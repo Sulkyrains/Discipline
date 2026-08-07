@@ -30,6 +30,11 @@ const DOCK_PATHS: Array<{ path: string; key: I18nKey }> = [
   { path: '/stats', key: 'navStats' }
 ]
 
+function formatCheckTime(ts: number): string {
+  const d = new Date(ts)
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
 export default function Settings() {
   const lang = useAppStore((s) => s.settings.language)
   const settings = useAppStore((s) => s.settings)
@@ -46,6 +51,8 @@ export default function Settings() {
   const [dockCollapsed, setDockCollapsed] = useState(true)
   const updateStatus = useUpdateStore((s) => s.status)
   const updateChecking = updateStatus === 'checking'
+  const updateRemote = useUpdateStore((s) => s.lastRemote)
+  const lastCheckedAt = useUpdateStore((s) => s.lastCheckedAt)
 
   const enableNotifications = async () => {
     const ok = await requestNotificationPermission()
@@ -86,6 +93,17 @@ export default function Settings() {
 
   const addDock = (path: string) =>
     setDockOrder([...dockOrder.filter((p) => p !== '/settings'), path, '/settings'])
+
+  const updateStatusLabel =
+    updateStatus === 'checking'
+      ? t(lang, 'checkingUpdate')
+      : updateStatus === 'outdated'
+        ? t(lang, 'updateStatusOutdated', { version: updateRemote ?? '' })
+        : updateStatus === 'current'
+          ? t(lang, 'upToDate', { version: APP_VERSION })
+          : updateStatus === 'error'
+            ? t(lang, 'updateCheckFailed')
+            : t(lang, 'updateStatusIdle')
 
   return (
     <div className="page page-settings">
@@ -360,6 +378,16 @@ export default function Settings() {
           <span className="muted">{t(lang, 'version')}</span>
           <span>{APP_VERSION}</span>
         </div>
+        <div className="settings-row">
+          <span className="muted">{t(lang, 'autoUpdate')}</span>
+          <span className={`chip ${updateStatus === 'current' ? 'chip-ok' : ''}`}>{updateStatusLabel}</span>
+        </div>
+        {lastCheckedAt ? (
+          <div className="settings-row">
+            <span className="muted">{t(lang, 'lastCheckAt')}</span>
+            <span>{formatCheckTime(lastCheckedAt)}</span>
+          </div>
+        ) : null}
         <div className="settings-row">
           <span className="muted">{t(lang, 'checkUpdate')}</span>
           <button

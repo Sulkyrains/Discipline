@@ -52,3 +52,17 @@ export function autoReloadOnce(reload: () => void = () => void clearCachesAndRel
   reload()
   return true
 }
+
+/**
+ * Reports and clears the "just auto-updated" flag set by autoReloadOnce, so
+ * the app can greet the user after the forced reload lands on the new build.
+ */
+export function consumeAutoUpdated(): boolean {
+  try {
+    if (!sessionStorage.getItem(AUTO_RELOAD_KEY)) return false
+    sessionStorage.removeItem(AUTO_RELOAD_KEY)
+    return true
+  } catch {
+    return false
+  }
+}

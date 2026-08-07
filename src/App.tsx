@@ -14,6 +14,8 @@ import { computeSignIns } from './lib/stats'
 import { playUiSound } from './lib/uiSound'
 import { applyAutoTheme, clearAutoTheme } from './lib/autoTheme'
 import { syncFocusLockActive, syncFocusLockWhitelist } from './lib/focusLock'
+import { consumeAutoUpdated } from './lib/update'
+import { APP_VERSION } from './version'
 import { useAppStore } from './stores/useAppStore'
 import { useAuthStore } from './stores/useAuthStore'
 import { useFocusStore } from './stores/useFocusStore'
@@ -98,6 +100,17 @@ export default function App() {
     if (s.keepOverdue) return
     const stale = s.todos.filter((td) => !td.completed && td.dueDate !== '' && td.dueDate < todayKey())
     if (stale.length > 0) setOverdueCount(stale.length)
+  }, [entered])
+
+  useEffect(() => {
+    if (!entered) return
+    if (consumeAutoUpdated()) {
+      const lang = useAppStore.getState().settings.language
+      useToastStore.getState().push({
+        title: t(lang, 'updatedToLatest', { version: APP_VERSION }),
+        kind: 'success'
+      })
+    }
   }, [entered])
 
   useEffect(() => {
