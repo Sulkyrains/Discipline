@@ -35,10 +35,11 @@ if (!__SINGLE_FILE__) {
     if (needsUpdate(remote, APP_VERSION)) void clearCachesAndReload()
   }
   void check()
-  window.setInterval(() => void check(), 5 * 60 * 1000)
+  window.setInterval(() => void check(), 60 * 1000)
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') void check()
   })
+  window.addEventListener('pageshow', () => void check())
 }
 
 // Static hosts (GitHub Pages / Gitee Pages) cannot rewrite arbitrary paths to
