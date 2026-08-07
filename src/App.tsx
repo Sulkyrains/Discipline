@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { lazy, Suspense, useEffect, useRef } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { THEME_META } from './lib/theme'
 import { isNative, notify, scheduleClassReminders, upcomingClassReminders } from './lib/notifications'
@@ -18,11 +18,21 @@ import Home from './pages/Home'
 import Timetable from './pages/Timetable'
 import Todos from './pages/Todos'
 import Focus from './pages/Focus'
-import Stats from './pages/Stats'
-import Achievements from './pages/Achievements'
-import Settings from './pages/Settings'
-import Login from './pages/Login'
-import Feedback from './pages/Feedback'
+
+const Stats = lazy(() => import('./pages/Stats'))
+const Achievements = lazy(() => import('./pages/Achievements'))
+const Settings = lazy(() => import('./pages/Settings'))
+const Login = lazy(() => import('./pages/Login'))
+const Feedback = lazy(() => import('./pages/Feedback'))
+
+function RouteFallback() {
+  const lang = useAppStore((s) => s.settings.language)
+  return (
+    <div className="page page-loading">
+      <p className="muted">{t(lang, 'loading')}</p>
+    </div>
+  )
+}
 
 export default function App() {
   const settings = useAppStore((s) => s.settings)
@@ -102,21 +112,23 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <Routes>
-        <Route path="/splash" element={<Splash />} />
-        <Route element={<FocusGuard />}>
-          <Route path="/" element={<Home />} />
-          <Route path="/timetable" element={<Timetable />} />
-          <Route path="/todos" element={<Todos />} />
-          <Route path="/focus" element={<Focus />} />
-          <Route path="/stats" element={<Stats />} />
-          <Route path="/achievements" element={<Achievements />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/feedback" element={<Feedback />} />
-        </Route>
-        <Route path="/login" element={<Login />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          <Route path="/splash" element={<Splash />} />
+          <Route element={<FocusGuard />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/timetable" element={<Timetable />} />
+            <Route path="/todos" element={<Todos />} />
+            <Route path="/focus" element={<Focus />} />
+            <Route path="/stats" element={<Stats />} />
+            <Route path="/achievements" element={<Achievements />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/feedback" element={<Feedback />} />
+          </Route>
+          <Route path="/login" element={<Login />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
       {!hideNav ? (
         <>
           <SoundPill />

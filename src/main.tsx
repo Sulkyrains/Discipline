@@ -3,12 +3,12 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter, HashRouter } from 'react-router-dom'
 import { registerSW } from 'virtual:pwa-register'
 import App from './App'
+import { APP_VERSION } from './version'
 import './styles/tokens.css'
 import './styles/base.css'
 import './styles/components.css'
 import './styles/pages.css'
 
-const APP_VERSION = '1.2.3'
 const VERSION_KEY = 'discipline-app-version'
 
 if (!__SINGLE_FILE__) {

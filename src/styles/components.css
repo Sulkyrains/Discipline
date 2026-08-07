@@ -139,8 +139,10 @@
 }
 
 .banner-lock {
+  background: var(--surface-2);
   background: color-mix(in srgb, var(--primary) 14%, transparent);
   color: var(--primary);
+  border: 1px solid var(--border);
   border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
   animation: lock-pulse 2s ease infinite;
 }
@@ -156,8 +158,10 @@
 }
 
 .banner-warn {
+  background: var(--surface-2);
   background: color-mix(in srgb, var(--warn) 14%, transparent);
   color: var(--warn);
+  border: 1px solid var(--border);
   border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent);
 }
 
@@ -292,6 +296,7 @@
 
 .nav-item.active {
   color: var(--primary);
+  background: var(--surface-2);
   background: color-mix(in srgb, var(--primary) 12%, transparent);
 }
 
@@ -312,7 +317,13 @@
 }
 
 .nav-item.pulsing {
+  background: var(--surface-2);
   background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.nav-item.disabled {
+  opacity: 0.4;
+  pointer-events: none;
 }
 
 .nav-label {
@@ -362,6 +373,7 @@
 }
 
 .chip-ok {
+  background: var(--surface-2);
   background: color-mix(in srgb, var(--primary) 16%, transparent);
   color: var(--primary);
 }

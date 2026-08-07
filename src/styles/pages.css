@@ -1,5 +1,13 @@
 /* Splash */
+.page-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
+}
+
 .splash {
+  min-height: 100vh;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
@@ -700,6 +708,7 @@
 }
 
 .sound-chip.active {
+  background: var(--surface-2);
   background: color-mix(in srgb, var(--primary) 16%, transparent);
   color: var(--primary);
 }
@@ -876,6 +885,7 @@ input[type='range'] {
 
 /* Login */
 .page-login {
+  min-height: 100vh;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;

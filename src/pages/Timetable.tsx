@@ -199,6 +199,7 @@ export default function Timetable() {
               value={form.name}
               placeholder="高等数学"
               onChange={(e) => setForm({ ...form, name: e.target.value })}
+              autoFocus
             />
             {errors.name ? <span className="form-error">{errors.name}</span> : null}
           </label>

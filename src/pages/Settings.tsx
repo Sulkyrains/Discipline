@@ -7,6 +7,7 @@ import { requestNotificationPermission } from '../lib/notifications'
 import { useAppStore } from '../stores/useAppStore'
 import { useAuthStore } from '../stores/useAuthStore'
 import { useToastStore } from '../stores/useToastStore'
+import { APP_VERSION } from '../version'
 import ConfirmDialog from '../components/ConfirmDialog'
 
 const THEME_NAMES: Record<ThemeId, { zh: string; en: string; dots: string[] }> = {
@@ -247,7 +248,7 @@ export default function Settings() {
         </div>
         <div className="settings-row">
           <span className="muted">{t(lang, 'version')}</span>
-          <span>1.2.3</span>
+          <span>{APP_VERSION}</span>
         </div>
       </section>
 

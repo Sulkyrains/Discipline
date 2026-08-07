@@ -195,7 +195,8 @@ const zh = {
   courseNameRequired: '请输入课程名称',
   timeInvalid: '结束时间需晚于开始时间',
   weeksInvalid: '结束周不能早于开始周',
-  courseConflict: '与已有课程时间重叠：'
+  courseConflict: '与已有课程时间重叠：',
+  loading: '加载中…'
 }
 
 const en: Record<keyof typeof zh, string> = {
@@ -393,7 +394,8 @@ const en: Record<keyof typeof zh, string> = {
   courseNameRequired: 'Course name is required',
   timeInvalid: 'End time must be after start time',
   weeksInvalid: 'End week cannot be before start week',
-  courseConflict: 'Time conflict with:'
+  courseConflict: 'Time conflict with:',
+  loading: 'Loading…'
 }
 
 export type I18nKey = keyof typeof zh

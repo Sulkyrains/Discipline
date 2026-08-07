@@ -4,6 +4,8 @@ import { t, type I18nKey } from '../lib/i18n'
 import { useAppStore } from '../stores/useAppStore'
 import { useFocusStore } from '../stores/useFocusStore'
 
+const FOCUS_WHITELIST = ['/focus', '/todos']
+
 function HomeIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -76,12 +78,17 @@ export default function BottomNav() {
       {ITEMS.map((item) => {
         const Icon = item.icon
         const pulsing = item.path === '/focus' && focusActive
+        const locked = focusActive && !FOCUS_WHITELIST.includes(item.path)
         return (
           <NavLink
             key={item.path}
             to={item.path}
             end={item.path === '/'}
-            className={({ isActive }) => `nav-item${isActive ? ' active' : ''}${pulsing ? ' pulsing' : ''}`}
+            aria-disabled={locked}
+            onClick={locked ? (e) => e.preventDefault() : undefined}
+            className={({ isActive }) =>
+              `nav-item${isActive ? ' active' : ''}${pulsing ? ' pulsing' : ''}${locked ? ' disabled' : ''}`
+            }
           >
             <span className="nav-icon">
               <Icon />
