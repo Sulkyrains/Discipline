@@ -23,7 +23,7 @@ export default defineConfig({
       injectRegister: false,
       includeAssets: ['favicon.svg', 'icons/*.png'],
       manifest: {
-        name: 'Discipline 自律',
+        name: 'Discipline',
         short_name: 'Discipline',
         description: '课程表 · 专注计时 · 待办 · 成就',
         theme_color: '#0B0F14',
