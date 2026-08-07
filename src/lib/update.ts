@@ -30,5 +30,7 @@ export async function clearCachesAndReload(): Promise<void> {
       // caches unavailable; reload anyway
     }
   }
-  window.location.reload()
+  // Bypass any short-lived HTTP cache for index.html so the reload always
+  // fetches the latest build from the network.
+  window.location.replace(window.location.pathname + '?v=' + Date.now() + window.location.hash)
 }

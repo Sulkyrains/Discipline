@@ -1,7 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, HashRouter } from 'react-router-dom'
-import { registerSW } from 'virtual:pwa-register'
 import App from './App'
 import { APP_VERSION } from './version'
 import { clearCachesAndReload, fetchRemoteVersion, needsUpdate } from './lib/update'
@@ -28,11 +27,22 @@ if (!__SINGLE_FILE__) {
   } catch {
     // storage unavailable (private mode etc.); skip cache-busting
   }
-  registerSW({ immediate: true })
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker
+      .register(`${import.meta.env.BASE_URL}sw.js?v=${APP_VERSION}`, { updateViaCache: 'none' })
+      .catch(() => {})
+  }
 
   const check = async () => {
     const remote = await fetchRemoteVersion()
-    if (needsUpdate(remote, APP_VERSION)) void clearCachesAndReload()
+    if (needsUpdate(remote, APP_VERSION)) {
+      void clearCachesAndReload()
+      return
+    }
+    // Clean up the cache-busting query after a successful fresh load.
+    if (window.location.search.startsWith('?v=')) {
+      window.history.replaceState(null, '', window.location.pathname + window.location.hash)
+    }
   }
   void check()
   window.setInterval(() => void check(), 60 * 1000)
