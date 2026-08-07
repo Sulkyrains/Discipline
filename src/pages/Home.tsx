@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { t } from '../lib/i18n'
 import { dateKey, minuteToHHMM, nowMinute, todayKey } from '../lib/format'
@@ -16,6 +16,12 @@ export default function Home() {
   const semesterStart = useAppStore((s) => s.settings.semesterStart)
   const user = useAuthStore((s) => s.user)
   const [quoteIdx, setQuoteIdx] = useState(0)
+  const [clockNow, setClockNow] = useState(() => new Date())
+
+  useEffect(() => {
+    const iv = window.setInterval(() => setClockNow(new Date()), 1000)
+    return () => window.clearInterval(iv)
+  }, [])
 
   const now = new Date()
   const hour = now.getHours()
@@ -37,6 +43,7 @@ export default function Home() {
   const greeting =
     hour < 12 ? t(lang, 'greetingMorning') : hour < 18 ? t(lang, 'greetingAfternoon') : t(lang, 'greetingEvening')
   const quote = quoteByIndex(quoteIdx)
+  const clock = `${String(clockNow.getHours()).padStart(2, '0')}:${String(clockNow.getMinutes()).padStart(2, '0')}`
 
   return (
     <div className="page page-home">
@@ -48,9 +55,10 @@ export default function Home() {
           </h1>
           <p className="home-date">
             {now.getMonth() + 1}月{now.getDate()}日 · {t(lang, 'weekLabel', { week })}
+            <span className="home-clock">{clock}</span>
           </p>
         </div>
-        <Link to="/achievements" className="streak-chip">
+        <Link to="/checkins" className="streak-chip">
           <span className="streak-flame">🔥</span>
           <span className="streak-num">{stats.currentStreak}</span>
           <span className="streak-label">{t(lang, 'currentStreak')}</span>

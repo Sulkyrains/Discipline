@@ -27,26 +27,29 @@ export interface Stats {
 function dayIndexMap(sessions: FocusSession[]): {
   minutes: Map<string, number>
   sessions: Map<string, number>
-  days: Set<string>
 } {
   const minutes = new Map<string, number>()
   const count = new Map<string, number>()
-  const days = new Set<string>()
   for (const s of sessions) {
     const k = dateKey(new Date(s.completedAt))
     minutes.set(k, (minutes.get(k) ?? 0) + s.plannedMinutes)
     count.set(k, (count.get(k) ?? 0) + 1)
-    days.add(k)
   }
-  return { minutes, sessions: count, days }
+  return { minutes, sessions: count }
 }
 
 export function computeStats(sessions: FocusSession[], todos: Todo[], today = new Date()): Stats {
-  const { minutes, sessions: counts, days } = dayIndexMap(sessions)
+  const { minutes, sessions: counts } = dayIndexMap(sessions)
   const todayKey = dateKey(today)
 
   let totalMinutes = 0
   for (const m of minutes.values()) totalMinutes += m
+
+  // A day only counts as a check-in when the user focused for >= 15 minutes.
+  const checkinDays = new Set<string>()
+  for (const [k, m] of minutes) {
+    if (m >= 15) checkinDays.add(k)
+  }
 
   let taskFocusSessions = 0
   let morningSessions = 0
@@ -60,13 +63,13 @@ export function computeStats(sessions: FocusSession[], todos: Todo[], today = ne
 
   let currentStreak = 0
   let cursor = new Date(today)
-  if (!days.has(dateKey(cursor))) cursor = addDays(cursor, -1)
-  while (days.has(dateKey(cursor))) {
+  if (!checkinDays.has(dateKey(cursor))) cursor = addDays(cursor, -1)
+  while (checkinDays.has(dateKey(cursor))) {
     currentStreak++
     cursor = addDays(cursor, -1)
   }
 
-  const dayList = [...days].sort()
+  const dayList = [...checkinDays].sort()
   let bestStreak = 0
   let run = 0
   let prevKey: string | null = null
@@ -92,7 +95,6 @@ export function computeStats(sessions: FocusSession[], todos: Todo[], today = ne
     totalSessions: sessions.length,
     currentStreak,
     bestStreak,
-    activeDays: days.size,
     completedTodos: todos.filter((t) => t.completed).length,
     todayMinutes: minutes.get(todayKey) ?? 0,
     todaySessions: counts.get(todayKey) ?? 0,
@@ -100,7 +102,8 @@ export function computeStats(sessions: FocusSession[], todos: Todo[], today = ne
     monthMinutes,
     taskFocusSessions,
     morningSessions,
-    nightSessions
+    nightSessions,
+    activeDays: checkinDays.size
   }
 }
 

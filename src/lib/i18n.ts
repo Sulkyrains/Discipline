@@ -196,7 +196,12 @@ const zh = {
   timeInvalid: '结束时间需晚于开始时间',
   weeksInvalid: '结束周不能早于开始周',
   courseConflict: '与已有课程时间重叠：',
-  loading: '加载中…'
+  loading: '加载中…',
+  checkinCalendar: '打卡日历',
+  monthCheckins: '本月打卡 {n} 天',
+  totalCheckins: '累计打卡 {n} 天',
+  prevMonth: '上个月',
+  nextMonth: '下个月'
 }
 
 const en: Record<keyof typeof zh, string> = {
@@ -395,7 +400,12 @@ const en: Record<keyof typeof zh, string> = {
   timeInvalid: 'End time must be after start time',
   weeksInvalid: 'End week cannot be before start week',
   courseConflict: 'Time conflict with:',
-  loading: 'Loading…'
+  loading: 'Loading…',
+  checkinCalendar: 'Check-in Calendar',
+  monthCheckins: '{n} days this month',
+  totalCheckins: '{n} total check-ins',
+  prevMonth: 'Last month',
+  nextMonth: 'Next month'
 }
 
 export type I18nKey = keyof typeof zh

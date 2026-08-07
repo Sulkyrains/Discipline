@@ -18,6 +18,7 @@ import Home from './pages/Home'
 import Timetable from './pages/Timetable'
 import Todos from './pages/Todos'
 import Focus from './pages/Focus'
+import Checkins from './pages/Checkins'
 
 const Stats = lazy(() => import('./pages/Stats'))
 const Achievements = lazy(() => import('./pages/Achievements'))
@@ -152,6 +153,7 @@ export default function App() {
                 <Route path="/timetable" element={<Timetable />} />
                 <Route path="/todos" element={<Todos />} />
                 <Route path="/focus" element={<Focus />} />
+                <Route path="/checkins" element={<Checkins />} />
                 <Route path="/stats" element={<Stats />} />
                 <Route path="/achievements" element={<Achievements />} />
                 <Route path="/settings" element={<Settings />} />

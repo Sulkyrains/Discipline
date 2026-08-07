@@ -76,4 +76,17 @@ describe('stats', () => {
     expect(s.morningSessions).toBe(1)
     expect(s.nightSessions).toBe(1)
   })
+
+  it('only counts days with at least 15 focused minutes as check-ins', () => {
+    const short = [session('2026-08-05T03:00:00.000Z', 10)]
+    expect(computeStats(short, [], now).currentStreak).toBe(0)
+    expect(computeStats(short, [], now).activeDays).toBe(0)
+
+    const combined = [
+      session('2026-08-05T03:00:00.000Z', 8),
+      session('2026-08-05T04:00:00.000Z', 8)
+    ]
+    expect(computeStats(combined, [], now).currentStreak).toBe(1)
+    expect(computeStats(combined, [], now).activeDays).toBe(1)
+  })
 })

@@ -84,6 +84,69 @@
   width: 100%;
 }
 
+/* Check-in calendar */
+.cal-card {
+  padding: 16px;
+}
+
+.cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.cal-head strong {
+  font-size: 15px;
+}
+
+.cal-week,
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.cal-week span {
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  padding: 4px 0;
+}
+
+.cal-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.cal-day.empty {
+  visibility: hidden;
+}
+
+.cal-day.done {
+  background: var(--surface-2);
+  background: color-mix(in srgb, var(--primary) 18%, transparent);
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.cal-day.today {
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+
+.cal-day.future {
+  opacity: 0.35;
+}
+
+.cal-foot {
+  margin-top: 12px;
+  text-align: center;
+}
+
 @keyframes splash-in {
   from {
     opacity: 0;
@@ -123,6 +186,13 @@
   font-size: 13px;
   color: var(--muted);
   margin-top: 3px;
+}
+
+.home-clock {
+  margin-left: 8px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--primary);
 }
 
 .streak-chip {
