@@ -2,6 +2,7 @@ import type { ReactElement } from 'react'
 import { NavLink } from 'react-router-dom'
 import { t, type I18nKey } from '../lib/i18n'
 import { useAppStore } from '../stores/useAppStore'
+import { useFocusStore } from '../stores/useFocusStore'
 
 function HomeIcon() {
   return (
@@ -57,11 +58,11 @@ function MeIcon() {
   )
 }
 
-const ITEMS: Array<{ path: string; key: I18nKey; icon: () => ReactElement; center?: boolean }> = [
+const ITEMS: Array<{ path: string; key: I18nKey; icon: () => ReactElement }> = [
   { path: '/', key: 'navToday', icon: HomeIcon },
   { path: '/timetable', key: 'navTimetable', icon: CalendarIcon },
   { path: '/todos', key: 'navTodos', icon: TodoIcon },
-  { path: '/focus', key: 'navFocus', icon: TimerIcon, center: true },
+  { path: '/focus', key: 'navFocus', icon: TimerIcon },
   { path: '/stats', key: 'navStats', icon: ChartIcon },
   { path: '/settings', key: 'navMe', icon: MeIcon }
 ] as const
@@ -69,29 +70,27 @@ const ITEMS: Array<{ path: string; key: I18nKey; icon: () => ReactElement; cente
 export default function BottomNav() {
   const lang = useAppStore((s) => s.settings.language)
   const openTodos = useAppStore((s) => s.todos.filter((td) => !td.completed).length)
+  const focusActive = useFocusStore((s) => s.active)
   return (
     <nav className="nav">
       {ITEMS.map((item) => {
         const Icon = item.icon
+        const pulsing = item.path === '/focus' && focusActive
         return (
           <NavLink
             key={item.path}
             to={item.path}
             end={item.path === '/'}
-            className={({ isActive }) => `nav-item${isActive ? ' active' : ''}${item.center ? ' center' : ''}`}
+            className={({ isActive }) => `nav-item${isActive ? ' active' : ''}${pulsing ? ' pulsing' : ''}`}
           >
-            {({ isActive }) => (
-              <>
-                <span className="nav-icon">
-                  <Icon />
-                  {item.path === '/todos' && openTodos > 0 ? (
-                    <span className="nav-badge">{openTodos > 99 ? '99+' : openTodos}</span>
-                  ) : null}
-                </span>
-                <span className="nav-label">{t(lang, item.key)}</span>
-                {item.center ? <span className={`nav-center-dot${isActive ? ' active' : ''}`} /> : null}
-              </>
-            )}
+            <span className="nav-icon">
+              <Icon />
+              {pulsing ? <span className="nav-pulse" /> : null}
+              {item.path === '/todos' && openTodos > 0 ? (
+                <span className="nav-badge">{openTodos > 99 ? '99+' : openTodos}</span>
+              ) : null}
+            </span>
+            <span className="nav-label">{t(lang, item.key)}</span>
           </NavLink>
         )
       })}

@@ -4,7 +4,6 @@ import { t } from '../lib/i18n'
 import type { ThemeId } from '../types'
 import { THEME_META, THEME_ORDER } from '../lib/theme'
 import { requestNotificationPermission } from '../lib/notifications'
-import { isSupabaseConfigured } from '../lib/supabase'
 import { useAppStore } from '../stores/useAppStore'
 import { useAuthStore } from '../stores/useAuthStore'
 import { useToastStore } from '../stores/useToastStore'
@@ -84,7 +83,6 @@ export default function Settings() {
                 {t(lang, 'goLogin')}
               </Link>
             </div>
-            {!isSupabaseConfigured() ? <p className="muted small">{t(lang, 'notConfigured')}</p> : null}
           </>
         )}
       </section>
@@ -249,7 +247,7 @@ export default function Settings() {
         </div>
         <div className="settings-row">
           <span className="muted">{t(lang, 'version')}</span>
-          <span>1.1.0</span>
+          <span>1.2.0</span>
         </div>
       </section>
 

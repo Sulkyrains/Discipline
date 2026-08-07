@@ -2,7 +2,6 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Logo from '../components/Logo'
 import { t } from '../lib/i18n'
-import { isSupabaseConfigured } from '../lib/supabase'
 import { useAppStore } from '../stores/useAppStore'
 import { useAuthStore } from '../stores/useAuthStore'
 
@@ -17,11 +16,9 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
-  const configured = isSupabaseConfigured()
-
   const submit = async (e: FormEvent) => {
     e.preventDefault()
-    if (!configured || loading || !email.trim() || password.length < 6) return
+    if (loading || !email.trim() || password.length < 6) return
     const ok = mode === 'in' ? await signIn(email.trim(), password) : await signUp(email.trim(), password)
     if (ok) navigate('/', { replace: true })
   }
@@ -43,13 +40,6 @@ export default function Login() {
         <h1>{t(lang, 'welcomeBack')}</h1>
         <p className="muted">Discipline · {t(lang, 'quoteOfDay')}</p>
       </div>
-
-      {!configured ? (
-        <div className="card setup-card">
-          <div className="banner banner-warn">{t(lang, 'notConfigured')}</div>
-          <p className="muted small setup-hint">{t(lang, 'loginSetupHint')}</p>
-        </div>
-      ) : null}
 
       <form className="card login-form" onSubmit={submit}>
         <label className="field">
@@ -75,7 +65,7 @@ export default function Login() {
 
         {errorText() ? <p className="form-error">{errorText()}</p> : null}
 
-        <button className="btn btn-primary btn-lg" type="submit" disabled={!configured || loading}>
+        <button className="btn btn-primary btn-lg" type="submit" disabled={loading}>
           {loading ? '…' : mode === 'in' ? t(lang, 'signIn') : t(lang, 'signUp')}
         </button>
 

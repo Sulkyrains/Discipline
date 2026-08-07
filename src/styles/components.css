@@ -287,17 +287,19 @@
   padding: 6px 0 4px;
   border-radius: 16px;
   color: var(--muted);
-  transition: color 0.2s;
+  transition: color 0.2s, background 0.2s;
 }
 
 .nav-item.active {
   color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
 }
 
 .nav-icon {
   width: 24px;
   height: 24px;
   position: relative;
+  transition: transform 0.2s;
 }
 
 .nav-icon svg {
@@ -305,9 +307,41 @@
   height: 100%;
 }
 
+.nav-item.active .nav-icon {
+  transform: translateY(-2px) scale(1.22);
+}
+
+.nav-item.pulsing {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
 .nav-label {
   font-size: 9.5px;
   font-weight: 650;
+}
+
+.nav-pulse {
+  position: absolute;
+  top: -3px;
+  right: -5px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 40%, transparent);
+  animation: nav-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes nav-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.6);
+    opacity: 0.55;
+  }
 }
 
 .nav-badge {
@@ -409,48 +443,6 @@
   50% {
     transform: scaleY(1);
   }
-}
-
-.nav-item.center {
-  margin-top: -24px;
-  justify-content: center;
-}
-
-.nav-item.center .nav-icon {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, var(--primary), var(--primary-2));
-  color: #fff;
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--primary) 45%, transparent);
-}
-
-.nav-item.center .nav-icon svg {
-  width: 26px;
-  height: 26px;
-}
-
-.nav-item.center .nav-label {
-  margin-top: 2px;
-}
-
-.nav-center-dot {
-  position: absolute;
-  top: 6px;
-  right: 18px;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--accent);
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.nav-center-dot.active {
-  opacity: 1;
 }
 
 /* Island / dynamic-island style toasts */
@@ -555,28 +547,33 @@
   backdrop-filter: blur(3px);
   z-index: 80;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   animation: fade-in 0.2s ease both;
 }
 
-.sheet {
-  width: min(520px, 100%);
-  max-height: 88dvh;
-  overflow-y: auto;
-  background: var(--surface);
-  border-radius: 24px 24px 0 0;
-  padding: 10px 20px calc(20px + env(safe-area-inset-bottom));
-  animation: sheet-up 0.3s cubic-bezier(0.2, 1, 0.3, 1) both;
-  border: 1px solid var(--border);
-  border-bottom: none;
+.sheet-backdrop {
+  padding: 24px;
 }
 
-@keyframes sheet-up {
+.sheet {
+  width: min(520px, 100%);
+  max-height: min(88dvh, 640px);
+  overflow-y: auto;
+  background: var(--surface);
+  border-radius: 24px;
+  padding: 10px 20px 20px;
+  animation: sheet-pop 0.25s cubic-bezier(0.2, 1, 0.3, 1) both;
+  border: 1px solid var(--border);
+}
+
+@keyframes sheet-pop {
   from {
-    transform: translateY(100%);
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
   }
   to {
+    opacity: 1;
     transform: none;
   }
 }

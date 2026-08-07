@@ -56,6 +56,26 @@
   animation: loader-slide 1.2s ease-in-out infinite;
 }
 
+.splash-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(280px, 100%);
+  margin-top: 40px;
+  animation: splash-in 0.8s 0.5s ease both;
+}
+
+.splash-mode-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.splash-mode-btn {
+  width: 100%;
+}
+
 @keyframes splash-in {
   from {
     opacity: 0;
