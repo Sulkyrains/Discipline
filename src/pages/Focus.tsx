@@ -22,10 +22,11 @@ function fmtSeconds(total: number): string {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
-const DURATION_QUICK = [10, 15, 25, 45, 60, 90, 120, 180, 240, 300]
+const DURATION_QUICK = [10, 15, 25, 45, 60, 90]
 
 export default function Focus() {
   const settings = useAppStore((s) => s.settings)
+  const setSettings = useAppStore((s) => s.setSettings)
   const abandonDates = useAppStore((s) => s.abandonDates)
   const recordAbandon = useAppStore((s) => s.recordAbandon)
   const lang = settings.language
@@ -259,6 +260,58 @@ export default function Focus() {
               </button>
             ))}
           </div>
+        </div>
+      ) : null}
+
+      {!active ? (
+        <div className="card breaks-card">
+          <h3 className="section-title">{t(lang, 'breakSettings')}</h3>
+          <div className="form-row">
+            <label className="field">
+              <span>{t(lang, 'shortBreak')}</span>
+              <input
+                className="input"
+                type="number"
+                min={1}
+                max={15}
+                value={settings.shortBreakMinutes}
+                onChange={(e) =>
+                  setSettings({
+                    shortBreakMinutes: Math.max(1, Math.min(15, Number(e.target.value) || 5))
+                  })
+                }
+              />
+            </label>
+            <label className="field">
+              <span>{t(lang, 'longBreak')}</span>
+              <input
+                className="input"
+                type="number"
+                min={1}
+                max={60}
+                value={settings.longBreakMinutes}
+                onChange={(e) =>
+                  setSettings({
+                    longBreakMinutes: Math.max(1, Math.min(60, Number(e.target.value) || 15))
+                  })
+                }
+              />
+            </label>
+          </div>
+          <label className="field">
+            <span>{t(lang, 'rounds')}</span>
+            <select
+              className="select"
+              value={settings.roundsBeforeLongBreak}
+              onChange={(e) => setSettings({ roundsBeforeLongBreak: Number(e.target.value) })}
+            >
+              {[2, 3, 4, 5, 6].map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
       ) : null}
 

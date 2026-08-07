@@ -211,65 +211,6 @@ export default function Settings() {
       </section>
 
       <section className="card settings-section">
-        <h3 className="section-title">{t(lang, 'focus')}</h3>
-        <div className="form-row">
-          <label className="field">
-            <span>{t(lang, 'pomodoro')}</span>
-            <input
-              className="input"
-              type="number"
-              min={10}
-              max={300}
-              value={settings.pomodoroMinutes}
-              onChange={(e) =>
-                setSettings({
-                  pomodoroMinutes: Math.max(10, Math.min(300, Number(e.target.value) || 25))
-                })
-              }
-            />
-          </label>
-          <label className="field">
-            <span>{t(lang, 'shortBreak')}</span>
-            <input
-              className="input"
-              type="number"
-              min={1}
-              max={60}
-              value={settings.shortBreakMinutes}
-              onChange={(e) => setSettings({ shortBreakMinutes: Math.max(1, Number(e.target.value) || 5) })}
-            />
-          </label>
-        </div>
-        <div className="form-row">
-          <label className="field">
-            <span>{t(lang, 'longBreak')}</span>
-            <input
-              className="input"
-              type="number"
-              min={1}
-              max={90}
-              value={settings.longBreakMinutes}
-              onChange={(e) => setSettings({ longBreakMinutes: Math.max(1, Number(e.target.value) || 15) })}
-            />
-          </label>
-          <label className="field">
-            <span>{t(lang, 'rounds')}</span>
-            <select
-              className="select"
-              value={settings.roundsBeforeLongBreak}
-              onChange={(e) => setSettings({ roundsBeforeLongBreak: Number(e.target.value) })}
-            >
-              {[2, 3, 4, 5, 6].map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      </section>
-
-      <section className="card settings-section">
         <h3 className="section-title">{t(lang, 'reminders')}</h3>
         <label className="field">
           <span>{t(lang, 'reminderDefault')}</span>
@@ -310,7 +251,7 @@ export default function Settings() {
       <section className="card settings-section">
         <h3 className="section-title">{t(lang, 'uiSound')}</h3>
         <div className="sound-chips">
-          {(['off', 'soft', 'pop', 'tick', 'bell'] as UiSoundId[]).map((id) => (
+          {(['off', 'soft', 'pop', 'tick', 'bell', 'wood', 'ding'] as UiSoundId[]).map((id) => (
             <button
               key={id}
               className={`sound-chip${settings.uiSound === id ? ' active' : ''}`}
@@ -325,8 +266,12 @@ export default function Settings() {
                     : id === 'pop'
                       ? 'uiSoundPop'
                       : id === 'tick'
-                        ? 'uiSoundTick'
-                        : 'uiSoundBell'
+                      ? 'uiSoundTick'
+                      : id === 'bell'
+                        ? 'uiSoundBell'
+                        : id === 'wood'
+                          ? 'uiSoundWood'
+                          : 'uiSoundDing'
               )}
             </button>
           ))}

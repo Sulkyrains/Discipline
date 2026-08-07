@@ -56,5 +56,11 @@ export function playUiSound(id: UiSoundId): void {
       tone(c, { type: 'sine', freq: 880, gain: 0.09, duration: 0.5 })
       tone(c, { type: 'sine', freq: 1318.5, gain: 0.05, duration: 0.5 })
       break
+    case 'wood':
+      tone(c, { type: 'triangle', freq: 240, gain: 0.1, duration: 0.08 })
+      break
+    case 'ding':
+      tone(c, { type: 'sine', freq: 1568, gain: 0.08, duration: 0.3 })
+      break
   }
 }

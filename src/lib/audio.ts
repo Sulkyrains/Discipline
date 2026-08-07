@@ -1,4 +1,4 @@
-export type SoundId = 'rain' | 'stream' | 'ocean' | 'campfire' | 'forest'
+export type SoundId = 'rain' | 'stream' | 'ocean' | 'campfire' | 'forest' | 'thunder' | 'insects' | 'wind'
 
 export interface SoundDef {
   id: SoundId
@@ -12,7 +12,10 @@ export const SOUNDS: SoundDef[] = [
   { id: 'stream', zh: '溪流', en: 'Stream', file: 'audio/stream.mp3' },
   { id: 'ocean', zh: '海浪', en: 'Ocean waves', file: 'audio/ocean.mp3' },
   { id: 'campfire', zh: '篝火', en: 'Campfire', file: 'audio/campfire.mp3' },
-  { id: 'forest', zh: '森林鸟鸣', en: 'Forest birds', file: 'audio/forest.mp3' }
+  { id: 'forest', zh: '森林鸟鸣', en: 'Forest birds', file: 'audio/forest.mp3' },
+  { id: 'thunder', zh: '雷雨', en: 'Thunder rain', file: 'audio/thunder.mp3' },
+  { id: 'insects', zh: '夏夜虫鸣', en: 'Night insects', file: 'audio/insects.mp3' },
+  { id: 'wind', zh: '山风', en: 'Mountain wind', file: 'audio/wind.mp3' }
 ]
 
 export function soundUrl(id: SoundId): string {

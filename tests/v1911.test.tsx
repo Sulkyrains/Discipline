@@ -136,7 +136,7 @@ describe('v1.9.11 focus duration', () => {
 
   it('clamps duration to 10-300 and shows ten quick options', () => {
     const { container } = render(<Focus />)
-    expect(container.querySelectorAll('.duration-chips .sound-chip').length).toBe(10)
+    expect(container.querySelectorAll('.duration-chips .sound-chip').length).toBe(6)
     const input = screen.getByLabelText('专注时长（分钟）') as HTMLInputElement
     fireEvent.change(input, { target: { value: '5' } })
     expect(useAppStore.getState().settings.pomodoroMinutes).toBe(10)

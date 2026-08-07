@@ -1013,6 +1013,10 @@
   margin-bottom: 0;
 }
 
+.breaks-card {
+  padding: 14px;
+}
+
 .abandon-limit-hint {
   margin: 10px 0 0;
   text-align: center;

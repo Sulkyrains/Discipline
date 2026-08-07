@@ -102,19 +102,37 @@ function resetStores() {
 describe('v1.7 real white noise assets', () => {
   const audioDir = join(process.cwd(), 'public', 'audio')
 
-  it('ships five non-empty mp3 files for offline use', () => {
+  it('ships eight non-empty mp3 files for offline use', () => {
     expect(existsSync(audioDir)).toBe(true)
     const files = readdirSync(audioDir)
       .filter((f) => f.endsWith('.mp3'))
       .sort()
-    expect(files).toEqual(['campfire.mp3', 'forest.mp3', 'ocean.mp3', 'rain.mp3', 'stream.mp3'])
+    expect(files).toEqual([
+      'campfire.mp3',
+      'forest.mp3',
+      'insects.mp3',
+      'ocean.mp3',
+      'rain.mp3',
+      'stream.mp3',
+      'thunder.mp3',
+      'wind.mp3'
+    ])
     for (const f of files) {
       expect(statSync(join(audioDir, f)).size).toBeGreaterThan(100_000)
     }
   })
 
-  it('SOUNDS exposes the five natural sounds with labels and files', () => {
-    expect(SOUNDS.map((s) => s.id)).toEqual(['rain', 'stream', 'ocean', 'campfire', 'forest'])
+  it('SOUNDS exposes the eight natural sounds with labels and files', () => {
+    expect(SOUNDS.map((s) => s.id)).toEqual([
+      'rain',
+      'stream',
+      'ocean',
+      'campfire',
+      'forest',
+      'thunder',
+      'insects',
+      'wind'
+    ])
     for (const s of SOUNDS) {
       expect(s.zh.length).toBeGreaterThan(0)
       expect(s.en.length).toBeGreaterThan(0)
@@ -168,7 +186,7 @@ describe('v1.7 sound engine', () => {
 
   it('plays all UI sound presets without throwing', () => {
     stubAudio()
-    for (const id of ['soft', 'pop', 'tick', 'bell'] as const) {
+    for (const id of ['soft', 'pop', 'tick', 'bell', 'wood', 'ding'] as const) {
       expect(() => playUiSound(id)).not.toThrow()
     }
     expect(() => playUiSound('off')).not.toThrow()

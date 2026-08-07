@@ -1,8 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it } from 'vitest'
-import Settings from '../src/pages/Settings'
+import Focus from '../src/pages/Focus'
 import { defaultSettings, useAppStore } from '../src/stores/useAppStore'
+import { useFocusStore } from '../src/stores/useFocusStore'
 
 function resetStore() {
   useAppStore.setState({
@@ -12,7 +13,19 @@ function resetStore() {
     sessions: [],
     unlocked: [],
     feedback: [],
-    mergedFor: null
+    mergedFor: null,
+    signIns: [],
+    abandonDates: [],
+    dockOrder: ['/', '/timetable', '/todos', '/focus', '/stats', '/settings'],
+    appWhitelist: [],
+    todoQuickTags: []
+  })
+  useFocusStore.setState({
+    timer: { phase: 'focus', status: 'idle', remainingSeconds: 15 * 60, roundsCompleted: 0 },
+    active: false,
+    phase: 'focus',
+    taskId: null,
+    startedAt: null
   })
 }
 
@@ -22,7 +35,7 @@ describe('v1.3.2 custom focus duration', () => {
   it('clamps the focus duration to at least 10 minutes', () => {
     render(
       <MemoryRouter>
-        <Settings />
+        <Focus />
       </MemoryRouter>
     )
     const focusInput = screen.getByLabelText('专注时长（分钟）')

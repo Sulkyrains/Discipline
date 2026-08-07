@@ -41,7 +41,7 @@ describe('v1.9.12 quick duration labels', () => {
     const texts = [...container.querySelectorAll('.duration-chips .sound-chip')].map((e) =>
       e.textContent?.trim()
     )
-    expect(texts).toEqual(['10', '15', '25', '45', '60', '90', '120', '180', '240', '300'])
+    expect(texts).toEqual(['10', '15', '25', '45', '60', '90'])
   })
 })
 

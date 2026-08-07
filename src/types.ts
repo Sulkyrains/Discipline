@@ -1,7 +1,7 @@
 export type Language = 'zh' | 'en'
 export type Parity = 'all' | 'odd' | 'even'
 export type ThemeId = 'minimal-dark' | 'forest-light' | 'vibrant' | 'china' | 'gray' | 'auto'
-export type UiSoundId = 'off' | 'soft' | 'pop' | 'tick' | 'bell'
+export type UiSoundId = 'off' | 'soft' | 'pop' | 'tick' | 'bell' | 'wood' | 'ding'
 
 export const COURSE_COLORS = ['indigo', 'mint', 'sun', 'coral', 'sky', 'rose', 'violet', 'teal', 'amber'] as const
 export type CourseColor = (typeof COURSE_COLORS)[number]
