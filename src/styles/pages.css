@@ -265,6 +265,43 @@
   color: var(--primary);
 }
 
+.update-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--primary);
+  box-shadow: var(--shadow-1);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.update-banner-dot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--primary);
+  animation: update-pulse 1.4s ease-in-out infinite;
+}
+
+.update-banner-text {
+  flex: 1;
+}
+
+@keyframes update-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
 .streak-chip {
   display: flex;
   align-items: center;

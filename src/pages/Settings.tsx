@@ -9,6 +9,8 @@ import { useAppStore } from '../stores/useAppStore'
 import { useAuthStore } from '../stores/useAuthStore'
 import { useToastStore } from '../stores/useToastStore'
 import { APP_VERSION } from '../version'
+import { clearCachesAndReload } from '../lib/update'
+import { useUpdateStore } from '../stores/useUpdateStore'
 import ConfirmDialog from '../components/ConfirmDialog'
 
 const THEME_NAMES: Record<ThemeId, { zh: string; en: string; dots: string[] }> = {
@@ -42,6 +44,8 @@ export default function Settings() {
   const [permState, setPermState] = useState<'unknown' | 'granted' | 'denied'>('unknown')
   const [confirmClear, setConfirmClear] = useState(false)
   const [dockCollapsed, setDockCollapsed] = useState(true)
+  const updateStatus = useUpdateStore((s) => s.status)
+  const updateChecking = updateStatus === 'checking'
 
   const enableNotifications = async () => {
     const ok = await requestNotificationPermission()
@@ -55,6 +59,17 @@ export default function Settings() {
   const syncNow = async () => {
     const ok = await mergeWithCloud()
     if (!ok) useToastStore.getState().push({ title: t(lang, 'syncFailed'), kind: 'warn' })
+  }
+
+  const handleCheckUpdate = async () => {
+    const result = await useUpdateStore.getState().checkNow()
+    const title =
+      result === 'outdated'
+        ? t(lang, 'updateFound')
+        : result === 'current'
+          ? t(lang, 'upToDate', { version: APP_VERSION })
+          : t(lang, 'updateCheckFailed')
+    useToastStore.getState().push({ title, kind: result === 'current' ? 'success' : 'warn' })
   }
 
   const visibleDock = dockOrder.filter((p) => p !== '/settings')
@@ -343,6 +358,21 @@ export default function Settings() {
         <div className="settings-row">
           <span className="muted">{t(lang, 'version')}</span>
           <span>{APP_VERSION}</span>
+        </div>
+        <div className="settings-row">
+          <span className="muted">{t(lang, 'checkUpdate')}</span>
+          <button
+            className="btn btn-ghost btn-sm"
+            disabled={updateChecking}
+            onClick={() => void handleCheckUpdate()}
+          >
+            {updateChecking ? t(lang, 'checkingUpdate') : t(lang, 'checkUpdateBtn')}
+          </button>
+          {updateStatus === 'outdated' ? (
+            <button className="btn btn-primary btn-sm" onClick={() => void clearCachesAndReload()}>
+              {t(lang, 'updateNow')}
+            </button>
+          ) : null}
         </div>
       </section>
 

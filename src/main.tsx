@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter, HashRouter } from 'react-router-dom'
 import App from './App'
 import { APP_VERSION } from './version'
-import { clearCachesAndReload, fetchRemoteVersion, needsUpdate } from './lib/update'
+import { useUpdateStore } from './stores/useUpdateStore'
 import './styles/tokens.css'
 import './styles/base.css'
 import './styles/components.css'
@@ -34,13 +34,9 @@ if (!__SINGLE_FILE__) {
   }
 
   const check = async () => {
-    const remote = await fetchRemoteVersion()
-    if (needsUpdate(remote, APP_VERSION)) {
-      void clearCachesAndReload()
-      return
-    }
+    const result = await useUpdateStore.getState().checkNow()
     // Clean up the cache-busting query after a successful fresh load.
-    if (window.location.search.startsWith('?v=')) {
+    if (result === 'current' && window.location.search.startsWith('?v=')) {
       window.history.replaceState(null, '', window.location.pathname + window.location.hash)
     }
   }

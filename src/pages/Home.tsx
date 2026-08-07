@@ -5,8 +5,10 @@ import { dateKey, formatDateCN, minuteToHHMM, nowMinute, todayKey } from '../lib
 import { coursesOnDay, currentWeekNumber, isCourseOngoing, WEEKDAY_EN, WEEKDAY_ZH } from '../lib/timetable'
 import { computeSignIns, computeStats } from '../lib/stats'
 import { quoteByIndex } from '../lib/quotes'
+import { clearCachesAndReload } from '../lib/update'
 import { useAppStore } from '../stores/useAppStore'
 import { useAuthStore } from '../stores/useAuthStore'
+import { useUpdateStore } from '../stores/useUpdateStore'
 
 export default function Home() {
   const lang = useAppStore((s) => s.settings.language)
@@ -16,6 +18,8 @@ export default function Home() {
   const signIns = useAppStore((s) => s.signIns)
   const semesterStart = useAppStore((s) => s.settings.semesterStart)
   const user = useAuthStore((s) => s.user)
+  const updateStatus = useUpdateStore((s) => s.status)
+  const updateRemote = useUpdateStore((s) => s.lastRemote)
   const [quoteIdx, setQuoteIdx] = useState(0)
   const [clockNow, setClockNow] = useState(() => new Date())
 
@@ -51,6 +55,17 @@ export default function Home() {
 
   return (
     <div className="page page-home">
+      {updateStatus === 'outdated' ? (
+        <div className="update-banner" role="status">
+          <span className="update-banner-dot" />
+          <span className="update-banner-text">
+            {t(lang, 'updateAvailable', { version: updateRemote ?? '' })}
+          </span>
+          <button className="btn btn-primary btn-sm" onClick={() => void clearCachesAndReload()}>
+            {t(lang, 'updateNow')}
+          </button>
+        </div>
+      ) : null}
       <header className="home-header">
         <div>
           <h1 className="home-greeting">
