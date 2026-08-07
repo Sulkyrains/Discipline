@@ -5,7 +5,7 @@ import { useFocusStore, type FocusEvent } from '../src/stores/useFocusStore'
 
 function resetStores() {
   useAppStore.setState({
-    settings: defaultSettings(),
+    settings: { ...defaultSettings(), pomodoroMinutes: 25 },
     courses: [],
     todos: [],
     sessions: [],
@@ -14,7 +14,7 @@ function resetStores() {
     mergedFor: null
   })
   useFocusStore.setState({
-    timer: createTimer(defaultSettings()),
+    timer: createTimer({ ...defaultSettings(), pomodoroMinutes: 25 }),
     active: false,
     phase: 'focus',
     taskId: null,

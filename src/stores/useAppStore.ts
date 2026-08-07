@@ -22,7 +22,7 @@ export const defaultSettings = (): Settings => ({
   theme: 'china',
   language: 'zh',
   semesterStart: dateKey(new Date(new Date().getFullYear(), 8, 1)),
-  pomodoroMinutes: 25,
+  pomodoroMinutes: 15,
   shortBreakMinutes: 5,
   longBreakMinutes: 15,
   roundsBeforeLongBreak: 4,

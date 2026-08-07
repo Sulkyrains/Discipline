@@ -255,7 +255,7 @@ export default function Focus() {
                 className={`sound-chip${settings.pomodoroMinutes === m ? ' active' : ''}`}
                 onClick={() => changeDuration(m)}
               >
-                {t(lang, 'minShort', { n: m })}
+                {m}
               </button>
             ))}
           </div>

@@ -167,7 +167,7 @@ describe('v1.9 focus duration control', () => {
 
   it('applies quick chips', () => {
     render(<Focus />)
-    fireEvent.click(screen.getByText('45 分'))
+    fireEvent.click(screen.getByText('45'))
     expect(useAppStore.getState().settings.pomodoroMinutes).toBe(45)
     expect(useFocusStore.getState().timer.remainingSeconds).toBe(45 * 60)
   })

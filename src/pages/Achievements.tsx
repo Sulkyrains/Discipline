@@ -35,13 +35,21 @@ export default function Achievements() {
           const isUnlocked = unlocked.includes(def.id)
           const p = def.progress(stats, signIn)
           const progressText = `${Math.min(p.current, p.target)}/${p.target}`
+          const hiddenLocked = !!def.hidden && !isUnlocked
           return (
-            <div key={def.id} className={`card ach-card${isUnlocked ? ' unlocked' : ''}`}>
-              <span className="ach-icon">{isUnlocked ? def.icon : '🔒'}</span>
-              <strong className="ach-name">{lang === 'zh' ? def.zh : def.en}</strong>
-              <span className="ach-desc muted">{lang === 'zh' ? def.descZh : def.descEn}</span>
+            <div
+              key={def.id}
+              className={`card ach-card${isUnlocked ? ' unlocked' : ''}${def.hidden ? ' ach-hidden' : ''}`}
+            >
+              <span className="ach-icon">{hiddenLocked ? '🔒' : isUnlocked ? def.icon : '🔒'}</span>
+              <strong className="ach-name">
+                {hiddenLocked ? `？？？ · ${t(lang, 'hiddenAchievement')}` : lang === 'zh' ? def.zh : def.en}
+              </strong>
+              <span className="ach-desc muted">
+                {hiddenLocked ? t(lang, 'hiddenHint') : lang === 'zh' ? def.descZh : def.descEn}
+              </span>
               <span className={`ach-progress${isUnlocked ? ' done' : ''}`}>
-                {isUnlocked ? `✓ ${t(lang, 'achieved')}` : progressText}
+                {isUnlocked ? `✓ ${t(lang, 'achieved')}` : hiddenLocked ? '？？？' : progressText}
               </span>
             </div>
           )

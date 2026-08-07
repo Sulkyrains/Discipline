@@ -7,6 +7,7 @@ export interface AchievementDef {
   en: string
   descZh: string
   descEn: string
+  hidden?: boolean
   check: (stats: Stats, signIn?: SignInStats) => boolean
   progress: (stats: Stats, signIn?: SignInStats) => { current: number; target: number }
 }
@@ -361,6 +362,50 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     descEn: 'Complete 3 todos in one day',
     check: (s) => s.todayCompletedTodos >= 3,
     progress: (s) => ({ current: Math.min(s.todayCompletedTodos, 3), target: 3 })
+  },
+  {
+    id: 'hours_50',
+    icon: '⏱️',
+    zh: '五十小时',
+    en: '50 Hours',
+    descZh: '累计专注 50 小时',
+    descEn: 'Focus for 50 hours in total',
+    hidden: true,
+    check: (s) => s.totalMinutes >= 3000,
+    progress: (s) => ({ current: Math.min(s.totalMinutes, 3000), target: 3000 })
+  },
+  {
+    id: 'tasks_500',
+    icon: '🗃️',
+    zh: '五百任务',
+    en: '500 Tasks',
+    descZh: '累计完成 500 个待办',
+    descEn: 'Complete 500 todos in total',
+    hidden: true,
+    check: (s) => s.completedTodos >= 500,
+    progress: (s) => ({ current: Math.min(s.completedTodos, 500), target: 500 })
+  },
+  {
+    id: 'checkin_total_200',
+    icon: '🗻',
+    zh: '两百日打卡',
+    en: '200 Check-ins',
+    descZh: '累计打卡 200 天',
+    descEn: 'Check in 200 days in total',
+    hidden: true,
+    check: (s) => s.activeDays >= 200,
+    progress: (s) => ({ current: Math.min(s.activeDays, 200), target: 200 })
+  },
+  {
+    id: 'signin_total_365',
+    icon: '🌠',
+    zh: '全年签到',
+    en: 'Year of Sign-ins',
+    descZh: '累计签到 365 天',
+    descEn: 'Sign in 365 days in total',
+    hidden: true,
+    check: (_s, signIn) => (signIn?.totalDays ?? 0) >= 365,
+    progress: (_s, signIn) => ({ current: Math.min(signIn?.totalDays ?? 0, 365), target: 365 })
   }
 ]
 

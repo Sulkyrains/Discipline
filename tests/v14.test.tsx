@@ -25,7 +25,7 @@ describe('v1.3.2 custom focus duration', () => {
         <Settings />
       </MemoryRouter>
     )
-    const focusInput = screen.getByDisplayValue('25')
+    const focusInput = screen.getByLabelText('专注时长（分钟）')
     fireEvent.change(focusInput, { target: { value: '5' } })
     expect(useAppStore.getState().settings.pomodoroMinutes).toBe(10)
     fireEvent.change(focusInput, { target: { value: '45' } })
