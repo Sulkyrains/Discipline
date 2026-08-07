@@ -247,7 +247,7 @@ export default function Settings() {
         </div>
         <div className="settings-row">
           <span className="muted">{t(lang, 'version')}</span>
-          <span>1.2.1</span>
+          <span>1.2.2</span>
         </div>
       </section>
 

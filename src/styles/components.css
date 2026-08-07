@@ -557,22 +557,16 @@
 }
 
 .sheet {
-  width: min(480px, 100%);
+  width: 480px;
+  max-width: 100%;
   max-height: 80vh;
   max-height: min(80dvh, 560px);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  overflow-y: auto;
   background: var(--surface);
   border-radius: 24px;
   padding: 10px 20px 20px;
   animation: sheet-pop 0.25s cubic-bezier(0.2, 1, 0.3, 1) both;
   border: 1px solid var(--border);
-}
-
-.sheet-body {
-  overflow-y: auto;
-  min-height: 0;
 }
 
 @keyframes sheet-pop {

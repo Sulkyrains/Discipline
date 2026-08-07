@@ -8,7 +8,25 @@ import './styles/base.css'
 import './styles/components.css'
 import './styles/pages.css'
 
+const APP_VERSION = '1.2.2'
+const VERSION_KEY = 'discipline-app-version'
+
 if (!__SINGLE_FILE__) {
+  try {
+    const seen = localStorage.getItem(VERSION_KEY)
+    if (seen !== APP_VERSION) {
+      localStorage.setItem(VERSION_KEY, APP_VERSION)
+      if ('caches' in window) {
+        void window.caches
+          .keys()
+          .then((keys) => Promise.all(keys.map((k) => window.caches.delete(k))))
+          .then(() => window.location.reload())
+          .catch(() => {})
+      }
+    }
+  } catch {
+    // storage unavailable (private mode etc.); skip cache-busting
+  }
   registerSW({ immediate: true })
 }
 
