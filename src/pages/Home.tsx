@@ -35,6 +35,7 @@ export default function Home() {
 
   const stats = useMemo(() => computeStats(sessions, todos, now), [sessions, todos, now])
   const signIn = useMemo(() => computeSignIns(signIns, now), [signIns, now])
+  const signedToday = signIns.includes(todayKey())
   const todayTodos = todos
     .filter((td) => !td.completed && (td.dueDate === todayKey() || td.dueDate === ''))
     .slice(0, 3)
@@ -70,7 +71,9 @@ export default function Home() {
           <Link to="/checkins" className="streak-chip signin-chip">
             <span className="streak-flame">📅</span>
             <span className="streak-num">{signIn.currentStreak}</span>
-            <span className="streak-label">{t(lang, 'signedToday')}</span>
+            <span className="streak-label">
+              {signedToday ? t(lang, 'signedToday') : t(lang, 'signInGo')}
+            </span>
           </Link>
         </div>
       </header>

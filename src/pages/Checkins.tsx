@@ -3,6 +3,7 @@ import { t } from '../lib/i18n'
 import { dateKey } from '../lib/format'
 import { computeSignIns, computeStats } from '../lib/stats'
 import { useAppStore } from '../stores/useAppStore'
+import { useToastStore } from '../stores/useToastStore'
 
 const WEEKDAY_ZH = ['一', '二', '三', '四', '五', '六', '日']
 const WEEKDAY_EN = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -57,6 +58,16 @@ export default function Checkins() {
   const daysInMonth = new Date(year, month + 1, 0).getDate()
   const todayKeyStr = dateKey(now)
   const signedToday = signIns.includes(todayKeyStr)
+  const manualSignIn = () => {
+    const first = useAppStore.getState().signInToday()
+    if (first) {
+      const { currentStreak } = computeSignIns(useAppStore.getState().signIns)
+      useToastStore.getState().push({
+        title: t(lang, 'signInAutoToast', { n: currentStreak }),
+        kind: 'success'
+      })
+    }
+  }
 
   const cells: Array<{ key: string; day: number; checkin: boolean; today: boolean; future: boolean }> = []
   for (let i = 0; i < lead; i++) cells.push({ key: 'empty-' + i, day: 0, checkin: false, today: false, future: false })
@@ -94,6 +105,11 @@ export default function Checkins() {
           {t(lang, 'signInStreak', { n: signIn.currentStreak })} ·{' '}
           {t(lang, 'signInTotal', { n: signIn.totalDays })}
         </p>
+        {!signedToday ? (
+          <button className="btn btn-primary btn-sm" onClick={manualSignIn}>
+            {t(lang, 'signInNow')}
+          </button>
+        ) : null}
       </div>
 
       <div className="card checkin-today">

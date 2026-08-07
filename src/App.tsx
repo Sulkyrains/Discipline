@@ -101,19 +101,6 @@ export default function App() {
   }, [entered])
 
   useEffect(() => {
-    if (!entered) return
-    const store = useAppStore.getState()
-    if (store.signInToday()) {
-      const lang = useAppStore.getState().settings.language
-      const { currentStreak } = computeSignIns(useAppStore.getState().signIns)
-      useToastStore.getState().push({
-        title: t(lang, 'signInAutoToast', { n: currentStreak }),
-        kind: 'success'
-      })
-    }
-  }, [entered])
-
-  useEffect(() => {
     useAuthStore.getState().init()
   }, [])
 
@@ -232,6 +219,20 @@ export default function App() {
   const showDailySplash = entered && !hideNav && lastDailySplashDate !== todayKey()
   const showOnboarding = entered && !hideNav && !hasOnboarded && lastDailySplashDate === todayKey()
 
+  const handleDailySignIn = () => {
+    const store = useAppStore.getState()
+    const first = store.signInToday()
+    store.markDailySplashSeen()
+    if (first) {
+      const lang = useAppStore.getState().settings.language
+      const { currentStreak } = computeSignIns(useAppStore.getState().signIns)
+      useToastStore.getState().push({
+        title: t(lang, 'signInAutoToast', { n: currentStreak }),
+        kind: 'success'
+      })
+    }
+  }
+
   return (
     <div className="app-shell">
       {!entered ? (
@@ -263,7 +264,7 @@ export default function App() {
             </>
           ) : null}
           {showDailySplash ? (
-            <DailySplash onSignIn={() => useAppStore.getState().markDailySplashSeen()} />
+            <DailySplash onSignIn={handleDailySignIn} />
           ) : null}
           {showOnboarding ? (
             <Onboarding onDone={() => useAppStore.getState().setOnboarded()} />

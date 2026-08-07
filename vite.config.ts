@@ -7,6 +7,15 @@ export default defineConfig({
   define: {
     __SINGLE_FILE__: 'false'
   },
+  build: {
+    minify: 'terser',
+    terserOptions: {
+      compress: { passes: 2 },
+      mangle: true,
+      format: { comments: false }
+    },
+    sourcemap: false
+  },
   plugins: [
     react(),
     VitePWA({

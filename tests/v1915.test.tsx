@@ -48,6 +48,7 @@ describe('v1.9.15 daily splash', () => {
     expect(screen.getByText('每日一句')).toBeInTheDocument()
     fireEvent.click(screen.getByText(/今日签到/))
     expect(useAppStore.getState().lastDailySplashDate).toBe(todayKey())
+    expect(useAppStore.getState().signIns).toContain(todayKey())
     expect(screen.queryByText(/今日签到/)).toBeNull()
   })
 

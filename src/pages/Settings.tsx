@@ -41,6 +41,7 @@ export default function Settings() {
   const navigate = useNavigate()
   const [permState, setPermState] = useState<'unknown' | 'granted' | 'denied'>('unknown')
   const [confirmClear, setConfirmClear] = useState(false)
+  const [dockCollapsed, setDockCollapsed] = useState(true)
 
   const enableNotifications = async () => {
     const ok = await requestNotificationPermission()
@@ -57,6 +58,7 @@ export default function Settings() {
   }
 
   const visibleDock = dockOrder.filter((p) => p !== '/settings')
+  const shownDock = dockCollapsed ? visibleDock.slice(0, 3) : visibleDock
 
   const moveDock = (index: number, delta: number) => {
     const to = index + delta
@@ -145,7 +147,7 @@ export default function Settings() {
         <p className="section-sub">{t(lang, 'dockVisible')}</p>
         {visibleDock.length === 0 ? <p className="muted small">—</p> : null}
         <div className="dock-manage-list">
-          {visibleDock.map((path, i) => {
+          {shownDock.map((path, i) => {
             const meta = DOCK_PATHS.find((d) => d.path === path)
             if (!meta) return null
             return (
@@ -174,6 +176,13 @@ export default function Settings() {
             )
           })}
         </div>
+        {visibleDock.length > 3 ? (
+          <button className="btn btn-ghost btn-sm" onClick={() => setDockCollapsed((c) => !c)}>
+            {dockCollapsed
+              ? t(lang, 'whitelistExpand', { n: visibleDock.length - 3 })
+              : t(lang, 'whitelistCollapse')}
+          </button>
+        ) : null}
         <p className="section-sub">{t(lang, 'dockHidden')}</p>
         {DOCK_PATHS.filter((d) => !dockOrder.includes(d.path)).map((d) => (
           <div key={d.path} className="dock-manage-row">

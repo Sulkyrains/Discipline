@@ -41,13 +41,16 @@ if (!__SINGLE_FILE__) {
   })
 }
 
-// GitHub Pages cannot rewrite arbitrary paths to index.html, so use hash
-// routing there to avoid 404s on deep links. Netlify keeps clean URLs.
-const isGithubPages =
-  typeof window !== 'undefined' && window.location.hostname.toLowerCase().includes('github.io')
-const Router = __SINGLE_FILE__ || isGithubPages ? HashRouter : BrowserRouter
+// Static hosts (GitHub Pages / Gitee Pages) cannot rewrite arbitrary paths to
+// index.html, so use hash routing there to avoid 404s on deep links.
+// Netlify keeps clean URLs.
+const isStaticPagesHost =
+  typeof window !== 'undefined' &&
+  (window.location.hostname.toLowerCase().includes('github.io') ||
+    window.location.hostname.toLowerCase().includes('gitee.io'))
+const Router = __SINGLE_FILE__ || isStaticPagesHost ? HashRouter : BrowserRouter
 
-if (!__SINGLE_FILE__ && isGithubPages && typeof window !== 'undefined' && !window.location.hash) {
+if (!__SINGLE_FILE__ && isStaticPagesHost && typeof window !== 'undefined' && !window.location.hash) {
   // When the service worker serves index.html for a deep link, convert the
   // pathname into a hash route so the page matches the requested view.
   const path = window.location.pathname.replace(/\/$/, '')

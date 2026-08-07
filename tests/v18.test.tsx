@@ -133,13 +133,15 @@ describe('v1.8 home sign-in chip', () => {
 describe('v1.8 auto sign-in on entry', () => {
   beforeEach(resetStores)
 
-  it('auto signs in after passing the mode gate', () => {
+  it('does not auto sign in; the daily splash button signs in manually', () => {
     render(
       <MemoryRouter initialEntries={['/']}>
         <App />
       </MemoryRouter>
     )
     fireEvent.click(screen.getByText('游客模式'))
+    expect(useAppStore.getState().signIns).not.toContain(todayKey())
+    fireEvent.click(screen.getByText(/今日签到/))
     expect(useAppStore.getState().signIns).toContain(todayKey())
   })
 })
