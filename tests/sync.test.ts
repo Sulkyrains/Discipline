@@ -30,6 +30,7 @@ function course(id: string): Course {
     weekEnd: 16,
     parity: 'all',
     color: 'indigo',
+    priority: 2,
     reminderMinutes: 0
   }
 }

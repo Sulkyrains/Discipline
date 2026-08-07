@@ -16,10 +16,10 @@ interface TodoForm {
   title: string
   notes: string
   dueDate: string
-  priority: 0 | 1 | 2 | 3
+  priority: 1 | 2 | 3
 }
 
-const emptyForm = (): TodoForm => ({ title: '', notes: '', dueDate: '', priority: 0 })
+const emptyForm = (): TodoForm => ({ title: '', notes: '', dueDate: '', priority: 2 })
 
 export default function Todos() {
   const lang = useAppStore((s) => s.settings.language)
@@ -79,7 +79,12 @@ export default function Todos() {
   }
 
   const openEdit = (todo: Todo) => {
-    setForm({ title: todo.title, notes: todo.notes, dueDate: todo.dueDate, priority: todo.priority })
+    setForm({
+      title: todo.title,
+      notes: todo.notes,
+      dueDate: todo.dueDate,
+      priority: (todo.priority === 0 ? 2 : todo.priority) as 1 | 2 | 3
+    })
     setEditing(todo)
   }
 
@@ -124,7 +129,7 @@ export default function Todos() {
     navigate('/focus')
   }
 
-  const priorityLabel = (p: number) => t(lang, `pri${p}` as 'pri0')
+  const priorityLabel = (p: number) => t(lang, `pri${Math.max(1, Math.min(3, p))}` as 'pri1')
 
   return (
     <div className="page page-todos">
@@ -135,11 +140,9 @@ export default function Todos() {
             {todos.filter((td) => !td.completed).length} / {todos.length}
           </p>
         </div>
-        {!focusActive ? (
-          <button className="btn btn-primary btn-sm" onClick={openNew}>
-            + {t(lang, 'addTodo')}
-          </button>
-        ) : null}
+        <button className="btn btn-primary btn-sm" onClick={openNew}>
+          + {t(lang, 'addTodo')}
+        </button>
       </header>
 
       {focusActive ? <div className="banner banner-lock">{t(lang, 'lockedBanner')}</div> : null}
@@ -286,11 +289,11 @@ export default function Todos() {
               <select
                 className="select"
                 value={form.priority}
-                onChange={(e) => setForm({ ...form, priority: Number(e.target.value) as 0 | 1 | 2 | 3 })}
+                onChange={(e) => setForm({ ...form, priority: Number(e.target.value) as 1 | 2 | 3 })}
               >
-                {[0, 1, 2, 3].map((p) => (
+                {[1, 2, 3].map((p) => (
                   <option key={p} value={p}>
-                    {t(lang, `pri${p}` as 'pri0')}
+                    {t(lang, `pri${p}` as 'pri1')}
                   </option>
                 ))}
               </select>

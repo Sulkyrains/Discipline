@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { t } from '../lib/i18n'
+import { t, type I18nKey } from '../lib/i18n'
 import type { ThemeId, UiSoundId } from '../types'
 import { THEME_META, THEME_ORDER } from '../lib/theme'
+import { reorderDock } from '../lib/migration'
 import { requestNotificationPermission } from '../lib/notifications'
 import { useAppStore } from '../stores/useAppStore'
 import { useAuthStore } from '../stores/useAuthStore'
@@ -13,14 +14,25 @@ import ConfirmDialog from '../components/ConfirmDialog'
 const THEME_NAMES: Record<ThemeId, { zh: string; en: string; dots: string[] }> = {
   'minimal-dark': { zh: '极简深色', en: 'Minimal dark', dots: ['#0B0F14', '#7C9CF5'] },
   'forest-light': { zh: '森林浅色', en: 'Forest light', dots: ['#F4F1E8', '#3E7C59'] },
-  vibrant: { zh: '活力彩色', en: 'Vibrant', dots: ['#FFF7EB', '#FF5C8A'] }
+  vibrant: { zh: '活力彩色', en: 'Vibrant', dots: ['#FFF7EB', '#FF5C8A'] },
+  china: { zh: '中国风·朱砂', en: 'China cinnabar', dots: ['#A63A32', '#C89B3C'] }
 }
+
+const DOCK_PATHS: Array<{ path: string; key: I18nKey }> = [
+  { path: '/', key: 'navToday' },
+  { path: '/timetable', key: 'navTimetable' },
+  { path: '/todos', key: 'navTodos' },
+  { path: '/focus', key: 'navFocus' },
+  { path: '/stats', key: 'navStats' }
+]
 
 export default function Settings() {
   const lang = useAppStore((s) => s.settings.language)
   const settings = useAppStore((s) => s.settings)
   const setSettings = useAppStore((s) => s.setSettings)
   const clearLocalData = useAppStore((s) => s.clearLocalData)
+  const dockOrder = useAppStore((s) => s.dockOrder)
+  const setDockOrder = useAppStore((s) => s.setDockOrder)
   const user = useAuthStore((s) => s.user)
   const signOut = useAuthStore((s) => s.signOut)
   const mergeWithCloud = useAuthStore((s) => s.mergeWithCloud)
@@ -41,6 +53,19 @@ export default function Settings() {
     const ok = await mergeWithCloud()
     if (!ok) useToastStore.getState().push({ title: t(lang, 'syncFailed'), kind: 'warn' })
   }
+
+  const visibleDock = dockOrder.filter((p) => p !== '/settings')
+
+  const moveDock = (index: number, delta: number) => {
+    const to = index + delta
+    if (to < 0 || to >= visibleDock.length) return
+    setDockOrder([...reorderDock(visibleDock, index, to), '/settings'])
+  }
+
+  const removeDock = (path: string) => setDockOrder(dockOrder.filter((p) => p !== path))
+
+  const addDock = (path: string) =>
+    setDockOrder([...dockOrder.filter((p) => p !== '/settings'), path, '/settings'])
 
   return (
     <div className="page page-settings">
@@ -106,6 +131,56 @@ export default function Settings() {
             </button>
           ))}
         </div>
+      </section>
+
+      <section className="card settings-section">
+        <h3 className="section-title">{t(lang, 'dockManage')}</h3>
+        <p className="muted small">{t(lang, 'dockLongPressHint')}</p>
+        <div className="dock-manage-row">
+          <span>{t(lang, 'navMe')}</span>
+          <span className="muted small">{t(lang, 'dockFixed')}</span>
+        </div>
+        <p className="section-sub">{t(lang, 'dockVisible')}</p>
+        {visibleDock.length === 0 ? <p className="muted small">—</p> : null}
+        <div className="dock-manage-list">
+          {visibleDock.map((path, i) => {
+            const meta = DOCK_PATHS.find((d) => d.path === path)
+            if (!meta) return null
+            return (
+              <div key={path} className="dock-manage-row">
+                <span>{t(lang, meta.key)}</span>
+                <div className="dock-manage-actions">
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    disabled={i === 0}
+                    onClick={() => moveDock(i, -1)}
+                  >
+                    {t(lang, 'dockUp')}
+                  </button>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    disabled={i === visibleDock.length - 1}
+                    onClick={() => moveDock(i, 1)}
+                  >
+                    {t(lang, 'dockDown')}
+                  </button>
+                  <button className="btn btn-danger btn-sm" onClick={() => removeDock(path)}>
+                    {t(lang, 'delete')}
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+        <p className="section-sub">{t(lang, 'dockHidden')}</p>
+        {DOCK_PATHS.filter((d) => !dockOrder.includes(d.path)).map((d) => (
+          <div key={d.path} className="dock-manage-row">
+            <span>{t(lang, d.key)}</span>
+            <button className="btn btn-primary btn-sm" onClick={() => addDock(d.path)}>
+              + {t(lang, 'add')}
+            </button>
+          </div>
+        ))}
       </section>
 
       <section className="card settings-section">
@@ -229,13 +304,24 @@ export default function Settings() {
       <section className="card settings-section">
         <h3 className="section-title">{t(lang, 'uiSound')}</h3>
         <div className="sound-chips">
-          {(['off', 'soft', 'pop'] as UiSoundId[]).map((id) => (
+          {(['off', 'soft', 'pop', 'tick', 'bell'] as UiSoundId[]).map((id) => (
             <button
               key={id}
               className={`sound-chip${settings.uiSound === id ? ' active' : ''}`}
               onClick={() => setSettings({ uiSound: id })}
             >
-              {t(lang, id === 'off' ? 'uiSoundOff' : id === 'soft' ? 'uiSoundSoft' : 'uiSoundPop')}
+              {t(
+                lang,
+                id === 'off'
+                  ? 'uiSoundOff'
+                  : id === 'soft'
+                    ? 'uiSoundSoft'
+                    : id === 'pop'
+                      ? 'uiSoundPop'
+                      : id === 'tick'
+                        ? 'uiSoundTick'
+                        : 'uiSoundBell'
+              )}
             </button>
           ))}
         </div>

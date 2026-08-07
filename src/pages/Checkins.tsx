@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { t } from '../lib/i18n'
 import { dateKey } from '../lib/format'
-import { computeStats } from '../lib/stats'
+import { computeSignIns, computeStats } from '../lib/stats'
 import { useAppStore } from '../stores/useAppStore'
 
 const WEEKDAY_ZH = ['一', '二', '三', '四', '五', '六', '日']
@@ -11,10 +11,12 @@ export default function Checkins() {
   const lang = useAppStore((s) => s.settings.language)
   const sessions = useAppStore((s) => s.sessions)
   const todos = useAppStore((s) => s.todos)
+  const signIns = useAppStore((s) => s.signIns)
   const [monthOffset, setMonthOffset] = useState(0)
 
   const now = new Date()
   const cursor = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1)
+  const signIn = useMemo(() => computeSignIns(signIns, now), [signIns, now])
 
   const checkinDays = useMemo(() => {
     const minutesByDay = new Map<string, number>()
@@ -40,6 +42,7 @@ export default function Checkins() {
   const lead = (first.getDay() + 6) % 7
   const daysInMonth = new Date(year, month + 1, 0).getDate()
   const todayKeyStr = dateKey(now)
+  const signedToday = signIns.includes(todayKeyStr)
 
   const cells: Array<{ key: string; day: number; checkin: boolean; today: boolean; future: boolean }> = []
   for (let i = 0; i < lead; i++) cells.push({ key: 'empty-' + i, day: 0, checkin: false, today: false, future: false })
@@ -65,6 +68,19 @@ export default function Checkins() {
           </p>
         </div>
       </header>
+
+      <div className="card signin-card">
+        <div className="signin-card-head">
+          <span>📅 {t(lang, 'signInDaily')}</span>
+          <strong className={signedToday ? 'checkin-met' : ''}>
+            {signedToday ? `✓ ${t(lang, 'signedToday')}` : t(lang, 'signInNotYet')}
+          </strong>
+        </div>
+        <p className="muted small">
+          {t(lang, 'signInStreak', { n: signIn.currentStreak })} ·{' '}
+          {t(lang, 'signInTotal', { n: signIn.totalDays })}
+        </p>
+      </div>
 
       <div className="card checkin-today">
         <div className="checkin-today-head">

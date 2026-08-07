@@ -1,9 +1,9 @@
-export type ThemeId = 'minimal-dark' | 'forest-light' | 'vibrant'
 export type Language = 'zh' | 'en'
 export type Parity = 'all' | 'odd' | 'even'
-export type UiSoundId = 'off' | 'soft' | 'pop'
+export type ThemeId = 'minimal-dark' | 'forest-light' | 'vibrant' | 'china'
+export type UiSoundId = 'off' | 'soft' | 'pop' | 'tick' | 'bell'
 
-export const COURSE_COLORS = ['indigo', 'mint', 'sun', 'coral', 'sky'] as const
+export const COURSE_COLORS = ['indigo', 'mint', 'sun', 'coral', 'sky', 'rose', 'violet', 'teal', 'amber'] as const
 export type CourseColor = (typeof COURSE_COLORS)[number]
 
 export interface Course {
@@ -18,6 +18,7 @@ export interface Course {
   weekEnd: number
   parity: Parity
   color: CourseColor
+  priority: 1 | 2 | 3
   reminderMinutes: number // 0 = no reminder
 }
 

@@ -72,6 +72,28 @@
   color-scheme: light;
 }
 
+[data-theme='china'] {
+  --bg: #f4eee3;
+  --bg-glow-1: rgba(166, 58, 50, 0.1);
+  --bg-glow-2: rgba(200, 155, 60, 0.1);
+  --surface: #fbf7ee;
+  --surface-2: #efe6d2;
+  --surface-3: #e2d5b8;
+  --text: #2e2a25;
+  --muted: #7a6f60;
+  --border: rgba(46, 42, 37, 0.12);
+  --primary: #a63a32;
+  --primary-2: #c89b3c;
+  --accent: #c89b3c;
+  --danger: #b33a2e;
+  --success: #4a7c59;
+  --warn: #a97a2b;
+  --logo-bg: #f4eee3;
+  --chart-grid: rgba(46, 42, 37, 0.1);
+  --font: 'Noto Serif SC', 'Songti SC', 'STSong', 'SimSun', 'Microsoft YaHei', serif;
+  color-scheme: light;
+}
+
 .color-indigo {
   --course: #7c9cf5;
 }
@@ -86,4 +108,20 @@
 }
 .color-sky {
   --course: #6fc3f5;
+}
+
+.color-rose {
+  --course: #f28ba8;
+}
+
+.color-violet {
+  --course: #9d7bf5;
+}
+
+.color-teal {
+  --course: #3fc3b2;
+}
+
+.color-amber {
+  --course: #e8a23d;
 }

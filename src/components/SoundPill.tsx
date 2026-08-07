@@ -19,7 +19,7 @@ export default function SoundPill() {
         <i />
       </span>
       <span>
-        {t(lang, 'soundNowPlaying')} 路 {lang === 'zh' ? def?.zh : def?.en}
+        {t(lang, 'soundNowPlaying')} · {lang === 'zh' ? def?.zh : def?.en}
       </span>
       <span className="sound-pill-stop">×</span>
     </button>

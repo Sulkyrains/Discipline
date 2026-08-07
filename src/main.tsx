@@ -4,6 +4,7 @@ import { BrowserRouter, HashRouter } from 'react-router-dom'
 import { registerSW } from 'virtual:pwa-register'
 import App from './App'
 import { APP_VERSION } from './version'
+import { clearCachesAndReload, fetchRemoteVersion, needsUpdate } from './lib/update'
 import './styles/tokens.css'
 import './styles/base.css'
 import './styles/components.css'
@@ -28,6 +29,16 @@ if (!__SINGLE_FILE__) {
     // storage unavailable (private mode etc.); skip cache-busting
   }
   registerSW({ immediate: true })
+
+  const check = async () => {
+    const remote = await fetchRemoteVersion()
+    if (needsUpdate(remote, APP_VERSION)) void clearCachesAndReload()
+  }
+  void check()
+  window.setInterval(() => void check(), 5 * 60 * 1000)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') void check()
+  })
 }
 
 const Router = __SINGLE_FILE__ ? HashRouter : BrowserRouter

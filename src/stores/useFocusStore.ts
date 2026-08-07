@@ -35,6 +35,7 @@ interface FocusStore {
   abandon: () => void
   skipBreak: () => void
   switchPhase: (p: TimerPhase) => void
+  setDuration: (minutes: number) => void
   setTaskId: (id: string | null) => void
   setActive: (v: boolean) => void
   setPhase: (p: TimerPhase) => void
@@ -152,6 +153,15 @@ export const useFocusStore = create<FocusStore>((set, get) => ({
       startedAt: null
     })
     stopInterval()
+  },
+
+  setDuration: (minutes) => {
+    const s = get()
+    if (s.timer.phase !== 'focus' || s.timer.status === 'running') return
+    set({
+      timer: { ...s.timer, status: 'idle', remainingSeconds: minutesToSeconds(minutes) },
+      startedAt: null
+    })
   },
 
   setTaskId: (id) => set({ taskId: id }),

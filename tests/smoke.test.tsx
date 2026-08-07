@@ -26,7 +26,7 @@ describe('app smoke', () => {
     )
     expect(screen.getByText('选择使用模式')).toBeInTheDocument()
     fireEvent.click(screen.getByText('游客模式'))
-    expect(screen.getByText('今日计划')).toBeInTheDocument()
+    expect(screen.getByText('今日课程')).toBeInTheDocument()
   })
 
   it('applies the active theme to the document root', () => {

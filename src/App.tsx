@@ -4,6 +4,7 @@ import { THEME_META } from './lib/theme'
 import { isNative, notify, scheduleClassReminders, upcomingClassReminders } from './lib/notifications'
 import { t } from './lib/i18n'
 import { todayKey } from './lib/format'
+import { computeSignIns } from './lib/stats'
 import { playUiSound } from './lib/uiSound'
 import { useAppStore } from './stores/useAppStore'
 import { useAuthStore } from './stores/useAuthStore'
@@ -76,6 +77,19 @@ export default function App() {
   }, [entered])
 
   useEffect(() => {
+    if (!entered) return
+    const store = useAppStore.getState()
+    if (store.signInToday()) {
+      const lang = useAppStore.getState().settings.language
+      const { currentStreak } = computeSignIns(useAppStore.getState().signIns)
+      useToastStore.getState().push({
+        title: t(lang, 'signInAutoToast', { n: currentStreak }),
+        kind: 'success'
+      })
+    }
+  }, [entered])
+
+  useEffect(() => {
     useAuthStore.getState().init()
   }, [])
 
@@ -84,6 +98,7 @@ export default function App() {
       const cfg = useAppStore.getState().settings
       const lang = cfg.language
       if (e.type === 'focusCompleted') {
+        playUiSound('bell')
         const body = t(lang, 'focusCompleteBody', { n: e.plannedMinutes ?? cfg.pomodoroMinutes })
         void notify(t(lang, 'focusCompleteTitle'), body)
         useToastStore.getState().push({
@@ -99,6 +114,7 @@ export default function App() {
           })
         }
       } else {
+        playUiSound('bell')
         void notify(t(lang, 'breakComplete'), '')
         useToastStore.getState().push({ title: t(lang, 'breakComplete'), kind: 'info' })
       }

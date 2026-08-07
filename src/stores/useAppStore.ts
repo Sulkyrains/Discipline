@@ -8,14 +8,15 @@ import type {
   Settings,
   Todo
 } from '../types'
-import { dateKey, nowISO, startOfWeek, todayKey, uid } from '../lib/format'
+import { dateKey, nowISO, todayKey, uid } from '../lib/format'
 import { computeStats } from '../lib/stats'
 import { evaluateAchievements, type AchievementDef } from '../lib/achievements'
+import { DEFAULT_DOCK, migrateTodoPriority, normalizeDockOrder } from '../lib/migration'
 
 export const defaultSettings = (): Settings => ({
-  theme: 'minimal-dark',
+  theme: 'china',
   language: 'zh',
-  semesterStart: dateKey(startOfWeek(new Date())),
+  semesterStart: dateKey(new Date(new Date().getFullYear(), 8, 1)),
   pomodoroMinutes: 25,
   shortBreakMinutes: 5,
   longBreakMinutes: 15,
@@ -28,13 +29,19 @@ export const defaultSettings = (): Settings => ({
 interface AppStoreState extends AppData {
   mergedFor: string | null
   keepOverdue: boolean
+  signIns: string[]
+  abandonDates: string[]
+  dockOrder: string[]
   setSettings: (partial: Partial<Settings>) => void
   setKeepOverdue: (v: boolean) => void
+  setDockOrder: (paths: string[]) => void
+  signInToday: () => boolean
+  recordAbandon: () => void
   clearOverdueTodos: () => number
   addCourse: (course: Omit<Course, 'id'>) => void
   updateCourse: (id: string, patch: Partial<Course>) => void
   removeCourse: (id: string) => void
-  addTodo: (input: { title: string; notes: string; dueDate: string; priority: 0 | 1 | 2 | 3 }) => void
+  addTodo: (input: { title: string; notes: string; dueDate: string; priority: 1 | 2 | 3 }) => void
   updateTodo: (id: string, patch: Partial<Todo>) => void
   toggleTodo: (id: string) => AchievementDef[]
   removeTodo: (id: string) => void
@@ -73,10 +80,24 @@ export const useAppStore = create<AppStoreState>()(
       feedback: [],
       mergedFor: null,
       keepOverdue: false,
+      signIns: [],
+      abandonDates: [],
+      dockOrder: [...DEFAULT_DOCK],
 
       setSettings: (partial) => set({ settings: { ...get().settings, ...partial } }),
 
       setKeepOverdue: (v) => set({ keepOverdue: v }),
+
+      setDockOrder: (paths) => set({ dockOrder: normalizeDockOrder(paths) }),
+
+      signInToday: () => {
+        const today = todayKey()
+        if (get().signIns.includes(today)) return false
+        set({ signIns: [...get().signIns, today] })
+        return true
+      },
+
+      recordAbandon: () => set({ abandonDates: [...get().abandonDates, nowISO()] }),
 
       clearOverdueTodos: () => {
         const stale = get().todos.filter((td) => !td.completed && td.dueDate !== '' && td.dueDate < todayKey())
@@ -189,7 +210,10 @@ export const useAppStore = create<AppStoreState>()(
           sessions: [],
           unlocked: [],
           feedback: [],
-          mergedFor: null
+          mergedFor: null,
+          signIns: [],
+          abandonDates: [],
+          dockOrder: [...DEFAULT_DOCK]
         })
     }),
     {
@@ -202,8 +226,20 @@ export const useAppStore = create<AppStoreState>()(
         unlocked: s.unlocked,
         feedback: s.feedback,
         mergedFor: s.mergedFor,
-        keepOverdue: s.keepOverdue
-      })
+        keepOverdue: s.keepOverdue,
+        signIns: s.signIns,
+        abandonDates: s.abandonDates,
+        dockOrder: s.dockOrder
+      }),
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<AppStoreState>
+        return {
+          ...current,
+          ...p,
+          dockOrder: normalizeDockOrder(p.dockOrder),
+          todos: migrateTodoPriority(p.todos ?? current.todos)
+        }
+      }
     }
   )
 )

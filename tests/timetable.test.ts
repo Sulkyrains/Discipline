@@ -21,6 +21,7 @@ function course(partial: Partial<Course>): Course {
     weekEnd: 16,
     parity: 'all',
     color: 'indigo',
+    priority: 2,
     reminderMinutes: 0,
     ...partial
   }

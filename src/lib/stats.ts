@@ -24,6 +24,11 @@ export interface Stats {
   nightSessions: number
 }
 
+export interface SignInStats {
+  currentStreak: number
+  totalDays: number
+}
+
 function dayIndexMap(sessions: FocusSession[]): {
   minutes: Map<string, number>
   sessions: Map<string, number>
@@ -123,4 +128,16 @@ export function dailySeries(sessions: FocusSession[], days: number, today = new 
     out.push({ key: k, label: `${d.getMonth() + 1}/${d.getDate()}`, minutes, sessions: count })
   }
   return out
+}
+
+export function computeSignIns(signIns: string[], today = new Date()): SignInStats {
+  const set = new Set(signIns)
+  let currentStreak = 0
+  let cursor = new Date(today)
+  if (!set.has(dateKey(cursor))) cursor = addDays(cursor, -1)
+  while (set.has(dateKey(cursor))) {
+    currentStreak++
+    cursor = addDays(cursor, -1)
+  }
+  return { currentStreak, totalDays: set.size }
 }

@@ -32,6 +32,7 @@ interface CourseForm {
   weekEnd: number
   parity: Parity
   color: CourseColor
+  priority: 1 | 2 | 3
   reminderMinutes: number
 }
 
@@ -47,6 +48,7 @@ function emptyForm(day = 1): CourseForm {
     weekEnd: 16,
     parity: 'all',
     color: 'indigo',
+    priority: 2,
     reminderMinutes: 0
   }
 }
@@ -101,6 +103,7 @@ export default function Timetable() {
       weekEnd: course.weekEnd,
       parity: course.parity,
       color: course.color,
+      priority: course.priority,
       reminderMinutes: course.reminderMinutes
     })
     setErrors({})
@@ -125,13 +128,28 @@ export default function Timetable() {
       weekEnd: form.weekEnd,
       parity: form.parity,
       color: form.color,
+      priority: form.priority,
       reminderMinutes: form.reminderMinutes
     }
+    const selfId = editing && editing !== 'new' ? editing.id : ''
+    const sameName = courses.filter((c) => c.name.trim() === base.name && c.id !== selfId)
+    const renamed =
+      editing !== 'new' && editing !== null && editing.name.trim() !== base.name
+    const payload = {
+      ...base,
+      color: renamed || editing === 'new' ? (sameName.length > 0 ? sameName[0].color : base.color) : base.color
+    }
     if (editing === 'new') {
-      for (const w of form.weekdays) addCourse({ ...base, dayOfWeek: w })
+      for (const w of form.weekdays) addCourse({ ...payload, dayOfWeek: w })
     } else if (editing) {
-      updateCourse(editing.id, { ...base, dayOfWeek: form.weekdays[0] })
-      for (const w of form.weekdays.slice(1)) addCourse({ ...base, dayOfWeek: w })
+      updateCourse(editing.id, { ...payload, dayOfWeek: form.weekdays[0] })
+      for (const w of form.weekdays.slice(1)) addCourse({ ...payload, dayOfWeek: w })
+      // Keep every course with the same name on the same color.
+      for (const c of courses) {
+        if (c.id !== editing.id && c.name.trim() === payload.name && c.color !== payload.color) {
+          updateCourse(c.id, { color: payload.color })
+        }
+      }
     }
     setEditing(null)
   }
@@ -192,6 +210,9 @@ export default function Timetable() {
               <div className="course-main">
                 <div className="course-row">
                   <strong className="course-name">{course.name}</strong>
+                  <span className={`chip chip-pri-${course.priority}`}>
+                    {t(lang, `pri${course.priority}` as 'pri1')}
+                  </span>
                   {ongoingId === course.id ? <span className="badge badge-live">{t(lang, 'ongoing')}</span> : null}
                   {upcomingId === course.id ? <span className="badge badge-next">{t(lang, 'nextUp')}</span> : null}
                 </div>
@@ -346,6 +367,20 @@ export default function Timetable() {
               ))}
             </div>
           </div>
+          <label className="field">
+            <span>{t(lang, 'priority')}</span>
+            <select
+              className="select"
+              value={form.priority}
+              onChange={(e) => setForm({ ...form, priority: Number(e.target.value) as 1 | 2 | 3 })}
+            >
+              {[1, 2, 3].map((p) => (
+                <option key={p} value={p}>
+                  {t(lang, `pri${p}` as 'pri1')}
+                </option>
+              ))}
+            </select>
+          </label>
           <label className="field">
             <span>{t(lang, 'reminder')}</span>
             <select
