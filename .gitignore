@@ -1,0 +1,15 @@
+node_modules
+.netlify
+dist
+dist-html
+.env
+.env.local
+*.local
+.DS_Store
+*.log
+android/.gradle
+android/build
+android/app/build
+android/local.properties
+*.apk
+*.aab
