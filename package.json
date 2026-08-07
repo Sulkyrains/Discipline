@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "npm run icons && tsc --noEmit && vite build && node scripts/write-version.mjs",
-    "build:gh-pages": "npm run icons && tsc --noEmit && vite build --base=/Discipline/ && node scripts/write-version.mjs",
+      "build:gh-pages": "npm run icons && tsc --noEmit && vite build --base=./ && node scripts/write-version.mjs",
     "build:html": "npm run icons && tsc --noEmit && vite build --config vite.singlefile.config.ts && node scripts/copy-html.mjs && node scripts/write-version.mjs",
     "preview": "vite preview",
     "test": "vitest run",

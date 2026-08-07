@@ -69,7 +69,8 @@ if (!__SINGLE_FILE__) {
 const isStaticPagesHost =
   typeof window !== 'undefined' &&
   (window.location.hostname.toLowerCase().includes('github.io') ||
-    window.location.hostname.toLowerCase().includes('gitee.io'))
+    window.location.hostname.toLowerCase().includes('gitee.io') ||
+    window.location.hostname.toLowerCase().includes('jsdelivr'))
 const Router = __SINGLE_FILE__ || isStaticPagesHost ? HashRouter : BrowserRouter
 
 if (!__SINGLE_FILE__ && isStaticPagesHost && typeof window !== 'undefined' && !window.location.hash) {
