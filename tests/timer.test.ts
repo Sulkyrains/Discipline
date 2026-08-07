@@ -18,7 +18,8 @@ const settings: Settings = {
   longBreakMinutes: 15,
   roundsBeforeLongBreak: 4,
   reminderMinutes: 10,
-  whiteNoiseVolume: 0.5
+  whiteNoiseVolume: 0.5,
+  uiSound: 'soft'
 }
 
 describe('timer state machine', () => {

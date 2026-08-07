@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { t } from '../lib/i18n'
 import type { Todo } from '../types'
@@ -10,7 +10,7 @@ import Sheet from '../components/Sheet'
 import EmptyState from '../components/EmptyState'
 import ConfirmDialog from '../components/ConfirmDialog'
 
-type Filter = 'all' | 'today' | 'done'
+type Filter = 'all' | 'done' | string
 
 interface TodoForm {
   title: string
@@ -41,6 +41,16 @@ export default function Todos() {
   const [batchError, setBatchError] = useState(false)
 
   const today = todayKey()
+  const upcomingDates = useMemo(() => {
+    const set = new Set<string>()
+    for (const td of todos) {
+      if (!td.completed && td.dueDate !== '' && td.dueDate >= today) set.add(td.dueDate)
+    }
+    return [...set]
+      .sort()
+      .filter((d) => d !== today)
+      .slice(0, 4)
+  }, [todos, today])
   const dateQuick = [
     { label: t(lang, 'today'), key: today },
     { label: t(lang, 'tomorrowShort'), key: dateKey(addDays(new Date(), 1)) },
@@ -55,8 +65,9 @@ export default function Todos() {
     })
     .filter((td) => {
       if (filter === 'done') return td.completed
-      if (filter === 'today') return !td.completed && (td.dueDate === today || td.dueDate === '' || td.dueDate < today)
-      return true
+      if (filter === 'all') return true
+      if (filter === 'today') return !td.completed && (td.dueDate === today || td.dueDate === '')
+      return !td.completed && td.dueDate === filter
     })
 
   const openNew = () => {
@@ -133,12 +144,21 @@ export default function Todos() {
 
       {focusActive ? <div className="banner banner-lock">{t(lang, 'lockedBanner')}</div> : null}
 
-      <div className="seg">
-        {(['all', 'today', 'done'] as Filter[]).map((f) => (
-          <button key={f} className={`seg-item${filter === f ? ' active' : ''}`} onClick={() => setFilter(f)}>
-            {t(lang, f === 'all' ? 'filterAll' : f === 'today' ? 'filterToday' : 'filterDone')}
+      <div className="filter-chips">
+        <button className={`sound-chip${filter === 'all' ? ' active' : ''}`} onClick={() => setFilter('all')}>
+          {t(lang, 'filterAll')}
+        </button>
+        <button className={`sound-chip${filter === 'today' ? ' active' : ''}`} onClick={() => setFilter('today')}>
+          {t(lang, 'filterToday')}
+        </button>
+        {upcomingDates.map((d) => (
+          <button key={d} className={`sound-chip${filter === d ? ' active' : ''}`} onClick={() => setFilter(d)}>
+            {formatDateCN(d)}
           </button>
         ))}
+        <button className={`sound-chip${filter === 'done' ? ' active' : ''}`} onClick={() => setFilter('done')}>
+          {t(lang, 'filterDone')}
+        </button>
       </div>
 
       <div className="todo-list">

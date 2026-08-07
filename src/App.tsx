@@ -3,6 +3,8 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { THEME_META } from './lib/theme'
 import { isNative, notify, scheduleClassReminders, upcomingClassReminders } from './lib/notifications'
 import { t } from './lib/i18n'
+import { todayKey } from './lib/format'
+import { playUiSound } from './lib/uiSound'
 import { useAppStore } from './stores/useAppStore'
 import { useAuthStore } from './stores/useAuthStore'
 import { useFocusStore } from './stores/useFocusStore'
@@ -13,6 +15,7 @@ import FocusGuard from './components/FocusGuard'
 import IslandHost from './components/IslandHost'
 import MergeDialog from './components/MergeDialog'
 import SoundPill from './components/SoundPill'
+import ConfirmDialog from './components/ConfirmDialog'
 import Splash from './pages/Splash'
 import Home from './pages/Home'
 import Timetable from './pages/Timetable'
@@ -41,6 +44,7 @@ export default function App() {
   const location = useLocation()
   const firedRef = useRef<Set<string>>(new Set())
   const [entered, setEntered] = useState(false)
+  const [overdueCount, setOverdueCount] = useState<number | null>(null)
 
   useEffect(() => {
     document.documentElement.dataset.theme = settings.theme
@@ -51,6 +55,25 @@ export default function App() {
   useEffect(() => {
     useSoundStore.setState({ volume: settings.whiteNoiseVolume })
   }, [settings.whiteNoiseVolume])
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null
+      if (!target || typeof target.closest !== 'function') return
+      if (!target.closest('button, a')) return
+      playUiSound(useAppStore.getState().settings.uiSound)
+    }
+    document.addEventListener('click', handler)
+    return () => document.removeEventListener('click', handler)
+  }, [])
+
+  useEffect(() => {
+    if (!entered) return
+    const s = useAppStore.getState()
+    if (s.keepOverdue) return
+    const stale = s.todos.filter((td) => !td.completed && td.dueDate !== '' && td.dueDate < todayKey())
+    if (stale.length > 0) setOverdueCount(stale.length)
+  }, [entered])
 
   useEffect(() => {
     useAuthStore.getState().init()
@@ -171,6 +194,22 @@ export default function App() {
           ) : null}
           <IslandHost />
           <MergeDialog />
+          <ConfirmDialog
+            open={overdueCount !== null}
+            title={t(settings.language, 'overdueCleanTitle')}
+            body={t(settings.language, 'overdueCleanBody', { n: overdueCount ?? 0 })}
+            danger
+            confirmText={t(settings.language, 'overdueDelete')}
+            cancelText={t(settings.language, 'overdueKeep')}
+            onConfirm={() => {
+              useAppStore.getState().clearOverdueTodos()
+              setOverdueCount(null)
+            }}
+            onCancel={() => {
+              useAppStore.getState().setKeepOverdue(true)
+              setOverdueCount(null)
+            }}
+          />
         </>
       )}
     </div>

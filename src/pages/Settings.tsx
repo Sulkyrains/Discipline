@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { t } from '../lib/i18n'
-import type { ThemeId } from '../types'
+import type { ThemeId, UiSoundId } from '../types'
 import { THEME_META, THEME_ORDER } from '../lib/theme'
 import { requestNotificationPermission } from '../lib/notifications'
 import { useAppStore } from '../stores/useAppStore'
@@ -224,6 +224,21 @@ export default function Settings() {
             onChange={(e) => setSettings({ whiteNoiseVolume: Number(e.target.value) / 100 })}
           />
         </label>
+      </section>
+
+      <section className="card settings-section">
+        <h3 className="section-title">{t(lang, 'uiSound')}</h3>
+        <div className="sound-chips">
+          {(['off', 'soft', 'pop'] as UiSoundId[]).map((id) => (
+            <button
+              key={id}
+              className={`sound-chip${settings.uiSound === id ? ' active' : ''}`}
+              onClick={() => setSettings({ uiSound: id })}
+            >
+              {t(lang, id === 'off' ? 'uiSoundOff' : id === 'soft' ? 'uiSoundSoft' : 'uiSoundPop')}
+            </button>
+          ))}
+        </div>
       </section>
 
       <section className="card settings-section">

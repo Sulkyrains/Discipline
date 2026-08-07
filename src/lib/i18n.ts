@@ -213,7 +213,15 @@ const zh = {
   batchCount: '将添加 {n} 条待办',
   batchEmpty: '请至少输入一条待办',
   tomorrowShort: '明天',
-  dayAfterShort: '后天'
+  dayAfterShort: '后天',
+  uiSound: '交互音效',
+  uiSoundOff: '关闭',
+  uiSoundSoft: '柔和',
+  uiSoundPop: '清脆',
+  overdueCleanTitle: '清理过期待办',
+  overdueCleanBody: '发现 {n} 条昨天及以前的待办，默认将自动删除，是否保留？',
+  overdueDelete: '删除',
+  overdueKeep: '保留'
 }
 
 const en: Record<keyof typeof zh, string> = {
@@ -429,7 +437,15 @@ const en: Record<keyof typeof zh, string> = {
   batchCount: 'Will add {n} tasks',
   batchEmpty: 'Enter at least one task',
   tomorrowShort: 'Tomorrow',
-  dayAfterShort: 'Day after tomorrow'
+  dayAfterShort: 'Day after tomorrow',
+  uiSound: 'UI sounds',
+  uiSoundOff: 'Off',
+  uiSoundSoft: 'Soft',
+  uiSoundPop: 'Crisp',
+  overdueCleanTitle: 'Clean up overdue tasks',
+  overdueCleanBody: 'Found {n} overdue tasks (yesterday or earlier). They will be deleted by default. Keep them?',
+  overdueDelete: 'Delete',
+  overdueKeep: 'Keep'
 }
 
 export type I18nKey = keyof typeof zh

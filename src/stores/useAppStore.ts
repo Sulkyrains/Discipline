@@ -8,7 +8,7 @@ import type {
   Settings,
   Todo
 } from '../types'
-import { dateKey, nowISO, startOfWeek, uid } from '../lib/format'
+import { dateKey, nowISO, startOfWeek, todayKey, uid } from '../lib/format'
 import { computeStats } from '../lib/stats'
 import { evaluateAchievements, type AchievementDef } from '../lib/achievements'
 
@@ -21,12 +21,16 @@ export const defaultSettings = (): Settings => ({
   longBreakMinutes: 15,
   roundsBeforeLongBreak: 4,
   reminderMinutes: 10,
-  whiteNoiseVolume: 0.5
+  whiteNoiseVolume: 0.5,
+  uiSound: 'soft'
 })
 
 interface AppStoreState extends AppData {
   mergedFor: string | null
+  keepOverdue: boolean
   setSettings: (partial: Partial<Settings>) => void
+  setKeepOverdue: (v: boolean) => void
+  clearOverdueTodos: () => number
   addCourse: (course: Omit<Course, 'id'>) => void
   updateCourse: (id: string, patch: Partial<Course>) => void
   removeCourse: (id: string) => void
@@ -68,8 +72,20 @@ export const useAppStore = create<AppStoreState>()(
       unlocked: [],
       feedback: [],
       mergedFor: null,
+      keepOverdue: false,
 
       setSettings: (partial) => set({ settings: { ...get().settings, ...partial } }),
+
+      setKeepOverdue: (v) => set({ keepOverdue: v }),
+
+      clearOverdueTodos: () => {
+        const stale = get().todos.filter((td) => !td.completed && td.dueDate !== '' && td.dueDate < todayKey())
+        if (stale.length > 0) {
+          const staleIds = new Set(stale.map((s) => s.id))
+          set({ todos: get().todos.filter((t) => !staleIds.has(t.id)) })
+        }
+        return stale.length
+      },
 
       addCourse: (course) => set({ courses: [...get().courses, { ...course, id: uid() }] }),
 
@@ -185,7 +201,8 @@ export const useAppStore = create<AppStoreState>()(
         sessions: s.sessions,
         unlocked: s.unlocked,
         feedback: s.feedback,
-        mergedFor: s.mergedFor
+        mergedFor: s.mergedFor,
+        keepOverdue: s.keepOverdue
       })
     }
   )

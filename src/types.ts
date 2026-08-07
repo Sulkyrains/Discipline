@@ -1,6 +1,7 @@
 export type ThemeId = 'minimal-dark' | 'forest-light' | 'vibrant'
 export type Language = 'zh' | 'en'
 export type Parity = 'all' | 'odd' | 'even'
+export type UiSoundId = 'off' | 'soft' | 'pop'
 
 export const COURSE_COLORS = ['indigo', 'mint', 'sun', 'coral', 'sky'] as const
 export type CourseColor = (typeof COURSE_COLORS)[number]
@@ -59,6 +60,7 @@ export interface Settings {
   roundsBeforeLongBreak: number
   reminderMinutes: number
   whiteNoiseVolume: number // 0..1
+  uiSound: UiSoundId
 }
 
 export interface UserInfo {
