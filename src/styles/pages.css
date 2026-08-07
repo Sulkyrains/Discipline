@@ -565,6 +565,36 @@
   text-align: left;
 }
 
+.todo-color-dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--course);
+}
+
+.chip-tag {
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  color: var(--primary);
+}
+
+.tag-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.tag-input-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.tag-input-row .input {
+  flex: 1;
+}
+
 /* Stats charts */
 .donut-legend {
   display: flex;

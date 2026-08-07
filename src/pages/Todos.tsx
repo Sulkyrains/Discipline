@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { t } from '../lib/i18n'
-import type { Todo } from '../types'
+import type { CourseColor, Todo } from '../types'
+import { COURSE_COLORS } from '../types'
 import { addDays, dateKey, formatDateCN, minuteToHHMM, timeToMinute, todayKey } from '../lib/format'
 import { useAppStore } from '../stores/useAppStore'
 import { useFocusStore } from '../stores/useFocusStore'
@@ -20,9 +21,18 @@ interface TodoForm {
   startMinute?: number
   endMinute?: number
   reminderMinutes?: number
+  color: CourseColor
+  tags: string[]
 }
 
-const emptyForm = (): TodoForm => ({ title: '', notes: '', dueDate: '', priority: 2 })
+const emptyForm = (): TodoForm => ({
+  title: '',
+  notes: '',
+  dueDate: '',
+  priority: 2,
+  color: 'indigo',
+  tags: []
+})
 
 export default function Todos() {
   const lang = useAppStore((s) => s.settings.language)
@@ -33,6 +43,8 @@ export default function Todos() {
   const removeTodo = useAppStore((s) => s.removeTodo)
   const focusActive = useFocusStore((s) => s.active)
   const setTaskId = useFocusStore((s) => s.setTaskId)
+  const todoQuickTags = useAppStore((s) => s.todoQuickTags)
+  const addTodoQuickTag = useAppStore((s) => s.addTodoQuickTag)
   const navigate = useNavigate()
 
   const [filter, setFilter] = useState<Filter>('all')
@@ -42,6 +54,7 @@ export default function Todos() {
   const [mode, setMode] = useState<'single' | 'batch'>('single')
   const [batchText, setBatchText] = useState('')
   const [batchError, setBatchError] = useState(false)
+  const [tagInput, setTagInput] = useState('')
 
   const today = todayKey()
   const upcomingDates = useMemo(() => {
@@ -89,12 +102,15 @@ export default function Todos() {
       priority: (todo.priority === 0 ? 2 : todo.priority) as 1 | 2 | 3,
       startMinute: todo.startMinute,
       endMinute: todo.endMinute,
-      reminderMinutes: todo.reminderMinutes
+      reminderMinutes: todo.reminderMinutes,
+      color: todo.color ?? 'indigo',
+      tags: todo.tags ?? []
     })
     setEditing(todo)
   }
 
   const save = () => {
+    for (const tag of form.tags) addTodoQuickTag(tag)
     if (editing === 'new' && mode === 'batch') {
       const lines = batchText
         .split('\n')
@@ -105,6 +121,8 @@ export default function Todos() {
         return
       }
       for (const line of lines) {
+        const existing = todos.find((td) => td.title.trim() === line)
+        const color = existing ? (existing.color ?? 'indigo') : form.color
         addTodo({
           title: line,
           notes: '',
@@ -112,19 +130,56 @@ export default function Todos() {
           priority: form.priority,
           startMinute: form.startMinute,
           endMinute: form.endMinute,
-          reminderMinutes: form.reminderMinutes
+          reminderMinutes: form.reminderMinutes,
+          color,
+          tags: [...form.tags]
         })
       }
       setEditing(null)
       return
     }
     if (!form.title.trim()) return
+    const selfId = editing !== 'new' && editing ? editing.id : ''
+    const sameTitle = todos.filter((td) => td.title.trim() === form.title.trim() && td.id !== selfId)
+    const renamed =
+      editing !== 'new' && editing !== null && editing.title.trim() !== form.title.trim()
+    const color =
+      renamed || editing === 'new'
+        ? sameTitle.length > 0
+          ? (sameTitle[0].color ?? 'indigo')
+          : form.color
+        : form.color
+    const payload = { ...form, title: form.title.trim(), color, tags: [...form.tags] }
     if (editing === 'new') {
-      addTodo({ ...form, title: form.title.trim() })
+      addTodo(payload)
     } else if (editing) {
-      updateTodo(editing.id, { ...form, title: form.title.trim() })
+      updateTodo(editing.id, payload)
+      for (const c of todos) {
+        if (
+          c.id !== editing.id &&
+          c.title.trim() === payload.title &&
+          (c.color ?? 'indigo') !== color
+        ) {
+          updateTodo(c.id, { color })
+        }
+      }
     }
     setEditing(null)
+  }
+
+  const addTag = () => {
+    const tag = tagInput.trim()
+    if (!tag) return
+    if (!form.tags.includes(tag)) setForm({ ...form, tags: [...form.tags, tag] })
+    addTodoQuickTag(tag)
+    setTagInput('')
+  }
+
+  const toggleQuickTag = (tag: string) => {
+    setForm({
+      ...form,
+      tags: form.tags.includes(tag) ? form.tags.filter((x) => x !== tag) : [...form.tags, tag]
+    })
   }
 
   const onToggle = (id: string) => {
@@ -195,6 +250,7 @@ export default function Todos() {
                 <strong>{todo.title}</strong>
                 {todo.notes ? <span className="muted todo-notes">{todo.notes}</span> : null}
                 <span className="todo-meta">
+                  <i className={`todo-color-dot color-${todo.color ?? 'indigo'}`} />
                   <span className={`chip chip-pri-${todo.priority}`}>{priorityLabel(todo.priority)}</span>
                   {todo.dueDate ? (
                     <span className={`chip${todo.dueDate < today && !todo.completed ? ' chip-overdue' : ''}`}>
@@ -210,6 +266,11 @@ export default function Todos() {
                     </span>
                   ) : null}
                   {todo.focusCount > 0 ? <span className="chip">🎯 ×{todo.focusCount}</span> : null}
+                  {(todo.tags ?? []).map((tag) => (
+                    <span key={tag} className="chip chip-tag">
+                      #{tag}
+                    </span>
+                  ))}
                 </span>
               </button>
               {!focusActive && !todo.completed ? (
@@ -363,6 +424,61 @@ export default function Todos() {
               }
             />
           </label>
+          <div className="field">
+            <span>{t(lang, 'color')}</span>
+            <div className="color-picker">
+              {COURSE_COLORS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  className={`color-dot color-${c}${form.color === c ? ' selected' : ''}`}
+                  onClick={() => setForm({ ...form, color: c })}
+                  aria-label={c}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="field">
+            <span>{t(lang, 'tags')}</span>
+            <div className="tag-chips">
+              {todoQuickTags.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  className={`sound-chip${form.tags.includes(tag) ? ' active' : ''}`}
+                  onClick={() => toggleQuickTag(tag)}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+            <div className="tag-input-row">
+              <input
+                className="input"
+                value={tagInput}
+                placeholder={t(lang, 'tagPlaceholder')}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    addTag()
+                  }
+                }}
+              />
+              <button type="button" className="btn btn-primary btn-sm" onClick={addTag}>
+                {t(lang, 'tagAdd')}
+              </button>
+            </div>
+            {form.tags.length > 0 ? (
+              <div className="tag-chips">
+                {form.tags.map((tag) => (
+                  <span key={tag} className="chip chip-tag">
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+          </div>
           <div className="sound-chips date-chips">
             {dateQuick.map((d) => (
               <button

@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware'
 import type {
   AppData,
   Course,
+  CourseColor,
   FeedbackItem,
   FocusSession,
   Settings,
@@ -12,8 +13,10 @@ import type {
 import { dateKey, nowISO, todayKey, uid } from '../lib/format'
 import { computeStats } from '../lib/stats'
 import { evaluateAchievements, type AchievementDef } from '../lib/achievements'
-import { DEFAULT_DOCK, migrateTodoPriority, normalizeDockOrder } from '../lib/migration'
+import { DEFAULT_DOCK, normalizeDockOrder } from '../lib/migration'
 import { defaultWhitelist } from '../lib/appWhitelist'
+
+const DEFAULT_QUICK_TAGS = ['学习', '工作', '生活', '运动', '阅读']
 
 export const defaultSettings = (): Settings => ({
   theme: 'china',
@@ -35,11 +38,13 @@ interface AppStoreState extends AppData {
   abandonDates: string[]
   dockOrder: string[]
   appWhitelist: WhitelistApp[]
+  todoQuickTags: string[]
   setSettings: (partial: Partial<Settings>) => void
   setKeepOverdue: (v: boolean) => void
   setDockOrder: (paths: string[]) => void
   addWhitelistApp: (app: WhitelistApp) => void
   removeWhitelistApp: (id: string) => void
+  addTodoQuickTag: (tag: string) => void
   signInToday: () => boolean
   recordAbandon: () => void
   clearOverdueTodos: () => number
@@ -54,6 +59,8 @@ interface AppStoreState extends AppData {
     startMinute?: number
     endMinute?: number
     reminderMinutes?: number
+    color?: CourseColor
+    tags?: string[]
   }) => void
   updateTodo: (id: string, patch: Partial<Todo>) => void
   toggleTodo: (id: string) => AchievementDef[]
@@ -97,6 +104,7 @@ export const useAppStore = create<AppStoreState>()(
       abandonDates: [],
       dockOrder: [...DEFAULT_DOCK],
       appWhitelist: defaultWhitelist(),
+      todoQuickTags: [...DEFAULT_QUICK_TAGS],
 
       setSettings: (partial) => set({ settings: { ...get().settings, ...partial } }),
 
@@ -112,6 +120,13 @@ export const useAppStore = create<AppStoreState>()(
         }),
 
       removeWhitelistApp: (id) => set({ appWhitelist: get().appWhitelist.filter((a) => a.id !== id) }),
+
+      addTodoQuickTag: (tag) =>
+        set({
+          todoQuickTags: get().todoQuickTags.includes(tag)
+            ? get().todoQuickTags
+            : [...get().todoQuickTags, tag]
+        }),
 
       signInToday: () => {
         const today = todayKey()
@@ -151,6 +166,8 @@ export const useAppStore = create<AppStoreState>()(
           endMinute: input.endMinute,
           reminderMinutes: input.reminderMinutes,
           priority: input.priority,
+          color: input.color ?? 'indigo',
+          tags: input.tags ?? [],
           completed: false,
           completedAt: '',
           createdAt: now,
@@ -240,7 +257,8 @@ export const useAppStore = create<AppStoreState>()(
           signIns: [],
           abandonDates: [],
           dockOrder: [...DEFAULT_DOCK],
-          appWhitelist: defaultWhitelist()
+          appWhitelist: defaultWhitelist(),
+          todoQuickTags: [...DEFAULT_QUICK_TAGS]
         })
     }),
     {
@@ -257,7 +275,8 @@ export const useAppStore = create<AppStoreState>()(
         signIns: s.signIns,
         abandonDates: s.abandonDates,
         dockOrder: s.dockOrder,
-        appWhitelist: s.appWhitelist
+        appWhitelist: s.appWhitelist,
+        todoQuickTags: s.todoQuickTags
       }),
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<AppStoreState>
@@ -265,11 +284,20 @@ export const useAppStore = create<AppStoreState>()(
           ...current,
           ...p,
           dockOrder: normalizeDockOrder(p.dockOrder),
-          todos: migrateTodoPriority(p.todos ?? current.todos),
+          todos: (p.todos ?? current.todos).map((t) => ({
+            ...t,
+            priority: t.priority === 0 ? 2 : t.priority,
+            color: t.color ?? 'indigo',
+            tags: t.tags ?? []
+          })),
           appWhitelist:
             Array.isArray(p.appWhitelist) && p.appWhitelist.length > 0
               ? p.appWhitelist
-              : defaultWhitelist()
+              : defaultWhitelist(),
+          todoQuickTags:
+            Array.isArray(p.todoQuickTags) && p.todoQuickTags.length > 0
+              ? p.todoQuickTags
+              : [...DEFAULT_QUICK_TAGS]
         }
       }
     }

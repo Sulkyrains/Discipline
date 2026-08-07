@@ -20,6 +20,7 @@ export interface Course {
   color: CourseColor
   priority: 1 | 2 | 3
   reminderMinutes: number // 0 = no reminder
+  notes?: string
 }
 
 export interface Todo {
@@ -31,6 +32,8 @@ export interface Todo {
   endMinute?: number // optional planned end time
   reminderMinutes?: number // optional reminder, 0..60 minutes before start
   priority: 0 | 1 | 2 | 3
+  color?: CourseColor
+  tags?: string[]
   completed: boolean
   completedAt: string // ISO or ''
   createdAt: string

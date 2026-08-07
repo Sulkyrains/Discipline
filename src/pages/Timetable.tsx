@@ -23,6 +23,7 @@ interface CourseForm {
   name: string
   location: string
   teacher: string
+  notes: string
   weekdays: number[]
   startMinute: number
   endMinute: number
@@ -39,6 +40,7 @@ function emptyForm(day = 1): CourseForm {
     name: '',
     location: '',
     teacher: '',
+    notes: '',
     weekdays: [day],
     startMinute: 480,
     endMinute: 510,
@@ -95,6 +97,7 @@ export default function Timetable() {
       name: course.name,
       location: course.location,
       teacher: course.teacher,
+      notes: course.notes ?? '',
       weekdays: [course.dayOfWeek],
       startMinute: course.startMinute,
       endMinute: course.endMinute,
@@ -121,6 +124,7 @@ export default function Timetable() {
       name: form.name.trim(),
       location: form.location,
       teacher: form.teacher,
+      notes: form.notes.trim(),
       startMinute: form.startMinute,
       endMinute: form.endMinute,
       weekStart: form.weekStart,
@@ -228,6 +232,7 @@ export default function Timetable() {
                 <span className="course-meta muted">
                   {[course.location, course.teacher, courseWeekLabel(course)].filter(Boolean).join(' · ')}
                 </span>
+                {course.notes ? <span className="course-meta muted course-notes">📝 {course.notes}</span> : null}
               </div>
               {course.reminderMinutes > 0 ? (
                 <span className="course-reminder">🔔 {course.reminderMinutes}m</span>
@@ -264,6 +269,15 @@ export default function Timetable() {
               <input className="input" value={form.teacher} onChange={(e) => setForm({ ...form, teacher: e.target.value })} />
             </label>
           </div>
+          <label className="field">
+            <span>{t(lang, 'notes')}</span>
+            <textarea
+              className="textarea"
+              rows={2}
+              value={form.notes}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+            />
+          </label>
           <div className="field">
             <span>{t(lang, 'weekday')} *</span>
             <div className="sound-chips">
