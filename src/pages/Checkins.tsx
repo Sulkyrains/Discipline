@@ -30,6 +30,9 @@ export default function Checkins() {
   }, [sessions])
 
   const stats = useMemo(() => computeStats(sessions, todos, now), [sessions, todos, now])
+  const todayMinutes = stats.todayMinutes
+  const met = todayMinutes >= 15
+  const pct = Math.min(100, Math.round((todayMinutes / 15) * 100))
 
   const year = cursor.getFullYear()
   const month = cursor.getMonth()
@@ -62,6 +65,21 @@ export default function Checkins() {
           </p>
         </div>
       </header>
+
+      <div className="card checkin-today">
+        <div className="checkin-today-head">
+          <span>{t(lang, 'todayCheckin')}</span>
+          <strong>
+            {todayMinutes} / 15 min
+          </strong>
+        </div>
+        <div className="progress-bar checkin-progress">
+          <span style={{ width: `${pct}%` }} />
+        </div>
+        <p className={`muted small${met ? ' checkin-met' : ''}`}>
+          {met ? `✓ ${t(lang, 'checkinMet')}` : t(lang, 'checkinRemaining', { n: 15 - todayMinutes })}
+        </p>
+      </div>
 
       <div className="card cal-card">
         <div className="cal-head">

@@ -201,7 +201,10 @@ const zh = {
   monthCheckins: '本月打卡 {n} 天',
   totalCheckins: '累计打卡 {n} 天',
   prevMonth: '上个月',
-  nextMonth: '下个月'
+  nextMonth: '下个月',
+  todayCheckin: '今日打卡',
+  checkinMet: '今日已打卡成功',
+  checkinRemaining: '还差 {n} 分钟达成打卡'
 }
 
 const en: Record<keyof typeof zh, string> = {
@@ -405,7 +408,10 @@ const en: Record<keyof typeof zh, string> = {
   monthCheckins: '{n} days this month',
   totalCheckins: '{n} total check-ins',
   prevMonth: 'Last month',
-  nextMonth: 'Next month'
+  nextMonth: 'Next month',
+  todayCheckin: 'Today check-in',
+  checkinMet: "Today's check-in complete",
+  checkinRemaining: '{n} more minutes to check in'
 }
 
 export type I18nKey = keyof typeof zh

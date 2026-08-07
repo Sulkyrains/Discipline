@@ -115,7 +115,7 @@
 }
 
 .cal-day {
-  aspect-ratio: 1;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -145,6 +145,34 @@
 .cal-foot {
   margin-top: 12px;
   text-align: center;
+}
+
+/* Today check-in summary */
+.checkin-today {
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+
+.checkin-today-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.checkin-today-head strong {
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.checkin-progress {
+  height: 10px;
+  margin-bottom: 8px;
+}
+
+.checkin-met {
+  color: var(--success);
+  font-weight: 650;
 }
 
 @keyframes splash-in {
