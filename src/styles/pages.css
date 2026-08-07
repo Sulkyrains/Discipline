@@ -1017,6 +1017,107 @@
   padding: 14px;
 }
 
+.daily-splash,
+.onboarding {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--bg);
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  animation: splash-in 0.4s ease;
+}
+
+.daily-splash-card,
+.onboarding-card {
+  width: min(360px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 28px 24px;
+  border-radius: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-2);
+  text-align: center;
+}
+
+.daily-splash-title {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.daily-splash-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.daily-splash-quote-en {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.daily-splash-quote-zh {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.daily-splash-signin {
+  margin-top: 8px;
+  width: 100%;
+}
+
+.onboarding-icon {
+  font-size: 40px;
+}
+
+.onboarding-title {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.onboarding-desc {
+  font-size: 13px;
+  line-height: 1.5;
+  min-height: 40px;
+}
+
+.onboarding-dots {
+  display: flex;
+  gap: 6px;
+  margin: 6px 0 12px;
+}
+
+.onboarding-dots i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--surface-3);
+}
+
+.onboarding-dots i.active {
+  width: 18px;
+  border-radius: 999px;
+  background: var(--primary);
+}
+
+.onboarding-actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.onboarding-actions .btn {
+  flex: 1;
+}
+
 .abandon-limit-hint {
   margin: 10px 0 0;
   text-align: center;

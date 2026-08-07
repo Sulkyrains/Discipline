@@ -259,7 +259,7 @@ export default function Focus() {
         </div>
       ) : null}
 
-      {!active ? (
+      {timer.phase === 'shortBreak' || timer.phase === 'longBreak' ? (
         <div className="card breaks-card">
           <h3 className="section-title">{t(lang, 'breakSettings')}</h3>
           <div className="form-row">

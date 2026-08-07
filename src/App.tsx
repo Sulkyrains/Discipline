@@ -20,7 +20,9 @@ import { useFocusStore } from './stores/useFocusStore'
 import { useSoundStore } from './stores/useSoundStore'
 import { useToastStore } from './stores/useToastStore'
 import BottomNav from './components/BottomNav'
+import DailySplash from './components/DailySplash'
 import FocusGuard from './components/FocusGuard'
+import Onboarding from './components/Onboarding'
 import IslandHost from './components/IslandHost'
 import MergeDialog from './components/MergeDialog'
 import SoundPill from './components/SoundPill'
@@ -55,6 +57,8 @@ export default function App() {
   const navigate = useNavigate()
   const focusActive = useFocusStore((s) => s.active)
   const appWhitelist = useAppStore((s) => s.appWhitelist)
+  const lastDailySplashDate = useAppStore((s) => s.lastDailySplashDate)
+  const hasOnboarded = useAppStore((s) => s.hasOnboarded)
   const firedRef = useRef<Set<string>>(new Set())
   const [entered, setEntered] = useState(false)
   const [overdueCount, setOverdueCount] = useState<number | null>(null)
@@ -225,6 +229,8 @@ export default function App() {
   }, [])
 
   const hideNav = location.pathname === '/splash' || location.pathname === '/login'
+  const showDailySplash = entered && !hideNav && lastDailySplashDate !== todayKey()
+  const showOnboarding = entered && !hideNav && !hasOnboarded && lastDailySplashDate === todayKey()
 
   return (
     <div className="app-shell">
@@ -255,6 +261,12 @@ export default function App() {
               <SoundPill />
               <BottomNav />
             </>
+          ) : null}
+          {showDailySplash ? (
+            <DailySplash onSignIn={() => useAppStore.getState().markDailySplashSeen()} />
+          ) : null}
+          {showOnboarding ? (
+            <Onboarding onDone={() => useAppStore.getState().setOnboarded()} />
           ) : null}
           <IslandHost />
           <MergeDialog />

@@ -51,7 +51,12 @@ describe('v1.9.13 natural sounds expansion', () => {
 describe('v1.9.13 focus break settings', () => {
   beforeEach(resetStores)
 
-  it('adjusts short/long breaks and rounds on the focus page with clamps', () => {
+  it('adjusts short/long breaks and rounds on the break screen with clamps', () => {
+    useFocusStore.setState({
+      timer: { phase: 'shortBreak', status: 'idle', remainingSeconds: 5 * 60, roundsCompleted: 0 },
+      phase: 'shortBreak',
+      active: false
+    })
     render(<Focus />)
     fireEvent.change(screen.getByLabelText('短休息'), { target: { value: '20' } })
     expect(useAppStore.getState().settings.shortBreakMinutes).toBe(15)

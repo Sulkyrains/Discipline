@@ -43,12 +43,16 @@ interface AppStoreState extends AppData {
   dockOrder: string[]
   appWhitelist: WhitelistApp[]
   todoQuickTags: string[]
+  lastDailySplashDate: string
+  hasOnboarded: boolean
   setSettings: (partial: Partial<Settings>) => void
   setKeepOverdue: (v: boolean) => void
   setDockOrder: (paths: string[]) => void
   addWhitelistApp: (app: WhitelistApp) => void
   removeWhitelistApp: (id: string) => void
   addTodoQuickTag: (tag: string) => void
+  markDailySplashSeen: () => void
+  setOnboarded: () => void
   signInToday: () => boolean
   recordAbandon: () => void
   clearOverdueTodos: () => number
@@ -109,6 +113,8 @@ export const useAppStore = create<AppStoreState>()(
       dockOrder: [...DEFAULT_DOCK],
       appWhitelist: defaultWhitelist(),
       todoQuickTags: [...DEFAULT_QUICK_TAGS],
+      lastDailySplashDate: '',
+      hasOnboarded: false,
 
       setSettings: (partial) => set({ settings: { ...get().settings, ...partial } }),
 
@@ -131,6 +137,10 @@ export const useAppStore = create<AppStoreState>()(
             ? get().todoQuickTags
             : [...get().todoQuickTags, tag]
         }),
+
+      markDailySplashSeen: () => set({ lastDailySplashDate: todayKey() }),
+
+      setOnboarded: () => set({ hasOnboarded: true }),
 
       signInToday: () => {
         const today = todayKey()
@@ -262,7 +272,9 @@ export const useAppStore = create<AppStoreState>()(
           abandonDates: [],
           dockOrder: [...DEFAULT_DOCK],
           appWhitelist: defaultWhitelist(),
-          todoQuickTags: [...DEFAULT_QUICK_TAGS]
+          todoQuickTags: [...DEFAULT_QUICK_TAGS],
+          lastDailySplashDate: '',
+          hasOnboarded: false
         })
     }),
     {
@@ -280,7 +292,9 @@ export const useAppStore = create<AppStoreState>()(
         abandonDates: s.abandonDates,
         dockOrder: s.dockOrder,
         appWhitelist: s.appWhitelist,
-        todoQuickTags: s.todoQuickTags
+        todoQuickTags: s.todoQuickTags,
+        lastDailySplashDate: s.lastDailySplashDate,
+        hasOnboarded: s.hasOnboarded
       }),
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<AppStoreState>
