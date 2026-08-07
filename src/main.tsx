@@ -29,6 +29,14 @@ if (!__SINGLE_FILE__) {
     // storage unavailable (private mode etc.); skip cache-busting
   }
   if ('serviceWorker' in navigator) {
+    // When a fresh service worker takes control, reload immediately so the
+    // page always switches to the newest precached assets.
+    let refreshing = false
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (refreshing) return
+      refreshing = true
+      window.location.reload()
+    })
     navigator.serviceWorker
       .register(`${import.meta.env.BASE_URL}sw.js?v=${APP_VERSION}`, { updateViaCache: 'none' })
       .catch(() => {})
