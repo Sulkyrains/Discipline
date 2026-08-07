@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { t } from '../lib/i18n'
 import type { Course, CourseColor, Parity } from '../types'
 import { COURSE_COLORS } from '../types'
@@ -6,6 +6,7 @@ import { minuteToHHMM, nowMinute } from '../lib/format'
 import {
   courseWeekLabel,
   coursesOnDay,
+  courseOverlaps,
   currentWeekNumber,
   isCourseOngoing,
   nextCourse,
@@ -63,6 +64,7 @@ export default function Timetable() {
   const [editing, setEditing] = useState<Course | 'new' | null>(null)
   const [form, setForm] = useState<CourseForm>(emptyForm)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [errors, setErrors] = useState<{ name?: string; time?: string; weeks?: string }>({})
 
   const todayDOW = ((new Date().getDay() + 6) % 7) + 1
   const todayWeek = currentWeekNumber(semesterStart)
@@ -72,9 +74,17 @@ export default function Timetable() {
   const ongoingId = ongoing && isCourseOngoing(ongoing, minute) ? ongoing.id : null
   const upcomingId = ongoing && !isCourseOngoing(ongoing, minute) ? ongoing.id : null
   const dayCourses = coursesOnDay(courses, day, week)
+  const conflicts = useMemo(() => {
+    if (editing === null || !form.name.trim()) return []
+    return courses.filter((c) => {
+      if (editing !== 'new' && c.id === editing.id) return false
+      return courseOverlaps(c, form)
+    })
+  }, [courses, form, editing])
 
   const openNew = () => {
     setForm(emptyForm())
+    setErrors({})
     setEditing('new')
   }
 
@@ -92,11 +102,17 @@ export default function Timetable() {
       color: course.color,
       reminderMinutes: course.reminderMinutes
     })
+    setErrors({})
     setEditing(course)
   }
 
   const save = () => {
-    if (!form.name.trim() || form.endMinute <= form.startMinute || form.weekEnd < form.weekStart) return
+    const nextErrors: { name?: string; time?: string; weeks?: string } = {}
+    if (!form.name.trim()) nextErrors.name = t(lang, 'courseNameRequired')
+    if (form.endMinute <= form.startMinute) nextErrors.time = t(lang, 'timeInvalid')
+    if (form.weekEnd < form.weekStart) nextErrors.weeks = t(lang, 'weeksInvalid')
+    setErrors(nextErrors)
+    if (Object.keys(nextErrors).length > 0) return
     if (editing === 'new') {
       addCourse({ ...form, name: form.name.trim() })
     } else if (editing) {
@@ -184,6 +200,7 @@ export default function Timetable() {
               placeholder="高等数学"
               onChange={(e) => setForm({ ...form, name: e.target.value })}
             />
+            {errors.name ? <span className="form-error">{errors.name}</span> : null}
           </label>
           <div className="form-row">
             <label className="field">
@@ -253,6 +270,7 @@ export default function Timetable() {
               </select>
             </label>
           </div>
+          {errors.time ? <span className="form-error">{errors.time}</span> : null}
           <div className="form-row">
             <label className="field">
               <span>{t(lang, 'weeksStart')}</span>
@@ -277,6 +295,12 @@ export default function Timetable() {
               />
             </label>
           </div>
+          {errors.weeks ? <span className="form-error">{errors.weeks}</span> : null}
+          {conflicts.length > 0 ? (
+            <div className="banner banner-warn">
+              {t(lang, 'courseConflict')} {conflicts.map((c) => c.name).join('、')}
+            </div>
+          ) : null}
           <div className="field">
             <span>{t(lang, 'color')}</span>
             <div className="color-picker">

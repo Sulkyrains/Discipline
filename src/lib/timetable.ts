@@ -1,4 +1,4 @@
-import type { Course } from '../types'
+import type { Course, Parity } from '../types'
 import { parseDateKey, startOfWeek } from './format'
 
 export function currentWeekNumber(semesterStartKey: string, today = new Date()): number {
@@ -43,6 +43,24 @@ export function courseWeekLabel(course: Course): string {
   if (course.parity === 'odd') return `${range} 单`
   if (course.parity === 'even') return `${range} 双`
   return range
+}
+
+export interface CourseShape {
+  dayOfWeek: number
+  startMinute: number
+  endMinute: number
+  weekStart: number
+  weekEnd: number
+  parity: Parity
+}
+
+export function courseOverlaps(a: CourseShape, b: CourseShape): boolean {
+  if (a.dayOfWeek !== b.dayOfWeek) return false
+  if (!(a.startMinute < b.endMinute && b.startMinute < a.endMinute)) return false
+  const parityCompatible = a.parity === 'all' || b.parity === 'all' || a.parity === b.parity
+  if (!parityCompatible) return false
+  if (a.weekStart > b.weekEnd || b.weekStart > a.weekEnd) return false
+  return true
 }
 
 export const WEEKDAY_ZH = ['一', '二', '三', '四', '五', '六', '日']

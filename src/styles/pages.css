@@ -863,6 +863,25 @@ input[type='range'] {
   padding-bottom: 60px;
 }
 
+.login-back {
+  position: absolute;
+  top: calc(14px + env(safe-area-inset-top));
+  left: 14px;
+}
+
+.setup-card {
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+
+.setup-card .banner {
+  margin-bottom: 8px;
+}
+
+.setup-hint {
+  line-height: 1.6;
+}
+
 .login-hero {
   text-align: center;
   margin-bottom: 26px;

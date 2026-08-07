@@ -6,11 +6,13 @@ import { t } from './lib/i18n'
 import { useAppStore } from './stores/useAppStore'
 import { useAuthStore } from './stores/useAuthStore'
 import { useFocusStore } from './stores/useFocusStore'
+import { useSoundStore } from './stores/useSoundStore'
 import { useToastStore } from './stores/useToastStore'
 import BottomNav from './components/BottomNav'
 import FocusGuard from './components/FocusGuard'
 import IslandHost from './components/IslandHost'
 import MergeDialog from './components/MergeDialog'
+import SoundPill from './components/SoundPill'
 import Splash from './pages/Splash'
 import Home from './pages/Home'
 import Timetable from './pages/Timetable'
@@ -33,6 +35,10 @@ export default function App() {
     const meta = document.querySelector('meta[name="theme-color"]')
     if (meta) meta.setAttribute('content', THEME_META[settings.theme])
   }, [settings.theme])
+
+  useEffect(() => {
+    useSoundStore.setState({ volume: settings.whiteNoiseVolume })
+  }, [settings.whiteNoiseVolume])
 
   useEffect(() => {
     useAuthStore.getState().init()
@@ -111,7 +117,12 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      {!hideNav ? <BottomNav /> : null}
+      {!hideNav ? (
+        <>
+          <SoundPill />
+          <BottomNav />
+        </>
+      ) : null}
       <IslandHost />
       <MergeDialog />
     </div>

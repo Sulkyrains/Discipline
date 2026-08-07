@@ -11,10 +11,11 @@ import {
   tickTimer
 } from '../lib/timer'
 import { nowISO } from '../lib/format'
-import { SOUNDS, SoundEngine, type SoundId } from '../lib/audio'
+import { SOUNDS } from '../lib/audio'
 import { notify } from '../lib/notifications'
 import { useAppStore } from '../stores/useAppStore'
 import { useFocusStore } from '../stores/useFocusStore'
+import { useSoundStore } from '../stores/useSoundStore'
 import { useToastStore } from '../stores/useToastStore'
 import ProgressRing from '../components/ProgressRing'
 import ConfirmDialog from '../components/ConfirmDialog'
@@ -43,9 +44,10 @@ export default function Focus() {
 
   const [confirmAbandon, setConfirmAbandon] = useState(false)
   const [confetti, setConfetti] = useState(false)
-  const engineRef = useRef<SoundEngine | null>(null)
-  const [sound, setSound] = useState<SoundId | null>(null)
-  const [volume, setVolume] = useState(settings.whiteNoiseVolume)
+  const sound = useSoundStore((s) => s.sound)
+  const volume = useSoundStore((s) => s.volume)
+  const toggleSound = useSoundStore((s) => s.toggle)
+  const setVolume = useSoundStore((s) => s.setVolume)
 
   const active = isFocusActive(timer)
 
@@ -53,10 +55,6 @@ export default function Focus() {
     useFocusStore.getState().setActive(isFocusActive(timer))
     useFocusStore.getState().setPhase(timer.phase)
   }, [timer])
-
-  useEffect(() => {
-    return () => engineRef.current?.dispose()
-  }, [])
 
   useEffect(() => {
     if (timer.status !== 'running') {
@@ -109,11 +107,6 @@ export default function Focus() {
     }
   }
 
-  const ensureEngine = (): SoundEngine => {
-    if (!engineRef.current) engineRef.current = new SoundEngine()
-    return engineRef.current
-  }
-
   const start = () => {
     if (timer.phase === 'focus' && timer.status === 'idle') startAtRef.current = nowISO()
     setTimer(startTimer(timer))
@@ -142,24 +135,6 @@ export default function Focus() {
           : cfg.longBreakMinutes
     startAtRef.current = null
     setTimer({ phase, status: 'idle', remainingSeconds: minutesToSeconds(minutes), roundsCompleted: timer.roundsCompleted })
-  }
-
-  const toggleSound = (id: SoundId) => {
-    if (sound === id) {
-      ensureEngine().stop()
-      setSound(null)
-      return
-    }
-    const engine = ensureEngine()
-    engine.setVolume(volume)
-    engine.play(id)
-    setSound(id)
-  }
-
-  const onVolume = (v: number) => {
-    setVolume(v)
-    ensureEngine().setVolume(v)
-    useAppStore.getState().setSettings({ whiteNoiseVolume: v })
   }
 
   const phaseMinutes =
@@ -263,7 +238,7 @@ export default function Focus() {
               min={0}
               max={100}
               value={Math.round(volume * 100)}
-              onChange={(e) => onVolume(Number(e.target.value) / 100)}
+              onChange={(e) => setVolume(Number(e.target.value) / 100)}
             />
           </label>
         ) : null}

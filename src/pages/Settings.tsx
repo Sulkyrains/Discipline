@@ -58,27 +58,33 @@ export default function Settings() {
               <span className="muted">{t(lang, 'signedInAs')}</span>
               <strong>{user.email}</strong>
             </div>
+            <div className="settings-row">
+              <span className="muted">{t(lang, 'currentMode')}</span>
+              <span className="chip chip-ok">{t(lang, 'loginMode')}</span>
+            </div>
+            <p className="muted small">{t(lang, 'loginModeDesc')}</p>
             <div className="settings-actions">
               <button className="btn btn-primary btn-sm" onClick={() => void syncNow()}>
                 {t(lang, 'syncNow')}
               </button>
               <button className="btn btn-ghost btn-sm" onClick={() => void signOut()}>
-                {t(lang, 'logout')}
+                {t(lang, 'logout')} · {t(lang, 'backGuest')}
               </button>
             </div>
           </>
         ) : (
           <>
             <div className="settings-row">
-              <span className="muted">{t(lang, 'guest')}</span>
-              {isSupabaseConfigured() ? (
-                <Link className="btn btn-primary btn-sm" to="/login">
-                  {t(lang, 'login')}
-                </Link>
-              ) : (
-                <span className="muted">{t(lang, 'notConfigured')}</span>
-              )}
+              <span className="muted">{t(lang, 'currentMode')}</span>
+              <span className="chip">{t(lang, 'guest')}</span>
             </div>
+            <p className="muted small">{t(lang, 'guestModeDesc')}</p>
+            <div className="settings-actions">
+              <Link className="btn btn-primary btn-sm" to="/login">
+                {t(lang, 'goLogin')}
+              </Link>
+            </div>
+            {!isSupabaseConfigured() ? <p className="muted small">{t(lang, 'notConfigured')}</p> : null}
           </>
         )}
       </section>
@@ -243,7 +249,7 @@ export default function Settings() {
         </div>
         <div className="settings-row">
           <span className="muted">{t(lang, 'version')}</span>
-          <span>1.0.0</span>
+          <span>1.1.0</span>
         </div>
       </section>
 

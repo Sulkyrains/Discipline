@@ -19,6 +19,9 @@ export interface Stats {
   todaySessions: number
   weekMinutes: number
   monthMinutes: number
+  taskFocusSessions: number
+  morningSessions: number
+  nightSessions: number
 }
 
 function dayIndexMap(sessions: FocusSession[]): {
@@ -44,6 +47,16 @@ export function computeStats(sessions: FocusSession[], todos: Todo[], today = ne
 
   let totalMinutes = 0
   for (const m of minutes.values()) totalMinutes += m
+
+  let taskFocusSessions = 0
+  let morningSessions = 0
+  let nightSessions = 0
+  for (const s of sessions) {
+    if (s.taskId) taskFocusSessions++
+    const h = new Date(s.completedAt).getHours()
+    if (h >= 5 && h < 9) morningSessions++
+    if (h >= 22 || h < 5) nightSessions++
+  }
 
   let currentStreak = 0
   let cursor = new Date(today)
@@ -84,7 +97,10 @@ export function computeStats(sessions: FocusSession[], todos: Todo[], today = ne
     todayMinutes: minutes.get(todayKey) ?? 0,
     todaySessions: counts.get(todayKey) ?? 0,
     weekMinutes,
-    monthMinutes
+    monthMinutes,
+    taskFocusSessions,
+    morningSessions,
+    nightSessions
   }
 }
 

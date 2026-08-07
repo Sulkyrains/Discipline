@@ -21,6 +21,16 @@ function CalendarIcon() {
   )
 }
 
+function TodoIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="3.5" width="16" height="17" rx="2.5" />
+      <path d="M8.5 8.5h7M8.5 12h7M8.5 15.5h4" />
+      <path d="M6.2 8.2l.9.9 1.7-1.7" />
+    </svg>
+  )
+}
+
 function TimerIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -50,6 +60,7 @@ function MeIcon() {
 const ITEMS: Array<{ path: string; key: I18nKey; icon: () => ReactElement; center?: boolean }> = [
   { path: '/', key: 'navToday', icon: HomeIcon },
   { path: '/timetable', key: 'navTimetable', icon: CalendarIcon },
+  { path: '/todos', key: 'navTodos', icon: TodoIcon },
   { path: '/focus', key: 'navFocus', icon: TimerIcon, center: true },
   { path: '/stats', key: 'navStats', icon: ChartIcon },
   { path: '/settings', key: 'navMe', icon: MeIcon }
@@ -57,6 +68,7 @@ const ITEMS: Array<{ path: string; key: I18nKey; icon: () => ReactElement; cente
 
 export default function BottomNav() {
   const lang = useAppStore((s) => s.settings.language)
+  const openTodos = useAppStore((s) => s.todos.filter((td) => !td.completed).length)
   return (
     <nav className="nav">
       {ITEMS.map((item) => {
@@ -72,6 +84,9 @@ export default function BottomNav() {
               <>
                 <span className="nav-icon">
                   <Icon />
+                  {item.path === '/todos' && openTodos > 0 ? (
+                    <span className="nav-badge">{openTodos > 99 ? '99+' : openTodos}</span>
+                  ) : null}
                 </span>
                 <span className="nav-label">{t(lang, item.key)}</span>
                 {item.center ? <span className={`nav-center-dot${isActive ? ' active' : ''}`} /> : null}

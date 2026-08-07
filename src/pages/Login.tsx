@@ -35,13 +35,21 @@ export default function Login() {
 
   return (
     <div className="page page-login">
+      <button className="btn btn-ghost btn-sm login-back" onClick={() => navigate('/', { replace: true })}>
+        ← {t(lang, 'backGuest')}
+      </button>
       <div className="login-hero">
         <Logo size={72} />
         <h1>{t(lang, 'welcomeBack')}</h1>
         <p className="muted">Discipline · {t(lang, 'quoteOfDay')}</p>
       </div>
 
-      {!configured ? <div className="banner banner-warn">{t(lang, 'notConfigured')}</div> : null}
+      {!configured ? (
+        <div className="card setup-card">
+          <div className="banner banner-warn">{t(lang, 'notConfigured')}</div>
+          <p className="muted small setup-hint">{t(lang, 'loginSetupHint')}</p>
+        </div>
+      ) : null}
 
       <form className="card login-form" onSubmit={submit}>
         <label className="field">

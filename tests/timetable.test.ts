@@ -3,6 +3,7 @@ import type { Course } from '../src/types'
 import {
   courseInWeek,
   coursesOnDay,
+  courseOverlaps,
   currentWeekNumber,
   nextCourse
 } from '../src/lib/timetable'
@@ -57,5 +58,17 @@ describe('timetable helpers', () => {
     expect(list.map((c) => c.id)).toEqual(['a', 'b'])
     expect(nextCourse([early, late], 1, 1, 515)?.id).toBe('b')
     expect(nextCourse([early, late], 1, 1, 700)).toBeNull()
+  })
+
+  it('detects schedule conflicts by day, time, parity and week range', () => {
+    const a = course({ startMinute: 480, endMinute: 510, weekStart: 1, weekEnd: 16, parity: 'all' })
+    expect(courseOverlaps(a, course({ id: 'c2', startMinute: 500, endMinute: 530, weekStart: 1, weekEnd: 16, parity: 'all' }))).toBe(true)
+    expect(courseOverlaps(a, course({ id: 'c3', dayOfWeek: 2, startMinute: 500, endMinute: 530 }))).toBe(false)
+    expect(courseOverlaps(a, course({ id: 'c4', startMinute: 500, endMinute: 530, parity: 'odd' }))).toBe(true)
+    expect(courseOverlaps(a, course({ id: 'c5', startMinute: 500, endMinute: 530, weekStart: 17, weekEnd: 20 }))).toBe(false)
+    const odd = course({ id: 'c6', parity: 'odd' })
+    const even = course({ id: 'c7', parity: 'even', startMinute: 500, endMinute: 530 })
+    expect(courseOverlaps(odd, even)).toBe(false)
+    expect(courseOverlaps(odd, course({ id: 'c8', parity: 'odd', startMinute: 500, endMinute: 530 }))).toBe(true)
   })
 })

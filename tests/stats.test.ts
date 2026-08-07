@@ -60,4 +60,20 @@ describe('stats', () => {
     expect(series[1].minutes).toBe(30) // session on 08-04
     expect(series[2].minutes).toBe(0) // today (08-05)
   })
+
+  it('tracks task-bound, morning and night sessions in local time', () => {
+    const list = [
+      session(new Date(2026, 7, 5, 7, 0, 0).toISOString(), 25, 'morning'),
+      session(new Date(2026, 7, 5, 23, 0, 0).toISOString(), 25, 'night'),
+      session(new Date(2026, 7, 4, 12, 0, 0).toISOString(), 25, 'plain')
+    ]
+    const listBound = [
+      { ...list[0], taskId: 't1' },
+      { ...list[1], taskId: 't2' }
+    ]
+    const s = computeStats(listBound, [], now)
+    expect(s.taskFocusSessions).toBe(2)
+    expect(s.morningSessions).toBe(1)
+    expect(s.nightSessions).toBe(1)
+  })
 })

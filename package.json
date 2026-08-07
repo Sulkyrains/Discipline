@@ -1,7 +1,7 @@
 {
   "name": "discipline",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "description": "Discipline 自律 —— 课程表 · 专注 · 待办 · 成就（PWA + Android APK）",
   "scripts": {
@@ -40,6 +40,7 @@
     "@vitejs/plugin-react": "^4.3.2",
     "gh-pages": "^6.1.1",
     "jsdom": "^25.0.1",
+    "netlify-cli": "^27.1.0",
     "pngjs": "^7.0.0",
     "typescript": "^5.5.4",
     "vite": "^5.4.8",

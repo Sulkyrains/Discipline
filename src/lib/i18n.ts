@@ -183,7 +183,20 @@ const zh = {
   mergeTitle: '发现本地数据',
   mergeBody: '检测到本机有 {n} 条记录，是否合并到云端？',
   mergeAction: '合并到云端',
-  mergeLater: '暂不'
+  mergeLater: '暂不',
+  currentMode: '当前模式',
+  guestModeDesc: '数据保存在本机浏览器，离线可用，无需账号',
+  loginMode: '登录模式',
+  loginModeDesc: '登录后数据同步到云端，可在多设备间共享',
+  goLogin: '前往登录',
+  loginSetupHint: '在项目根目录创建 .env 并填入 VITE_SUPABASE_URL 与 VITE_SUPABASE_ANON_KEY（详见 README），重新部署后即可启用登录',
+  backGuest: '返回游客模式',
+  soundNowPlaying: '正在播放',
+  stopSound: '停止',
+  courseNameRequired: '请输入课程名称',
+  timeInvalid: '结束时间需晚于开始时间',
+  weeksInvalid: '结束周不能早于开始周',
+  courseConflict: '与已有课程时间重叠：'
 }
 
 const en: Record<keyof typeof zh, string> = {
@@ -369,7 +382,20 @@ const en: Record<keyof typeof zh, string> = {
   mergeTitle: 'Local data found',
   mergeBody: 'Found {n} local records. Merge them into the cloud?',
   mergeAction: 'Merge to cloud',
-  mergeLater: 'Not now'
+  mergeLater: 'Not now',
+  currentMode: 'Mode',
+  guestModeDesc: 'Data stays on this device. Works offline, no account needed.',
+  loginMode: 'Account mode',
+  loginModeDesc: 'Sign in to sync data to the cloud and share across devices.',
+  goLogin: 'Go to sign in',
+  loginSetupHint: 'Create a .env file with VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (see README), then redeploy to enable sign-in.',
+  backGuest: 'Continue as guest',
+  soundNowPlaying: 'Playing',
+  stopSound: 'Stop',
+  courseNameRequired: 'Course name is required',
+  timeInvalid: 'End time must be after start time',
+  weeksInvalid: 'End week cannot be before start week',
+  courseConflict: 'Time conflict with:'
 }
 
 export type I18nKey = keyof typeof zh
