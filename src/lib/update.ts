@@ -14,6 +14,14 @@ export function needsUpdate(remote: string | null, current: string): boolean {
 }
 
 export async function clearCachesAndReload(): Promise<void> {
+  try {
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations()
+      await Promise.all(registrations.map((r) => r.unregister()))
+    }
+  } catch {
+    // service worker unavailable; continue
+  }
   if ('caches' in window) {
     try {
       const keys = await window.caches.keys()
