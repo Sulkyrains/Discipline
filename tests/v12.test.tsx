@@ -14,8 +14,7 @@ function resetStores() {
     sessions: [],
     unlocked: [],
     feedback: [],
-    mergedFor: null,
-    onboarded: false
+    mergedFor: null
   })
   useFocusStore.setState({ active: false })
 }
@@ -64,25 +63,22 @@ describe('v1.2 splash onboarding', () => {
     )
   }
 
-  it('shows both mode choices on first launch', () => {
+  it('always shows both mode choices on the splash gate', () => {
     renderSplash()
     expect(screen.getByText('选择使用模式')).toBeInTheDocument()
     expect(screen.getByText('游客模式')).toBeInTheDocument()
     expect(screen.getByText('登录模式')).toBeInTheDocument()
-    expect(useAppStore.getState().onboarded).toBe(false)
   })
 
-  it('guest choice marks onboarding done and goes home', () => {
+  it('guest choice goes home', () => {
     renderSplash()
     fireEvent.click(screen.getByText('游客模式'))
     expect(screen.getByText('home-target')).toBeInTheDocument()
-    expect(useAppStore.getState().onboarded).toBe(true)
   })
 
-  it('login choice marks onboarding done and goes to login', () => {
+  it('login choice goes to login', () => {
     renderSplash()
     fireEvent.click(screen.getByText('登录模式'))
     expect(screen.getByText('login-target')).toBeInTheDocument()
-    expect(useAppStore.getState().onboarded).toBe(true)
   })
 })

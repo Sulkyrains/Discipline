@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it } from 'vitest'
 import App from '../src/App'
@@ -24,6 +24,8 @@ describe('app smoke', () => {
         <App />
       </MemoryRouter>
     )
+    expect(screen.getByText('选择使用模式')).toBeInTheDocument()
+    fireEvent.click(screen.getByText('游客模式'))
     expect(screen.getByText(/Always believe a better day/)).toBeInTheDocument()
   })
 

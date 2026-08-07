@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { THEME_META } from './lib/theme'
 import { isNative, notify, scheduleClassReminders, upcomingClassReminders } from './lib/notifications'
@@ -39,6 +39,7 @@ export default function App() {
   const courses = useAppStore((s) => s.courses)
   const location = useLocation()
   const firedRef = useRef<Set<string>>(new Set())
+  const [entered, setEntered] = useState(false)
 
   useEffect(() => {
     document.documentElement.dataset.theme = settings.theme
@@ -139,31 +140,37 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <Suspense fallback={<RouteFallback />}>
-        <Routes>
-          <Route path="/splash" element={<Splash />} />
-          <Route element={<FocusGuard />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/timetable" element={<Timetable />} />
-            <Route path="/todos" element={<Todos />} />
-            <Route path="/focus" element={<Focus />} />
-            <Route path="/stats" element={<Stats />} />
-            <Route path="/achievements" element={<Achievements />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/feedback" element={<Feedback />} />
-          </Route>
-          <Route path="/login" element={<Login />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Suspense>
-      {!hideNav ? (
+      {!entered ? (
+        <Splash onChoose={() => setEntered(true)} />
+      ) : (
         <>
-          <SoundPill />
-          <BottomNav />
+          <Suspense fallback={<RouteFallback />}>
+            <Routes>
+              <Route path="/splash" element={<Splash />} />
+              <Route element={<FocusGuard />}>
+                <Route path="/" element={<Home />} />
+                <Route path="/timetable" element={<Timetable />} />
+                <Route path="/todos" element={<Todos />} />
+                <Route path="/focus" element={<Focus />} />
+                <Route path="/stats" element={<Stats />} />
+                <Route path="/achievements" element={<Achievements />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/feedback" element={<Feedback />} />
+              </Route>
+              <Route path="/login" element={<Login />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
+          {!hideNav ? (
+            <>
+              <SoundPill />
+              <BottomNav />
+            </>
+          ) : null}
+          <IslandHost />
+          <MergeDialog />
         </>
-      ) : null}
-      <IslandHost />
-      <MergeDialog />
+      )}
     </div>
   )
 }

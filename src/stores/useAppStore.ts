@@ -26,9 +26,7 @@ export const defaultSettings = (): Settings => ({
 
 interface AppStoreState extends AppData {
   mergedFor: string | null
-  onboarded: boolean
   setSettings: (partial: Partial<Settings>) => void
-  setOnboarded: () => void
   addCourse: (course: Omit<Course, 'id'>) => void
   updateCourse: (id: string, patch: Partial<Course>) => void
   removeCourse: (id: string) => void
@@ -70,11 +68,8 @@ export const useAppStore = create<AppStoreState>()(
       unlocked: [],
       feedback: [],
       mergedFor: null,
-      onboarded: false,
 
       setSettings: (partial) => set({ settings: { ...get().settings, ...partial } }),
-
-      setOnboarded: () => set({ onboarded: true }),
 
       addCourse: (course) => set({ courses: [...get().courses, { ...course, id: uid() }] }),
 
@@ -190,8 +185,7 @@ export const useAppStore = create<AppStoreState>()(
         sessions: s.sessions,
         unlocked: s.unlocked,
         feedback: s.feedback,
-        mergedFor: s.mergedFor,
-        onboarded: s.onboarded
+        mergedFor: s.mergedFor
       })
     }
   )

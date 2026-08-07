@@ -15,8 +15,7 @@ function resetStores() {
     sessions: [],
     unlocked: [],
     feedback: [],
-    mergedFor: null,
-    onboarded: false
+    mergedFor: null
   })
   useFocusStore.setState({ active: false })
 }
