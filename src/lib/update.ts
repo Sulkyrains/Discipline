@@ -35,32 +35,30 @@ export async function clearCachesAndReload(): Promise<void> {
   window.location.replace(window.location.pathname + '?v=' + Date.now() + window.location.hash)
 }
 
-const AUTO_RELOAD_KEY = 'discipline-auto-reloaded'
+const UPDATED_KEY = 'discipline-auto-reloaded'
 
 /**
- * Triggers a forced cache-clearing reload at most once per browser session.
- * Returns true when the reload was triggered, false when it already happened
- * (so callers can fall back to the visible update banner instead).
+ * Applies an update now: marks the session as "just updated" (so the app can
+ * greet the user after the reload) and performs the forced cache-clearing
+ * reload. Called only from explicit user actions (banner / settings buttons).
  */
-export function autoReloadOnce(reload: () => void = () => void clearCachesAndReload()): boolean {
+export function applyUpdateNow(reload: () => void = () => void clearCachesAndReload()): void {
   try {
-    if (sessionStorage.getItem(AUTO_RELOAD_KEY)) return false
-    sessionStorage.setItem(AUTO_RELOAD_KEY, '1')
+    sessionStorage.setItem(UPDATED_KEY, '1')
   } catch {
     // storage unavailable; still allow the reload
   }
   reload()
-  return true
 }
 
 /**
- * Reports and clears the "just auto-updated" flag set by autoReloadOnce, so
- * the app can greet the user after the forced reload lands on the new build.
+ * Reports and clears the "just updated" flag set by applyUpdateNow, so the
+ * app can greet the user after the manual refresh lands on the new build.
  */
 export function consumeAutoUpdated(): boolean {
   try {
-    if (!sessionStorage.getItem(AUTO_RELOAD_KEY)) return false
-    sessionStorage.removeItem(AUTO_RELOAD_KEY)
+    if (!sessionStorage.getItem(UPDATED_KEY)) return false
+    sessionStorage.removeItem(UPDATED_KEY)
     return true
   } catch {
     return false

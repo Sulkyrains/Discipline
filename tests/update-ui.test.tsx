@@ -13,7 +13,11 @@ import { APP_VERSION } from '../src/version'
 
 vi.mock('../src/lib/update', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../src/lib/update')>()
-  return { ...actual, clearCachesAndReload: vi.fn().mockResolvedValue(undefined) }
+  return {
+    ...actual,
+    clearCachesAndReload: vi.fn().mockResolvedValue(undefined),
+    applyUpdateNow: vi.fn()
+  }
 })
 
 const reloadMock = vi.mocked(clearCachesAndReload)
@@ -105,8 +109,8 @@ describe('v1.9.16 visible update mechanism', () => {
     )
     fireEvent.click(screen.getByText(t('zh', 'checkUpdateBtn')))
     expect(await screen.findByText(t('zh', 'updateNow'))).toBeInTheDocument()
-    expect(useToastStore.getState().toasts.some((x) => x.title === t('zh', 'updateAutoReloading'))).toBe(true)
-    expect(reloadMock).toHaveBeenCalled()
+    expect(useToastStore.getState().toasts.some((x) => x.title === t('zh', 'updateFound'))).toBe(true)
+    expect(reloadMock).not.toHaveBeenCalled()
   })
 
   it('confirms the latest version when remote matches', async () => {

@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import Settings from '../src/pages/Settings'
 import { t } from '../src/lib/i18n'
 import { todayKey } from '../src/lib/format'
-import { autoReloadOnce, consumeAutoUpdated } from '../src/lib/update'
+import { applyUpdateNow, consumeAutoUpdated } from '../src/lib/update'
 import { defaultSettings, useAppStore } from '../src/stores/useAppStore'
 import { useUpdateStore } from '../src/stores/useUpdateStore'
 import { APP_VERSION } from '../src/version'
@@ -37,7 +37,7 @@ describe('v1.9.18 auto-update system', () => {
   })
 
   it('reports and clears the auto-updated flag once', () => {
-    autoReloadOnce(vi.fn())
+    applyUpdateNow(vi.fn())
     expect(consumeAutoUpdated()).toBe(true)
     expect(consumeAutoUpdated()).toBe(false)
   })

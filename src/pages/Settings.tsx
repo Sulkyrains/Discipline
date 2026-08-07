@@ -9,7 +9,7 @@ import { useAppStore } from '../stores/useAppStore'
 import { useAuthStore } from '../stores/useAuthStore'
 import { useToastStore } from '../stores/useToastStore'
 import { APP_VERSION } from '../version'
-import { clearCachesAndReload } from '../lib/update'
+import { applyUpdateNow } from '../lib/update'
 import { useUpdateStore } from '../stores/useUpdateStore'
 import ConfirmDialog from '../components/ConfirmDialog'
 
@@ -70,13 +70,12 @@ export default function Settings() {
 
   const handleCheckUpdate = async () => {
     const result = await useUpdateStore.getState().checkNow()
-    if (result === 'outdated') {
-      useToastStore.getState().push({ title: t(lang, 'updateAutoReloading'), kind: 'warn' })
-      void clearCachesAndReload()
-      return
-    }
     const title =
-      result === 'current' ? t(lang, 'upToDate', { version: APP_VERSION }) : t(lang, 'updateCheckFailed')
+      result === 'outdated'
+        ? t(lang, 'updateFound')
+        : result === 'current'
+          ? t(lang, 'upToDate', { version: APP_VERSION })
+          : t(lang, 'updateCheckFailed')
     useToastStore.getState().push({ title, kind: result === 'current' ? 'success' : 'warn' })
   }
 
@@ -398,7 +397,7 @@ export default function Settings() {
             {updateChecking ? t(lang, 'checkingUpdate') : t(lang, 'checkUpdateBtn')}
           </button>
           {updateStatus === 'outdated' ? (
-            <button className="btn btn-primary btn-sm" onClick={() => void clearCachesAndReload()}>
+            <button className="btn btn-primary btn-sm" onClick={() => applyUpdateNow()}>
               {t(lang, 'updateNow')}
             </button>
           ) : null}

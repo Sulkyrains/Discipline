@@ -5,7 +5,7 @@ import { dateKey, formatDateCN, minuteToHHMM, nowMinute, todayKey } from '../lib
 import { coursesOnDay, currentWeekNumber, isCourseOngoing, WEEKDAY_EN, WEEKDAY_ZH } from '../lib/timetable'
 import { computeSignIns, computeStats } from '../lib/stats'
 import { quoteByIndex } from '../lib/quotes'
-import { clearCachesAndReload } from '../lib/update'
+import { applyUpdateNow } from '../lib/update'
 import { useAppStore } from '../stores/useAppStore'
 import { useAuthStore } from '../stores/useAuthStore'
 import { useUpdateStore } from '../stores/useUpdateStore'
@@ -61,7 +61,7 @@ export default function Home() {
           <span className="update-banner-text">
             {t(lang, 'updateAvailable', { version: updateRemote ?? '' })}
           </span>
-          <button className="btn btn-primary btn-sm" onClick={() => void clearCachesAndReload()}>
+          <button className="btn btn-primary btn-sm" onClick={() => applyUpdateNow()}>
             {t(lang, 'updateNow')}
           </button>
         </div>
