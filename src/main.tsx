@@ -41,7 +41,11 @@ if (!__SINGLE_FILE__) {
   })
 }
 
-const Router = __SINGLE_FILE__ ? HashRouter : BrowserRouter
+// GitHub Pages cannot rewrite arbitrary paths to index.html, so use hash
+// routing there to avoid 404s on deep links. Netlify keeps clean URLs.
+const isGithubPages =
+  typeof window !== 'undefined' && window.location.hostname.toLowerCase().includes('github.io')
+const Router = __SINGLE_FILE__ || isGithubPages ? HashRouter : BrowserRouter
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

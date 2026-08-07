@@ -6,6 +6,12 @@
     <title>Discipline</title>
   </head>
   <body>
-    <script>location.replace('/Discipline/')</script>
+    <script>
+      ;(function () {
+        var base = '/Discipline/'
+        var path = location.pathname.replace(/^\/Discipline\/?/, '')
+        location.replace(base + (path ? '#/' + path : ''))
+      })()
+    </script>
   </body>
 </html>
