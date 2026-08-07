@@ -47,6 +47,16 @@ const isGithubPages =
   typeof window !== 'undefined' && window.location.hostname.toLowerCase().includes('github.io')
 const Router = __SINGLE_FILE__ || isGithubPages ? HashRouter : BrowserRouter
 
+if (!__SINGLE_FILE__ && isGithubPages && typeof window !== 'undefined' && !window.location.hash) {
+  // When the service worker serves index.html for a deep link, convert the
+  // pathname into a hash route so the page matches the requested view.
+  const path = window.location.pathname.replace(/\/$/, '')
+  const route = path.replace(/^\/Discipline/, '')
+  if (route && route !== '') {
+    window.location.replace('/Discipline/#' + route)
+  }
+}
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <Router>

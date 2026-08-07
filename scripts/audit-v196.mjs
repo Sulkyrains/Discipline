@@ -91,15 +91,37 @@ await send('Log.enable')
 
 // 1) Deep link WITHOUT hash: server 404s, our 404.html must redirect into the hash route.
 await send('Page.navigate', { url: BASE + '/todos' })
-await waitFor("location.hash.includes('/todos')", '404 redirect to hash route')
+try {
+  await waitFor("location.hash.includes('/todos')", '404 redirect to hash route')
+} catch {
+  await sleep(3000)
+  const dbg = await evalJs(
+    "(() => ({ href: location.href, title: document.title, text: document.body ? document.body.innerText.slice(0, 160) : '' }))()"
+  )
+  console.log('DEBUG after bare /todos:', JSON.stringify(dbg, null, 2))
+  throw new Error('404 redirect failed for bare /todos')
+}
 const redirectHref = await evalJs('location.href')
 
-// Pass the app mode gate (it lands on home by design), then verify hash routes render.
-await waitFor("document.querySelector('.splash') !== null", 'splash gate')
-await evalJs(
-  "(() => { const b = [...document.querySelectorAll('button')].find(x => x.textContent.trim() === '游客模式'); if (b) { b.click(); return true } return false })()"
-)
-await waitFor("document.querySelector('.page-home') !== null", 'home page')
+// Pass the app mode gate (it lands on home by design), tolerating the
+// one-time cache-busting reload that happens on a fresh profile.
+let homeReady = false
+for (let i = 0; i < 40 && !homeReady; i++) {
+  const state = await evalJs(
+    "document.querySelector('.page-home') ? 'home' : (document.querySelector('.splash') ? 'splash' : 'loading')"
+  )
+  if (state === 'home') {
+    homeReady = true
+    break
+  }
+  if (state === 'splash') {
+    await evalJs(
+      "(() => { const b = [...document.querySelectorAll('button')].find(x => x.textContent.trim() === '游客模式'); if (b) { b.click(); return true } return false })()"
+    )
+  }
+  await sleep(500)
+}
+if (!homeReady) throw new Error('home page not ready after gate')
 
 await evalJs("location.hash = '#/todos'")
 await waitFor("document.querySelector('.page-todos') !== null", 'todos page render')
@@ -113,14 +135,15 @@ const hashFocus = await evalJs(
   "(() => ({ href: location.href, hasFocus: document.body.textContent.includes('专注') }))()"
 )
 
-const result = { deep, hashFocus, errors }
+const realErrors = errors.filter((e) => !e.includes('status of 404'))
+const result = { deep, hashFocus, errors, realErrors }
 console.log(JSON.stringify(result, null, 2))
 
 let ok = true
 if (!deep.href.includes('#/todos')) ok = false
 if (!deep.hasTodos || !deep.no404) ok = false
 if (!hashFocus.href.includes('#/focus') || !hashFocus.hasFocus) ok = false
-if (errors.length) ok = false
+if (realErrors.length) ok = false
 
 ws.close()
 process.exit(ok ? 0 : 1)
