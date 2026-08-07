@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { t, type I18nKey } from '../lib/i18n'
-import type { ThemeId, UiSoundId } from '../types'
+import type { Settings as SettingsType, ThemeId, UiSoundId } from '../types'
 import { THEME_META, THEME_ORDER } from '../lib/theme'
 import { reorderDock } from '../lib/migration'
 import { requestNotificationPermission } from '../lib/notifications'
@@ -213,6 +213,27 @@ export default function Settings() {
       <section className="card settings-section">
         <h3 className="section-title">{t(lang, 'reminders')}</h3>
         <label className="field">
+          <span>{t(lang, 'reminderMode')}</span>
+          <div className="sound-chips">
+            {(['sound', 'vibrate', 'silent'] as Array<SettingsType['reminderMode']>).map((m) => (
+              <button
+                key={m}
+                className={`sound-chip${settings.reminderMode === m ? ' active' : ''}`}
+                onClick={() => setSettings({ reminderMode: m })}
+              >
+                {t(
+                  lang,
+                  m === 'sound'
+                    ? 'reminderSound'
+                    : m === 'vibrate'
+                      ? 'reminderVibrate'
+                      : 'reminderSilent'
+                )}
+              </button>
+            ))}
+          </div>
+        </label>
+        <label className="field">
           <span>{t(lang, 'reminderDefault')}</span>
           <select
             className="select"
@@ -276,6 +297,18 @@ export default function Settings() {
             </button>
           ))}
         </div>
+        <label className="field">
+          <span>
+            {t(lang, 'uiSoundVolume')}: {Math.round(settings.uiSoundVolume * 100)}%
+          </span>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            value={Math.round(settings.uiSoundVolume * 100)}
+            onChange={(e) => setSettings({ uiSoundVolume: Number(e.target.value) / 100 })}
+          />
+        </label>
       </section>
 
       <section className="card settings-section">

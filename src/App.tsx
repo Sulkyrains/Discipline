@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { THEME_META } from './lib/theme'
 import {
   isNative,
@@ -52,6 +52,7 @@ export default function App() {
   const courses = useAppStore((s) => s.courses)
   const todos = useAppStore((s) => s.todos)
   const location = useLocation()
+  const navigate = useNavigate()
   const focusActive = useFocusStore((s) => s.active)
   const appWhitelist = useAppStore((s) => s.appWhitelist)
   const firedRef = useRef<Set<string>>(new Set())
@@ -80,7 +81,8 @@ export default function App() {
       const target = e.target as HTMLElement | null
       if (!target || typeof target.closest !== 'function') return
       if (!target.closest('button, a')) return
-      playUiSound(useAppStore.getState().settings.uiSound)
+      const st = useAppStore.getState().settings
+      playUiSound(st.uiSound, st.uiSoundVolume)
     }
     document.addEventListener('click', handler)
     return () => document.removeEventListener('click', handler)
@@ -123,8 +125,15 @@ export default function App() {
     const unsub = useFocusStore.getState().registerEventHandler((e) => {
       const cfg = useAppStore.getState().settings
       const lang = cfg.language
+      const notifyMode = () => {
+        if (cfg.reminderMode === 'sound') playUiSound('bell', cfg.uiSoundVolume)
+        if (cfg.reminderMode === 'vibrate' && typeof navigator !== 'undefined' && navigator.vibrate) {
+          navigator.vibrate([200, 100, 200])
+        }
+      }
+      navigate('/focus')
       if (e.type === 'focusCompleted') {
-        playUiSound('bell')
+        notifyMode()
         const body = t(lang, 'focusCompleteBody', { n: e.plannedMinutes ?? cfg.pomodoroMinutes })
         void notify(t(lang, 'focusCompleteTitle'), body)
         useToastStore.getState().push({
@@ -140,7 +149,7 @@ export default function App() {
           })
         }
       } else {
-        playUiSound('bell')
+        notifyMode()
         void notify(t(lang, 'breakComplete'), '')
         useToastStore.getState().push({ title: t(lang, 'breakComplete'), kind: 'info' })
       }

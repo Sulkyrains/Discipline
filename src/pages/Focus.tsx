@@ -55,6 +55,7 @@ export default function Focus() {
   const pendingStart = useRef(false)
 
   const active = isFocusActive(timer)
+  const uiVol = settings.uiSoundVolume
   const abandonedToday = abandonDates.filter((d) => dateKey(new Date(d)) === todayKey()).length
   const abandonBlocked = abandonedToday >= 3
   const visibleApps =
@@ -72,7 +73,7 @@ export default function Focus() {
 
   const onStart = (e: ReactMouseEvent) => {
     e.stopPropagation()
-    playUiSound('soft')
+    playUiSound('soft', uiVol)
     const st = useFocusStore.getState()
     const incomplete = useAppStore.getState().todos.filter((td) => !td.completed)
     if (!st.taskId && incomplete.length > 0) {
@@ -81,11 +82,6 @@ export default function Focus() {
       return
     }
     st.start()
-  }
-  const onPause = (e: ReactMouseEvent) => {
-    e.stopPropagation()
-    playUiSound('tick')
-    useFocusStore.getState().pause()
   }
   const onSkipBreak = () => useFocusStore.getState().skipBreak()
   const onSwitchPhase = (p: TimerPhase) => useFocusStore.getState().switchPhase(p)
@@ -111,7 +107,7 @@ export default function Focus() {
 
   const completeBoundTask = () => {
     if (!taskId) return
-    playUiSound('pop')
+    playUiSound('pop', uiVol)
     const unlocked = toggleTodo(taskId)
     setTaskId(null)
     for (const def of unlocked) {
@@ -124,7 +120,7 @@ export default function Focus() {
   }
 
   const switchBoundTask = (id: string) => {
-    playUiSound('soft')
+    playUiSound('soft', uiVol)
     setTaskId(id || null)
   }
 
@@ -136,7 +132,7 @@ export default function Focus() {
   }
 
   const pickTaskFromPrompt = (id: string) => {
-    playUiSound('soft')
+    playUiSound('soft', uiVol)
     setTaskId(id)
     setTaskPickerOpen(false)
     setConfirmBind(false)
@@ -149,12 +145,12 @@ export default function Focus() {
   const directStart = () => {
     pendingStart.current = false
     setConfirmBind(false)
-    playUiSound('soft')
+    playUiSound('soft', uiVol)
     useFocusStore.getState().start()
   }
 
   const openPicker = async () => {
-    playUiSound('soft')
+    playUiSound('soft', uiVol)
     const apps = await listInstalledApps()
     setInstalledApps(apps.length > 0 ? apps.map((a) => ({ id: a.id, name: a.name, system: false })) : COMMON_APPS)
     setPickerOpen(true)
@@ -204,8 +200,8 @@ export default function Focus() {
             {t(lang, 'inFocus')}
           </button>
         ) : timer.status === 'running' ? (
-          <button className="btn btn-primary btn-lg" onClick={onPause}>
-            {t(lang, 'pause')}
+          <button className="btn btn-primary btn-lg" onClick={onSkipBreak}>
+            {t(lang, 'skipBreak')}
           </button>
         ) : (
           <button className="btn btn-primary btn-lg" onClick={onStart}>

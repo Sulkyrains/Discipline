@@ -21,7 +21,9 @@ const settings: Settings = {
   whiteNoiseVolume: 0.5,
   uiSound: 'soft',
   courseSort: 'time',
-  todoSort: 'time'
+  todoSort: 'time',
+  reminderMode: 'sound',
+  uiSoundVolume: 0.8
 }
 
 describe('timer state machine', () => {

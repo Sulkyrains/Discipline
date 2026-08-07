@@ -30,7 +30,9 @@ export const defaultSettings = (): Settings => ({
   whiteNoiseVolume: 0.5,
   uiSound: 'soft',
   courseSort: 'time',
-  todoSort: 'time'
+  todoSort: 'time',
+  reminderMode: 'sound',
+  uiSoundVolume: 0.8
 })
 
 interface AppStoreState extends AppData {
@@ -285,6 +287,7 @@ export const useAppStore = create<AppStoreState>()(
         return {
           ...current,
           ...p,
+          settings: { ...defaultSettings(), ...p.settings },
           dockOrder: normalizeDockOrder(p.dockOrder),
           todos: (p.todos ?? current.todos).map((t) => ({
             ...t,

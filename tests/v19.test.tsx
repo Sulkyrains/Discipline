@@ -66,14 +66,15 @@ describe('v1.9 no pause during focus', () => {
     expect(screen.getByText('专注中')).toBeInTheDocument()
   })
 
-  it('keeps pause during breaks', () => {
+  it('cannot pause during breaks and offers skip instead', () => {
     useFocusStore.setState({
       timer: { phase: 'shortBreak', status: 'running', remainingSeconds: 300, roundsCompleted: 1 },
       active: false,
       phase: 'shortBreak'
     })
     render(<Focus />)
-    expect(screen.getByText('暂停')).toBeInTheDocument()
+    expect(screen.queryByText('暂停')).toBeNull()
+    expect(screen.getByText('跳过休息')).toBeInTheDocument()
   })
 })
 

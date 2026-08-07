@@ -24,6 +24,7 @@ export interface Course {
 }
 
 export type SortMode = 'time' | 'priority'
+export type ReminderMode = 'sound' | 'vibrate' | 'silent'
 
 export interface Todo {
   id: string
@@ -78,6 +79,8 @@ export interface Settings {
   uiSound: UiSoundId
   courseSort: SortMode
   todoSort: SortMode
+  reminderMode: ReminderMode
+  uiSoundVolume: number // 0..1
 }
 
 export interface UserInfo {
