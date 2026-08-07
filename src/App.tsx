@@ -55,6 +55,33 @@ export default function App() {
   }, [])
 
   useEffect(() => {
+    const unsub = useFocusStore.getState().registerEventHandler((e) => {
+      const cfg = useAppStore.getState().settings
+      const lang = cfg.language
+      if (e.type === 'focusCompleted') {
+        const body = t(lang, 'focusCompleteBody', { n: e.plannedMinutes ?? cfg.pomodoroMinutes })
+        void notify(t(lang, 'focusCompleteTitle'), body)
+        useToastStore.getState().push({
+          title: t(lang, 'focusCompleteTitle'),
+          body,
+          kind: 'success'
+        })
+        for (const def of e.unlocked ?? []) {
+          useToastStore.getState().push({
+            title: `🏆 ${t(lang, 'viewAchievements')} · ${lang === 'zh' ? def.zh : def.en}`,
+            body: lang === 'zh' ? def.descZh : def.descEn,
+            kind: 'achieve'
+          })
+        }
+      } else {
+        void notify(t(lang, 'breakComplete'), '')
+        useToastStore.getState().push({ title: t(lang, 'breakComplete'), kind: 'info' })
+      }
+    })
+    return unsub
+  }, [])
+
+  useEffect(() => {
     if (isNative()) {
       void scheduleClassReminders(courses, settings.semesterStart, settings.reminderMinutes)
       return

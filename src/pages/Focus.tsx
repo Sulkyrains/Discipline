@@ -1,18 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { t } from '../lib/i18n'
-import type { TimerEvent, TimerPhase, TimerState } from '../lib/timer'
-import {
-  abandonTimer,
-  createTimer,
-  isFocusActive,
-  minutesToSeconds,
-  pauseTimer,
-  startTimer,
-  tickTimer
-} from '../lib/timer'
-import { nowISO } from '../lib/format'
+import { isFocusActive, minutesToSeconds, type TimerPhase } from '../lib/timer'
 import { SOUNDS } from '../lib/audio'
-import { notify } from '../lib/notifications'
 import { useAppStore } from '../stores/useAppStore'
 import { useFocusStore } from '../stores/useFocusStore'
 import { useSoundStore } from '../stores/useSoundStore'
@@ -31,110 +20,39 @@ export default function Focus() {
   const settings = useAppStore((s) => s.settings)
   const lang = settings.language
   const todos = useAppStore((s) => s.todos)
+  const timer = useFocusStore((s) => s.timer)
   const taskId = useFocusStore((s) => s.taskId)
   const setTaskId = useFocusStore((s) => s.setTaskId)
-
-  const [timer, setTimer] = useState<TimerState>(() => createTimer(settings))
-  const timerRef = useRef(timer)
-  timerRef.current = timer
-  const lastTickRef = useRef<number | null>(null)
-  const startAtRef = useRef<string | null>(null)
-  const taskIdRef = useRef(taskId)
-  taskIdRef.current = taskId
-
-  const [confirmAbandon, setConfirmAbandon] = useState(false)
-  const [confetti, setConfetti] = useState(false)
+  const registerEventHandler = useFocusStore((s) => s.registerEventHandler)
   const sound = useSoundStore((s) => s.sound)
   const volume = useSoundStore((s) => s.volume)
   const toggleSound = useSoundStore((s) => s.toggle)
   const setVolume = useSoundStore((s) => s.setVolume)
 
+  const [confirmAbandon, setConfirmAbandon] = useState(false)
+  const [confetti, setConfetti] = useState(false)
+
   const active = isFocusActive(timer)
 
   useEffect(() => {
-    useFocusStore.getState().setActive(isFocusActive(timer))
-    useFocusStore.getState().setPhase(timer.phase)
-  }, [timer])
-
-  useEffect(() => {
-    if (timer.status !== 'running') {
-      lastTickRef.current = null
-      return
-    }
-    lastTickRef.current = Date.now()
-    const iv = window.setInterval(() => {
-      const now = Date.now()
-      const delta = (now - (lastTickRef.current ?? now)) / 1000
-      lastTickRef.current = now
-      const { state, event } = tickTimer(timerRef.current, delta, useAppStore.getState().settings)
-      setTimer(state)
-      if (event) handleEvent(event)
-    }, 500)
-    return () => window.clearInterval(iv)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timer.status])
-
-  const handleEvent = (event: TimerEvent) => {
-    const cfg = useAppStore.getState().settings
-    if (event.type === 'focusCompleted') {
-      const { session, unlocked } = useAppStore.getState().addSession({
-        taskId: taskIdRef.current,
-        plannedMinutes: cfg.pomodoroMinutes,
-        startedAt: startAtRef.current ?? nowISO()
-      })
-      startAtRef.current = null
-      const body = t(cfg.language, 'focusCompleteBody', { n: session.plannedMinutes })
-      void notify(t(cfg.language, 'focusCompleteTitle'), body)
-      useToastStore.getState().push({
-        title: t(cfg.language, 'focusCompleteTitle'),
-        body,
-        kind: 'success'
-      })
-      if (unlocked.length > 0) {
+    const unsub = registerEventHandler((e) => {
+      if (e.type === 'focusCompleted') {
         setConfetti(true)
         window.setTimeout(() => setConfetti(false), 2400)
-        for (const def of unlocked) {
-          useToastStore.getState().push({
-            title: `🏆 ${t(cfg.language, 'viewAchievements')} · ${cfg.language === 'zh' ? def.zh : def.en}`,
-            body: cfg.language === 'zh' ? def.descZh : def.descEn,
-            kind: 'achieve'
-          })
-        }
       }
-    } else {
-      void notify(t(cfg.language, 'breakComplete'), '')
-      useToastStore.getState().push({ title: t(cfg.language, 'breakComplete'), kind: 'info' })
-    }
-  }
+    })
+    return unsub
+  }, [registerEventHandler])
 
-  const start = () => {
-    if (timer.phase === 'focus' && timer.status === 'idle') startAtRef.current = nowISO()
-    setTimer(startTimer(timer))
-  }
-
-  const pause = () => setTimer(pauseTimer(timer))
+  const onStart = () => useFocusStore.getState().start()
+  const onPause = () => useFocusStore.getState().pause()
+  const onSkipBreak = () => useFocusStore.getState().skipBreak()
+  const onSwitchPhase = (p: TimerPhase) => useFocusStore.getState().switchPhase(p)
 
   const confirmAbandonAction = () => {
-    setTimer(abandonTimer(timer, useAppStore.getState().settings))
-    startAtRef.current = null
+    useFocusStore.getState().abandon()
     setConfirmAbandon(false)
     useToastStore.getState().push({ title: t(lang, 'abandon'), body: t(lang, 'abandonBody'), kind: 'warn' })
-  }
-
-  const skipBreak = () => {
-    setTimer(createTimer(useAppStore.getState().settings))
-  }
-
-  const switchPhase = (phase: TimerPhase) => {
-    const cfg = useAppStore.getState().settings
-    const minutes =
-      phase === 'focus'
-        ? cfg.pomodoroMinutes
-        : phase === 'shortBreak'
-          ? cfg.shortBreakMinutes
-          : cfg.longBreakMinutes
-    startAtRef.current = null
-    setTimer({ phase, status: 'idle', remainingSeconds: minutesToSeconds(minutes), roundsCompleted: timer.roundsCompleted })
   }
 
   const phaseMinutes =
@@ -160,7 +78,7 @@ export default function Focus() {
             key={p}
             className={`phase-chip${timer.phase === p ? ' active' : ''}`}
             disabled={timer.status === 'running'}
-            onClick={() => switchPhase(p)}
+            onClick={() => onSwitchPhase(p)}
           >
             {t(lang, p)}
           </button>
@@ -177,11 +95,11 @@ export default function Focus() {
 
       <div className="timer-controls">
         {timer.status === 'running' ? (
-          <button className="btn btn-primary btn-lg" onClick={pause}>
+          <button className="btn btn-primary btn-lg" onClick={onPause}>
             {t(lang, 'pause')}
           </button>
         ) : (
-          <button className="btn btn-primary btn-lg" onClick={start}>
+          <button className="btn btn-primary btn-lg" onClick={onStart}>
             {timer.status === 'paused' ? t(lang, 'resume') : t(lang, 'start')}
           </button>
         )}
@@ -191,7 +109,7 @@ export default function Focus() {
           </button>
         ) : null}
         {timer.phase !== 'focus' && timer.status === 'idle' ? (
-          <button className="btn btn-ghost" onClick={skipBreak}>
+          <button className="btn btn-ghost" onClick={onSkipBreak}>
             {t(lang, 'skipBreak')}
           </button>
         ) : null}
@@ -224,7 +142,7 @@ export default function Focus() {
               className={`sound-chip${sound === s.id ? ' active' : ''}`}
               onClick={() => toggleSound(s.id)}
             >
-              {sound === s.id ? '⏸' : '▶'} {lang === 'zh' ? s.zh : s.en}
+              {sound === s.id ? '◉' : '○'} {lang === 'zh' ? s.zh : s.en}
             </button>
           ))}
         </div>
