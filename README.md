@@ -55,6 +55,14 @@ npm run deploy:gh-pages   # 构建（base=/Discipline/）并推送到 gh-pages �
 
 深链接在 GitHub Pages 上会回退到首页（见 `public/404.html`）。
 
+### HTML 单文件版（双击即用）
+
+```bash
+npm run build:html
+```
+
+生成 `discipline.html`：全部脚本与样式内联在单个 HTML 里，双击即可在浏览器打开（无需 Node、无需服务器），数据保存在浏览器 localStorage。适合直接交付、演示或放进课程作业附件。路由使用 hash（`#/`），任意静态托管也兼容。
+
 ### Android APK（Capacitor）
 
 ```bash

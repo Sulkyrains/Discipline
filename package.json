@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "npm run icons && tsc --noEmit && vite build",
     "build:gh-pages": "npm run icons && tsc --noEmit && vite build --base=/Discipline/",
+    "build:html": "npm run icons && tsc --noEmit && vite build --config vite.singlefile.config.ts && node scripts/copy-html.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -43,6 +44,7 @@
     "typescript": "^5.5.4",
     "vite": "^5.4.8",
     "vite-plugin-pwa": "^0.20.5",
+    "vite-plugin-singlefile": "^2.3.3",
     "vitest": "^2.1.3"
   }
 }
