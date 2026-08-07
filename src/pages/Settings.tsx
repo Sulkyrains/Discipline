@@ -63,12 +63,13 @@ export default function Settings() {
 
   const handleCheckUpdate = async () => {
     const result = await useUpdateStore.getState().checkNow()
+    if (result === 'outdated') {
+      useToastStore.getState().push({ title: t(lang, 'updateAutoReloading'), kind: 'warn' })
+      void clearCachesAndReload()
+      return
+    }
     const title =
-      result === 'outdated'
-        ? t(lang, 'updateFound')
-        : result === 'current'
-          ? t(lang, 'upToDate', { version: APP_VERSION })
-          : t(lang, 'updateCheckFailed')
+      result === 'current' ? t(lang, 'upToDate', { version: APP_VERSION }) : t(lang, 'updateCheckFailed')
     useToastStore.getState().push({ title, kind: result === 'current' ? 'success' : 'warn' })
   }
 

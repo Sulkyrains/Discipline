@@ -34,3 +34,21 @@ export async function clearCachesAndReload(): Promise<void> {
   // fetches the latest build from the network.
   window.location.replace(window.location.pathname + '?v=' + Date.now() + window.location.hash)
 }
+
+const AUTO_RELOAD_KEY = 'discipline-auto-reloaded'
+
+/**
+ * Triggers a forced cache-clearing reload at most once per browser session.
+ * Returns true when the reload was triggered, false when it already happened
+ * (so callers can fall back to the visible update banner instead).
+ */
+export function autoReloadOnce(reload: () => void = () => void clearCachesAndReload()): boolean {
+  try {
+    if (sessionStorage.getItem(AUTO_RELOAD_KEY)) return false
+    sessionStorage.setItem(AUTO_RELOAD_KEY, '1')
+  } catch {
+    // storage unavailable; still allow the reload
+  }
+  reload()
+  return true
+}

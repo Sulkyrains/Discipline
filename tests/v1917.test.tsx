@@ -1,11 +1,10 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import Home from '../src/pages/Home'
 import Settings from '../src/pages/Settings'
 import { t } from '../src/lib/i18n'
 import { todayKey } from '../src/lib/format'
-import { clearCachesAndReload } from '../src/lib/update'
+import { autoReloadOnce, clearCachesAndReload } from '../src/lib/update'
 import { defaultSettings, useAppStore } from '../src/stores/useAppStore'
 import { useToastStore } from '../src/stores/useToastStore'
 import { useUpdateStore } from '../src/stores/useUpdateStore'
@@ -38,7 +37,6 @@ function resetStores() {
   })
   useUpdateStore.setState({ status: 'idle', lastRemote: null, lastCheckedAt: null })
   useToastStore.setState({ toasts: [] })
-  reloadMock.mockClear()
 }
 
 function stubRemoteVersion(version: string | null) {
@@ -51,52 +49,22 @@ function stubRemoteVersion(version: string | null) {
   )
 }
 
-describe('v1.9.16 visible update mechanism', () => {
+describe('v1.9.17 auto-update on check', () => {
   beforeEach(() => {
     resetStores()
+    window.sessionStorage.clear()
+    reloadMock.mockClear()
     vi.unstubAllGlobals()
   })
 
-  it('marks the app current when the remote version matches', async () => {
-    stubRemoteVersion(APP_VERSION)
-    const status = await useUpdateStore.getState().checkNow()
-    expect(status).toBe('current')
-    expect(useUpdateStore.getState().status).toBe('current')
-    expect(useUpdateStore.getState().lastRemote).toBe(APP_VERSION)
+  it('auto-reloads only once per session', () => {
+    const spy = vi.fn()
+    expect(autoReloadOnce(spy)).toBe(true)
+    expect(autoReloadOnce(spy)).toBe(false)
+    expect(spy).toHaveBeenCalledTimes(1)
   })
 
-  it('marks the app outdated when the remote version differs', async () => {
-    stubRemoteVersion('2.0.0')
-    const status = await useUpdateStore.getState().checkNow()
-    expect(status).toBe('outdated')
-    expect(useUpdateStore.getState().lastRemote).toBe('2.0.0')
-  })
-
-  it('marks the app error when the remote check fails', async () => {
-    stubRemoteVersion(null)
-    const status = await useUpdateStore.getState().checkNow()
-    expect(status).toBe('error')
-    expect(useUpdateStore.getState().lastRemote).toBeNull()
-  })
-
-  it('shows a refresh banner on Home only when outdated', () => {
-    const { rerender } = render(
-      <MemoryRouter>
-        <Home />
-      </MemoryRouter>
-    )
-    expect(screen.queryByText(t('zh', 'updateNow'))).toBeNull()
-    useUpdateStore.setState({ status: 'outdated', lastRemote: '2.0.0' })
-    rerender(
-      <MemoryRouter>
-        <Home />
-      </MemoryRouter>
-    )
-    expect(screen.getByText(/2\.0\.0/)).toBeInTheDocument()
-    expect(screen.getByText(t('zh', 'updateNow'))).toBeInTheDocument()
-  })
-
-  it('offers a check button and a refresh button in Settings when outdated', async () => {
+  it('auto-refreshes when the Settings check finds an older version', async () => {
     stubRemoteVersion('2.0.0')
     render(
       <MemoryRouter>
@@ -104,12 +72,12 @@ describe('v1.9.16 visible update mechanism', () => {
       </MemoryRouter>
     )
     fireEvent.click(screen.getByText(t('zh', 'checkUpdateBtn')))
-    expect(await screen.findByText(t('zh', 'updateNow'))).toBeInTheDocument()
+    await waitFor(() => expect(reloadMock).toHaveBeenCalled())
     expect(useToastStore.getState().toasts.some((x) => x.title === t('zh', 'updateAutoReloading'))).toBe(true)
-    expect(reloadMock).toHaveBeenCalled()
+    expect(useUpdateStore.getState().status).toBe('outdated')
   })
 
-  it('confirms the latest version when remote matches', async () => {
+  it('does not reload when the app is already up to date', async () => {
     stubRemoteVersion(APP_VERSION)
     render(
       <MemoryRouter>
@@ -117,8 +85,9 @@ describe('v1.9.16 visible update mechanism', () => {
       </MemoryRouter>
     )
     fireEvent.click(screen.getByText(t('zh', 'checkUpdateBtn')))
-    await vi.waitFor(() => {
+    await waitFor(() => {
       expect(useToastStore.getState().toasts.some((x) => x.title === t('zh', 'upToDate', { version: APP_VERSION }))).toBe(true)
     })
+    expect(reloadMock).not.toHaveBeenCalled()
   })
 })

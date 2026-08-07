@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter, HashRouter } from 'react-router-dom'
 import App from './App'
 import { APP_VERSION } from './version'
+import { autoReloadOnce } from './lib/update'
 import { useUpdateStore } from './stores/useUpdateStore'
 import './styles/tokens.css'
 import './styles/base.css'
@@ -35,6 +36,12 @@ if (!__SINGLE_FILE__) {
 
   const check = async () => {
     const result = await useUpdateStore.getState().checkNow()
+    if (result === 'outdated') {
+      // First detection per session updates automatically; afterwards the
+      // home banner stays visible so the update is never silent.
+      autoReloadOnce()
+      return
+    }
     // Clean up the cache-busting query after a successful fresh load.
     if (result === 'current' && window.location.search.startsWith('?v=')) {
       window.history.replaceState(null, '', window.location.pathname + window.location.hash)
