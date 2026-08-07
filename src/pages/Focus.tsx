@@ -45,6 +45,7 @@ export default function Focus() {
   const [confetti, setConfetti] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [installedApps, setInstalledApps] = useState<WhitelistApp[]>([])
+  const [deleteMode, setDeleteMode] = useState(false)
 
   const active = isFocusActive(timer)
   const abandonedToday = abandonDates.filter((d) => dateKey(new Date(d)) === todayKey()).length
@@ -266,15 +267,16 @@ export default function Focus() {
         ) : (
           <div className="whitelist-list">
             {appWhitelist.map((app) => (
-              <div key={app.id} className="whitelist-row">
+              <div key={app.id} className={`whitelist-row${deleteMode ? ' deleting' : ''}`}>
                 <span className="whitelist-name">{app.name}</span>
                 {app.system ? <span className="chip">{t(lang, 'systemApp')}</span> : null}
-                {!active ? (
+                {!active && deleteMode ? (
                   <button
                     className="btn btn-danger btn-sm"
                     onClick={() => removeWhitelistApp(app.id)}
+                    aria-label={t(lang, 'delete')}
                   >
-                    {t(lang, 'delete')}
+                    ×
                   </button>
                 ) : null}
               </div>
@@ -282,9 +284,17 @@ export default function Focus() {
           </div>
         )}
         {!active ? (
-          <button className="btn btn-primary btn-sm" onClick={() => void openPicker()}>
-            + {t(lang, 'whitelistAdd')}
-          </button>
+          <div className="whitelist-manage-row">
+            <button className="btn btn-primary btn-sm" onClick={() => void openPicker()}>
+              + {t(lang, 'whitelistAdd')}
+            </button>
+            <button
+              className={`btn ${deleteMode ? 'btn-danger' : 'btn-ghost'} btn-sm`}
+              onClick={() => setDeleteMode((m) => !m)}
+            >
+              {deleteMode ? t(lang, 'cancel') : t(lang, 'delete')}
+            </button>
+          </div>
         ) : null}
         <p className="muted small">{t(lang, 'whitelistHint')}</p>
       </div>

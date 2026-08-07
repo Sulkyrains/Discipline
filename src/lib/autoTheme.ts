@@ -23,22 +23,23 @@ function hsl(h: number, s: number, l: number): string {
 
 export function autoThemeVars(now: Date): Record<string, string> {
   const hour = now.getHours() + now.getMinutes() / 60
-  const light = wave(hour, 10, 42)
-  const textLight = wave(hour, 92, 72)
-  const sat = wave(hour, 38, 60)
-  const primLight = wave(hour, 52, 68)
+  const light = wave(hour, 12, 62)
+  const textLight = wave(hour, 92, 38)
+  const bgSat = wave(hour, 5, 10)
+  const primSat = wave(hour, 22, 34)
+  const primLight = wave(hour, 55, 70)
   return {
-    '--bg': hsl(226, wave(hour, 30, 46), light),
-    '--surface': hsl(226, wave(hour, 28, 44), light + 5),
-    '--surface-2': hsl(226, wave(hour, 26, 42), light + 2),
-    '--surface-3': hsl(226, wave(hour, 24, 40), light - 2),
-    '--text': hsl(226, 30, textLight),
-    '--muted': hsl(226, 22, wave(hour, 68, 54)),
-    '--primary': hsl(226, sat, primLight),
-    '--primary-2': hsl(168, wave(hour, 34, 52), wave(hour, 60, 72)),
-    '--accent': hsl(30, 70, wave(hour, 62, 72)),
+    '--bg': hsl(220, bgSat, light),
+    '--surface': hsl(220, bgSat, light + 5),
+    '--surface-2': hsl(220, bgSat, light + 2),
+    '--surface-3': hsl(220, bgSat, light - 2),
+    '--text': hsl(220, 6, textLight),
+    '--muted': hsl(220, 5, wave(hour, 70, 55)),
+    '--primary': hsl(215, primSat, primLight),
+    '--primary-2': hsl(200, 18, wave(hour, 58, 70)),
+    '--accent': hsl(35, 30, wave(hour, 60, 72)),
     '--border': light < 30 ? 'rgba(255, 255, 255, 0.1)' : 'rgba(38, 48, 63, 0.12)',
-    '--logo-bg': hsl(226, wave(hour, 30, 46), light),
+    '--logo-bg': hsl(220, bgSat, light),
     'color-scheme': light < 34 ? 'dark' : 'light'
   }
 }

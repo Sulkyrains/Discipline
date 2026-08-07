@@ -536,6 +536,16 @@
   margin-bottom: 10px;
 }
 
+.whitelist-manage-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.whitelist-row.deleting {
+  padding: 2px 0;
+}
+
 .bind-row {
   display: flex;
   align-items: flex-end;
