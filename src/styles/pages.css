@@ -181,6 +181,10 @@
   font-variant-numeric: tabular-nums;
 }
 
+.checkin-task-head {
+  margin-top: 10px;
+}
+
 .checkin-progress {
   height: 10px;
   margin-bottom: 8px;

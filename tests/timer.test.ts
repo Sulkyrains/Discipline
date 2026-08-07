@@ -19,7 +19,9 @@ const settings: Settings = {
   roundsBeforeLongBreak: 4,
   reminderMinutes: 10,
   whiteNoiseVolume: 0.5,
-  uiSound: 'soft'
+  uiSound: 'soft',
+  courseSort: 'time',
+  todoSort: 'time'
 }
 
 describe('timer state machine', () => {

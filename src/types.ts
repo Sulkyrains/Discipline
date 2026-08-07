@@ -18,10 +18,12 @@ export interface Course {
   weekEnd: number
   parity: Parity
   color: CourseColor
-  priority: 1 | 2 | 3
+  priority?: 1 | 2 | 3
   reminderMinutes: number // 0 = no reminder
   notes?: string
 }
+
+export type SortMode = 'time' | 'priority'
 
 export interface Todo {
   id: string
@@ -31,7 +33,7 @@ export interface Todo {
   startMinute?: number // optional planned start time
   endMinute?: number // optional planned end time
   reminderMinutes?: number // optional reminder, 0..60 minutes before start
-  priority: 0 | 1 | 2 | 3
+  priority?: 1 | 2 | 3
   color?: CourseColor
   tags?: string[]
   completed: boolean
@@ -74,6 +76,8 @@ export interface Settings {
   reminderMinutes: number
   whiteNoiseVolume: number // 0..1
   uiSound: UiSoundId
+  courseSort: SortMode
+  todoSort: SortMode
 }
 
 export interface UserInfo {

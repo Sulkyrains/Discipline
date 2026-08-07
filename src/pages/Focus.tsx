@@ -1,7 +1,7 @@
-import { useEffect, useState, type MouseEvent as ReactMouseEvent } from 'react'
+import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import { t } from '../lib/i18n'
 import { isFocusActive, minutesToSeconds, type TimerPhase } from '../lib/timer'
-import { dateKey, todayKey } from '../lib/format'
+import { dateKey, minuteToHHMM, todayKey } from '../lib/format'
 import { SOUNDS } from '../lib/audio'
 import { COMMON_APPS } from '../lib/appWhitelist'
 import { listInstalledApps } from '../lib/focusLock'
@@ -10,7 +10,7 @@ import { useAppStore } from '../stores/useAppStore'
 import { useFocusStore } from '../stores/useFocusStore'
 import { useSoundStore } from '../stores/useSoundStore'
 import { useToastStore } from '../stores/useToastStore'
-import type { WhitelistApp } from '../types'
+import type { Todo, WhitelistApp } from '../types'
 import ProgressRing from '../components/ProgressRing'
 import ConfirmDialog from '../components/ConfirmDialog'
 import Confetti from '../components/Confetti'
@@ -21,6 +21,8 @@ function fmtSeconds(total: number): string {
   const s = total % 60
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
+
+const DURATION_QUICK = [10, 15, 25, 45, 60, 90, 120, 180, 240, 300]
 
 export default function Focus() {
   const settings = useAppStore((s) => s.settings)
@@ -46,10 +48,16 @@ export default function Focus() {
   const [pickerOpen, setPickerOpen] = useState(false)
   const [installedApps, setInstalledApps] = useState<WhitelistApp[]>([])
   const [deleteMode, setDeleteMode] = useState(false)
+  const [wlCollapsed, setWlCollapsed] = useState(true)
+  const [confirmBind, setConfirmBind] = useState(false)
+  const [taskPickerOpen, setTaskPickerOpen] = useState(false)
+  const pendingStart = useRef(false)
 
   const active = isFocusActive(timer)
   const abandonedToday = abandonDates.filter((d) => dateKey(new Date(d)) === todayKey()).length
   const abandonBlocked = abandonedToday >= 3
+  const visibleApps =
+    appWhitelist.length > 6 && wlCollapsed ? appWhitelist.slice(0, 6) : appWhitelist
 
   useEffect(() => {
     const unsub = registerEventHandler((e) => {
@@ -64,7 +72,14 @@ export default function Focus() {
   const onStart = (e: ReactMouseEvent) => {
     e.stopPropagation()
     playUiSound('soft')
-    useFocusStore.getState().start()
+    const st = useFocusStore.getState()
+    const incomplete = useAppStore.getState().todos.filter((td) => !td.completed)
+    if (!st.taskId && incomplete.length > 0) {
+      pendingStart.current = true
+      setConfirmBind(true)
+      return
+    }
+    st.start()
   }
   const onPause = (e: ReactMouseEvent) => {
     e.stopPropagation()
@@ -88,7 +103,7 @@ export default function Focus() {
   }
 
   const changeDuration = (minutes: number) => {
-    const clamped = Math.max(15, Math.min(180, Number.isFinite(minutes) ? minutes : 15))
+    const clamped = Math.max(10, Math.min(300, Number.isFinite(minutes) ? minutes : 10))
     useAppStore.getState().setSettings({ pomodoroMinutes: clamped })
     useFocusStore.getState().setDuration(clamped)
   }
@@ -110,6 +125,31 @@ export default function Focus() {
   const switchBoundTask = (id: string) => {
     playUiSound('soft')
     setTaskId(id || null)
+  }
+
+  const taskOptionLabel = (td: Todo): string => {
+    const parts = [td.title]
+    if (td.startMinute !== undefined) parts.push(minuteToHHMM(td.startMinute))
+    for (const tag of td.tags ?? []) parts.push(`#${tag}`)
+    return parts.join(' · ')
+  }
+
+  const pickTaskFromPrompt = (id: string) => {
+    playUiSound('soft')
+    setTaskId(id)
+    setTaskPickerOpen(false)
+    setConfirmBind(false)
+    if (pendingStart.current) {
+      pendingStart.current = false
+      useFocusStore.getState().start()
+    }
+  }
+
+  const directStart = () => {
+    pendingStart.current = false
+    setConfirmBind(false)
+    playUiSound('soft')
+    useFocusStore.getState().start()
   }
 
   const openPicker = async () => {
@@ -200,15 +240,15 @@ export default function Focus() {
             <input
               className="input"
               type="number"
-              min={15}
-              max={180}
+              min={10}
+              max={300}
               step={5}
               value={settings.pomodoroMinutes}
               onChange={(e) => changeDuration(Number(e.target.value))}
             />
           </label>
           <div className="sound-chips duration-chips">
-            {[15, 25, 45, 60].map((m) => (
+            {DURATION_QUICK.map((m) => (
               <button
                 key={m}
                 type="button"
@@ -240,7 +280,7 @@ export default function Focus() {
                 .filter((td) => !td.completed)
                 .map((td) => (
                   <option key={td.id} value={td.id}>
-                    {td.title}
+                    {taskOptionLabel(td)}
                   </option>
                 ))}
             </select>
@@ -266,7 +306,7 @@ export default function Focus() {
           <p className="muted small">{t(lang, 'emptyWhitelist')}</p>
         ) : (
           <div className="whitelist-list">
-            {appWhitelist.map((app) => (
+            {visibleApps.map((app) => (
               <div key={app.id} className={`whitelist-row${deleteMode ? ' deleting' : ''}`}>
                 <span className="whitelist-name">{app.name}</span>
                 {app.system ? <span className="chip">{t(lang, 'systemApp')}</span> : null}
@@ -294,6 +334,16 @@ export default function Focus() {
             >
               {deleteMode ? t(lang, 'cancel') : t(lang, 'delete')}
             </button>
+            {appWhitelist.length > 6 ? (
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => setWlCollapsed((c) => !c)}
+              >
+                {wlCollapsed
+                  ? t(lang, 'whitelistExpand', { n: appWhitelist.length - 6 })
+                  : t(lang, 'whitelistCollapse')}
+              </button>
+            ) : null}
           </div>
         ) : null}
         <p className="muted small">{t(lang, 'whitelistHint')}</p>
@@ -338,6 +388,43 @@ export default function Focus() {
         onConfirm={confirmAbandonAction}
         onCancel={() => setConfirmAbandon(false)}
       />
+
+      <ConfirmDialog
+        open={confirmBind}
+        title={t(lang, 'bindPromptTitle')}
+        body={t(lang, 'bindPromptBody')}
+        confirmText={t(lang, 'selectTask')}
+        cancelText={t(lang, 'bindDirectStart')}
+        onConfirm={() => {
+          setConfirmBind(false)
+          setTaskPickerOpen(true)
+        }}
+        onCancel={directStart}
+      />
+
+      <Sheet
+        open={taskPickerOpen}
+        title={t(lang, 'selectTask')}
+        onClose={() => {
+          setTaskPickerOpen(false)
+          pendingStart.current = false
+        }}
+      >
+        <div className="app-picker-list">
+          {todos
+            .filter((td) => !td.completed)
+            .map((td) => (
+              <button
+                key={td.id}
+                type="button"
+                className="app-picker-row"
+                onClick={() => pickTaskFromPrompt(td.id)}
+              >
+                {taskOptionLabel(td)}
+              </button>
+            ))}
+        </div>
+      </Sheet>
 
       <Sheet
         open={pickerOpen}

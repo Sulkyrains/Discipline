@@ -1,15 +1,17 @@
 import { useMemo } from 'react'
 import { t } from '../lib/i18n'
 import { ACHIEVEMENTS, achievementById } from '../lib/achievements'
-import { computeStats } from '../lib/stats'
+import { computeSignIns, computeStats } from '../lib/stats'
 import { useAppStore } from '../stores/useAppStore'
 
 export default function Achievements() {
   const lang = useAppStore((s) => s.settings.language)
   const sessions = useAppStore((s) => s.sessions)
   const todos = useAppStore((s) => s.todos)
+  const signIns = useAppStore((s) => s.signIns)
   const unlocked = useAppStore((s) => s.unlocked)
   const stats = useMemo(() => computeStats(sessions, todos), [sessions, todos])
+  const signIn = useMemo(() => computeSignIns(signIns), [signIns])
 
   const unlockedDefs = unlocked.map((id) => achievementById(id)).filter((d): d is NonNullable<typeof d> => !!d)
 
@@ -31,7 +33,7 @@ export default function Achievements() {
       <div className="ach-grid">
         {ACHIEVEMENTS.map((def) => {
           const isUnlocked = unlocked.includes(def.id)
-          const p = def.progress(stats)
+          const p = def.progress(stats, signIn)
           const progressText = `${Math.min(p.current, p.target)}/${p.target}`
           return (
             <div key={def.id} className={`card ach-card${isUnlocked ? ' unlocked' : ''}`}>

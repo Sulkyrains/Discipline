@@ -4,7 +4,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { todayKey } from '../src/lib/format'
 import {
   DEFAULT_DOCK,
-  migrateTodoPriority,
   normalizeDockOrder,
   reorderDock
 } from '../src/lib/migration'
@@ -156,17 +155,12 @@ describe('v1.9.1 migration helpers', () => {
     ])
   })
 
-  it('migrates legacy normal-priority todos to medium', () => {
-    const migrated = migrateTodoPriority([todo('t1', '旧任务', 0), todo('t2', '新任务', 1)])
-    expect(migrated[0].priority).toBe(2)
-    expect(migrated[1].priority).toBe(1)
-  })
 })
 
 describe('v1.9.1 todo priority', () => {
   beforeEach(resetStores)
 
-  it('defaults new todos to medium priority without a normal option', () => {
+  it('defaults new todos to no priority and only offers low/medium/high', () => {
     render(
       <MemoryRouter>
         <Todos />
@@ -174,12 +168,12 @@ describe('v1.9.1 todo priority', () => {
     )
     fireEvent.click(screen.getByText(/添加待办/))
     const select = screen.getByLabelText('优先级') as HTMLSelectElement
-    expect(select.value).toBe('2')
+    expect(select.value).toBe('')
     const options = within(select).getAllByRole('option').map((o) => o.textContent)
-    expect(options).toEqual(['低', '中', '高'])
+    expect(options).toEqual(['无', '低', '中', '高'])
     fireEvent.change(screen.getByPlaceholderText('复习高数第二章'), { target: { value: '新任务' } })
     fireEvent.click(screen.getByText('保存'))
-    expect(useAppStore.getState().todos[0].priority).toBe(2)
+    expect(useAppStore.getState().todos[0].priority).toBeUndefined()
   })
 })
 
@@ -193,7 +187,7 @@ describe('v1.9.1 course priority and colors', () => {
     )
   })
 
-  it('defaults the course form priority to medium', () => {
+  it('defaults the course form priority to unset', () => {
     render(
       <MemoryRouter>
         <Timetable />
@@ -201,7 +195,7 @@ describe('v1.9.1 course priority and colors', () => {
     )
     fireEvent.click(screen.getByText(/添加课程/))
     const select = screen.getByLabelText('优先级') as HTMLSelectElement
-    expect(select.value).toBe('2')
+    expect(select.value).toBe('')
   })
 
   it('adopts the same color as an existing course with the same name', () => {

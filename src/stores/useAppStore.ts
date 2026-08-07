@@ -11,7 +11,7 @@ import type {
   WhitelistApp
 } from '../types'
 import { dateKey, nowISO, todayKey, uid } from '../lib/format'
-import { computeStats } from '../lib/stats'
+import { computeSignIns, computeStats } from '../lib/stats'
 import { evaluateAchievements, type AchievementDef } from '../lib/achievements'
 import { DEFAULT_DOCK, normalizeDockOrder } from '../lib/migration'
 import { defaultWhitelist } from '../lib/appWhitelist'
@@ -28,7 +28,9 @@ export const defaultSettings = (): Settings => ({
   roundsBeforeLongBreak: 4,
   reminderMinutes: 10,
   whiteNoiseVolume: 0.5,
-  uiSound: 'soft'
+  uiSound: 'soft',
+  courseSort: 'time',
+  todoSort: 'time'
 })
 
 interface AppStoreState extends AppData {
@@ -55,7 +57,7 @@ interface AppStoreState extends AppData {
     title: string
     notes: string
     dueDate: string
-    priority: 1 | 2 | 3
+    priority?: 1 | 2 | 3
     startMinute?: number
     endMinute?: number
     reminderMinutes?: number
@@ -82,7 +84,7 @@ function evaluateAndUnlock(
   todos: Todo[]
 ): AchievementDef[] {
   const stats = computeStats(sessions, todos)
-  const fresh = evaluateAchievements(stats, get().unlocked)
+  const fresh = evaluateAchievements(stats, get().unlocked, computeSignIns(get().signIns))
   if (fresh.length > 0) {
     set({ unlocked: [...get().unlocked, ...fresh.map((a) => a.id)] })
   }
@@ -286,7 +288,8 @@ export const useAppStore = create<AppStoreState>()(
           dockOrder: normalizeDockOrder(p.dockOrder),
           todos: (p.todos ?? current.todos).map((t) => ({
             ...t,
-            priority: t.priority === 0 ? 2 : t.priority,
+            priority:
+              (t as { priority?: unknown }).priority === 0 ? undefined : t.priority,
             color: t.color ?? 'indigo',
             tags: t.tags ?? []
           })),

@@ -28,13 +28,27 @@ export default function Checkins() {
     for (const [k, m] of minutesByDay) {
       if (m >= 15) set.add(k)
     }
+    const tasksByDay = new Map<string, number>()
+    for (const td of todos) {
+      if (td.completed && td.completedAt) {
+        const k = dateKey(new Date(td.completedAt))
+        tasksByDay.set(k, (tasksByDay.get(k) ?? 0) + 1)
+      }
+    }
+    for (const [k, n] of tasksByDay) {
+      if (n >= 3) set.add(k)
+    }
     return set
-  }, [sessions])
+  }, [sessions, todos])
 
   const stats = useMemo(() => computeStats(sessions, todos, now), [sessions, todos, now])
   const todayMinutes = stats.todayMinutes
-  const met = todayMinutes >= 15
-  const pct = Math.min(100, Math.round((todayMinutes / 15) * 100))
+  const todayCompletedTodos = stats.todayCompletedTodos
+  const minutesMet = todayMinutes >= 15
+  const tasksMet = todayCompletedTodos >= 3
+  const met = minutesMet || tasksMet
+  const pctMin = Math.min(100, Math.round((todayMinutes / 15) * 100))
+  const pctTasks = Math.min(100, Math.round((todayCompletedTodos / 3) * 100))
 
   const year = cursor.getFullYear()
   const month = cursor.getMonth()
@@ -90,10 +104,23 @@ export default function Checkins() {
           </strong>
         </div>
         <div className="progress-bar checkin-progress">
-          <span style={{ width: `${pct}%` }} />
+          <span style={{ width: `${pctMin}%` }} />
+        </div>
+        <div className="checkin-today-head checkin-task-head">
+          <span>{t(lang, 'checkinTasksLabel')}</span>
+          <strong>
+            {todayCompletedTodos} / 3
+          </strong>
+        </div>
+        <div className="progress-bar checkin-progress">
+          <span style={{ width: `${pctTasks}%` }} />
         </div>
         <p className={`muted small${met ? ' checkin-met' : ''}`}>
-          {met ? `✓ ${t(lang, 'checkinMet')}` : t(lang, 'checkinRemaining', { n: 15 - todayMinutes })}
+          {met
+            ? `✓ ${t(lang, 'checkinMet')}`
+            : minutesMet
+              ? t(lang, 'checkinTasksRemaining', { n: 3 - todayCompletedTodos })
+              : t(lang, 'checkinRemaining', { n: 15 - todayMinutes })}
         </p>
       </div>
 

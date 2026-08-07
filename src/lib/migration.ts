@@ -1,5 +1,3 @@
-import type { Todo } from '../types'
-
 export const DEFAULT_DOCK = ['/', '/timetable', '/todos', '/focus', '/stats', '/settings']
 const VALID_DOCK = new Set(DEFAULT_DOCK)
 
@@ -15,10 +13,6 @@ export function normalizeDockOrder(order: unknown): string[] {
   }
   // The Me/settings entry is fixed and always present at the very end.
   return [...paths.filter((p) => p !== '/settings'), '/settings']
-}
-
-export function migrateTodoPriority(todos: Todo[]): Todo[] {
-  return todos.map((t) => (t.priority === 0 ? { ...t, priority: 2 as const } : t))
 }
 
 export function reorderDock(order: string[], from: number, to: number): string[] {

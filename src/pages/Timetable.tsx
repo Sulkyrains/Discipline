@@ -31,7 +31,7 @@ interface CourseForm {
   weekEnd: number
   parity: Parity
   color: CourseColor
-  priority: 1 | 2 | 3
+  priority?: 1 | 2 | 3
   reminderMinutes: number
 }
 
@@ -48,7 +48,7 @@ function emptyForm(day = 1): CourseForm {
     weekEnd: 16,
     parity: 'all',
     color: 'indigo',
-    priority: 2,
+    priority: undefined,
     reminderMinutes: 0
   }
 }
@@ -60,6 +60,8 @@ export default function Timetable() {
   const addCourse = useAppStore((s) => s.addCourse)
   const updateCourse = useAppStore((s) => s.updateCourse)
   const removeCourse = useAppStore((s) => s.removeCourse)
+  const setSettings = useAppStore((s) => s.setSettings)
+  const courseSort = useAppStore((s) => s.settings.courseSort)
   const focusActive = useFocusStore((s) => s.active)
 
   const [week, setWeek] = useState(() => currentWeekNumber(semesterStart))
@@ -77,6 +79,15 @@ export default function Timetable() {
   const ongoingId = ongoing && isCourseOngoing(ongoing, minute) ? ongoing.id : null
   const upcomingId = ongoing && !isCourseOngoing(ongoing, minute) ? ongoing.id : null
   const dayCourses = coursesOnDay(courses, day, week)
+  const sortedDayCourses = useMemo(() => {
+    const list = coursesOnDay(courses, day, week)
+    if (courseSort === 'priority') {
+      return [...list].sort(
+        (a, b) => (b.priority ?? 0) - (a.priority ?? 0) || a.startMinute - b.startMinute
+      )
+    }
+    return list
+  }, [courses, day, week, courseSort])
   const conflicts = useMemo(() => {
     if (editing === null || !form.name.trim()) return []
     return courses.filter((c) => {
@@ -192,6 +203,21 @@ export default function Timetable() {
         </button>
       </div>
 
+      <div className="seg seg-sm sort-seg">
+        <button
+          className={`seg-item${courseSort === 'time' ? ' active' : ''}`}
+          onClick={() => setSettings({ courseSort: 'time' })}
+        >
+          {t(lang, 'sortTime')}
+        </button>
+        <button
+          className={`seg-item${courseSort === 'priority' ? ' active' : ''}`}
+          onClick={() => setSettings({ courseSort: 'priority' })}
+        >
+          {t(lang, 'sortPriority')}
+        </button>
+      </div>
+
       <div className="week-strip">
         {WEEKDAY_ZH.map((wz, i) => {
           const d = i + 1
@@ -209,7 +235,7 @@ export default function Timetable() {
         {dayCourses.length === 0 ? (
           <EmptyState emoji="🗓️" text={t(lang, 'noCourseOnDay')} />
         ) : (
-          dayCourses.map((course) => (
+          sortedDayCourses.map((course) => (
             <button
               key={course.id}
               className="card course-item"
@@ -220,9 +246,11 @@ export default function Timetable() {
               <div className="course-main">
                 <div className="course-row">
                   <strong className="course-name">{course.name}</strong>
-                  <span className={`chip chip-pri-${course.priority}`}>
-                    {t(lang, `pri${course.priority}` as 'pri1')}
-                  </span>
+                  {course.priority ? (
+                    <span className={`chip chip-pri-${course.priority}`}>
+                      {t(lang, `pri${course.priority}` as 'pri1')}
+                    </span>
+                  ) : null}
                   {ongoingId === course.id ? <span className="badge badge-live">{t(lang, 'ongoing')}</span> : null}
                   {upcomingId === course.id ? <span className="badge badge-next">{t(lang, 'nextUp')}</span> : null}
                 </div>
@@ -387,9 +415,16 @@ export default function Timetable() {
             <span>{t(lang, 'priority')}</span>
             <select
               className="select"
-              value={form.priority}
-              onChange={(e) => setForm({ ...form, priority: Number(e.target.value) as 1 | 2 | 3 })}
+              value={form.priority ?? ''}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  priority:
+                    e.target.value === '' ? undefined : (Number(e.target.value) as 1 | 2 | 3)
+                })
+              }
             >
+              <option value="">{t(lang, 'none')}</option>
               {[1, 2, 3].map((p) => (
                 <option key={p} value={p}>
                   {t(lang, `pri${p}` as 'pri1')}

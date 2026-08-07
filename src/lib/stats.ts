@@ -17,6 +17,7 @@ export interface Stats {
   completedTodos: number
   todayMinutes: number
   todaySessions: number
+  todayCompletedTodos: number
   weekMinutes: number
   monthMinutes: number
   taskFocusSessions: number
@@ -53,14 +54,25 @@ function dayIndexMap(sessions: FocusSession[]): {
 export function computeStats(sessions: FocusSession[], todos: Todo[], today = new Date()): Stats {
   const { minutes, sessions: counts } = dayIndexMap(sessions)
   const todayKey = dateKey(today)
+  const completedByDay = new Map<string, number>()
+  for (const td of todos) {
+    if (td.completed && td.completedAt) {
+      const k = dateKey(new Date(td.completedAt))
+      completedByDay.set(k, (completedByDay.get(k) ?? 0) + 1)
+    }
+  }
 
   let totalMinutes = 0
   for (const m of minutes.values()) totalMinutes += m
 
-  // A day only counts as a check-in when the user focused for >= 15 minutes.
+  // A day counts as a check-in when the user focused for >= 15 minutes
+  // or completed >= 3 todos that day.
   const checkinDays = new Set<string>()
   for (const [k, m] of minutes) {
     if (m >= 15) checkinDays.add(k)
+  }
+  for (const [k, n] of completedByDay) {
+    if (n >= 3) checkinDays.add(k)
   }
 
   let taskFocusSessions = 0
@@ -110,6 +122,7 @@ export function computeStats(sessions: FocusSession[], todos: Todo[], today = ne
     completedTodos: todos.filter((t) => t.completed).length,
     todayMinutes: minutes.get(todayKey) ?? 0,
     todaySessions: counts.get(todayKey) ?? 0,
+    todayCompletedTodos: completedByDay.get(todayKey) ?? 0,
     weekMinutes,
     monthMinutes,
     taskFocusSessions,

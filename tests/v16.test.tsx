@@ -25,7 +25,7 @@ function todo(id: string, title: string, dueDate: string, completed = false): To
     title,
     notes: '',
     dueDate,
-    priority: 0,
+    priority: 2,
     completed,
     completedAt: '',
     createdAt: '2026-08-01T00:00:00.000Z',

@@ -218,10 +218,14 @@ export default function Settings() {
             <input
               className="input"
               type="number"
-              min={15}
-              max={180}
+              min={10}
+              max={300}
               value={settings.pomodoroMinutes}
-              onChange={(e) => setSettings({ pomodoroMinutes: Math.max(15, Number(e.target.value) || 25) })}
+              onChange={(e) =>
+                setSettings({
+                  pomodoroMinutes: Math.max(10, Math.min(300, Number(e.target.value) || 25))
+                })
+              }
             />
           </label>
           <label className="field">

@@ -69,7 +69,7 @@ describe('v1.8 focus-mode add todo', () => {
           title: '现有任务',
           notes: '',
           dueDate: todayKey(),
-          priority: 0,
+          priority: 2,
           completed: false,
           completedAt: '',
           createdAt: '2026-01-01T00:00:00.000Z',

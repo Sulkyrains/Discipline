@@ -1,4 +1,4 @@
-import type { Stats } from './stats'
+import type { SignInStats, Stats } from './stats'
 
 export interface AchievementDef {
   id: string
@@ -7,8 +7,8 @@ export interface AchievementDef {
   en: string
   descZh: string
   descEn: string
-  check: (stats: Stats) => boolean
-  progress: (stats: Stats) => { current: number; target: number }
+  check: (stats: Stats, signIn?: SignInStats) => boolean
+  progress: (stats: Stats, signIn?: SignInStats) => { current: number; target: number }
 }
 
 export const ACHIEVEMENTS: AchievementDef[] = [
@@ -261,6 +261,106 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     descEn: 'Focus 600 minutes in a single month',
     check: (s) => s.monthMinutes >= 600,
     progress: (s) => ({ current: Math.min(s.monthMinutes, 600), target: 600 })
+  },
+  {
+    id: 'signin_first',
+    icon: '📅',
+    zh: '初次签到',
+    en: 'First Check-in',
+    descZh: '完成第一次每日签到',
+    descEn: 'Sign in for the first time',
+    check: (_s, signIn) => (signIn?.totalDays ?? 0) >= 1,
+    progress: (_s, signIn) => ({ current: signIn?.totalDays ?? 0, target: 1 })
+  },
+  {
+    id: 'signin_streak_7',
+    icon: '🗓️',
+    zh: '七日签到',
+    en: '7-Day Sign-in Streak',
+    descZh: '连续签到 7 天',
+    descEn: 'Sign in 7 days in a row',
+    check: (_s, signIn) => (signIn?.currentStreak ?? 0) >= 7,
+    progress: (_s, signIn) => ({ current: Math.min(signIn?.currentStreak ?? 0, 7), target: 7 })
+  },
+  {
+    id: 'signin_streak_30',
+    icon: '🏵️',
+    zh: '全勤一月',
+    en: '30-Day Sign-in Streak',
+    descZh: '连续签到 30 天',
+    descEn: 'Sign in 30 days in a row',
+    check: (_s, signIn) => (signIn?.currentStreak ?? 0) >= 30,
+    progress: (_s, signIn) => ({ current: Math.min(signIn?.currentStreak ?? 0, 30), target: 30 })
+  },
+  {
+    id: 'signin_total_30',
+    icon: '💮',
+    zh: '签到新秀',
+    en: '30 Total Sign-ins',
+    descZh: '累计签到 30 天',
+    descEn: 'Sign in 30 days in total',
+    check: (_s, signIn) => (signIn?.totalDays ?? 0) >= 30,
+    progress: (_s, signIn) => ({ current: Math.min(signIn?.totalDays ?? 0, 30), target: 30 })
+  },
+  {
+    id: 'signin_total_100',
+    icon: '💎',
+    zh: '签到元老',
+    en: '100 Total Sign-ins',
+    descZh: '累计签到 100 天',
+    descEn: 'Sign in 100 days in total',
+    check: (_s, signIn) => (signIn?.totalDays ?? 0) >= 100,
+    progress: (_s, signIn) => ({ current: Math.min(signIn?.totalDays ?? 0, 100), target: 100 })
+  },
+  {
+    id: 'checkin_streak_14',
+    icon: '🥈',
+    zh: '半月之约',
+    en: '14-Day Check-in Streak',
+    descZh: '连续打卡 14 天',
+    descEn: 'Check in 14 days in a row',
+    check: (s) => s.currentStreak >= 14,
+    progress: (s) => ({ current: Math.min(s.currentStreak, 14), target: 14 })
+  },
+  {
+    id: 'checkin_streak_30',
+    icon: '🥇',
+    zh: '月度王者',
+    en: '30-Day Check-in Streak',
+    descZh: '连续打卡 30 天',
+    descEn: 'Check in 30 days in a row',
+    check: (s) => s.currentStreak >= 30,
+    progress: (s) => ({ current: Math.min(s.currentStreak, 30), target: 30 })
+  },
+  {
+    id: 'checkin_total_50',
+    icon: '🏔️',
+    zh: '半百征程',
+    en: '50 Total Check-ins',
+    descZh: '累计打卡 50 天',
+    descEn: 'Check in 50 days in total',
+    check: (s) => s.activeDays >= 50,
+    progress: (s) => ({ current: Math.min(s.activeDays, 50), target: 50 })
+  },
+  {
+    id: 'checkin_total_100',
+    icon: '🗻',
+    zh: '百日登峰',
+    en: '100 Total Check-ins',
+    descZh: '累计打卡 100 天',
+    descEn: 'Check in 100 days in total',
+    check: (s) => s.activeDays >= 100,
+    progress: (s) => ({ current: Math.min(s.activeDays, 100), target: 100 })
+  },
+  {
+    id: 'tasks3_day',
+    icon: '✅',
+    zh: '高效一日',
+    en: 'Three Tasks a Day',
+    descZh: '单日完成 3 个待办',
+    descEn: 'Complete 3 todos in one day',
+    check: (s) => s.todayCompletedTodos >= 3,
+    progress: (s) => ({ current: Math.min(s.todayCompletedTodos, 3), target: 3 })
   }
 ]
 
@@ -268,6 +368,10 @@ export function achievementById(id: string): AchievementDef | undefined {
   return ACHIEVEMENTS.find((a) => a.id === id)
 }
 
-export function evaluateAchievements(stats: Stats, unlocked: string[]): AchievementDef[] {
-  return ACHIEVEMENTS.filter((a) => !unlocked.includes(a.id) && a.check(stats))
+export function evaluateAchievements(
+  stats: Stats,
+  unlocked: string[],
+  signIn?: SignInStats
+): AchievementDef[] {
+  return ACHIEVEMENTS.filter((a) => !unlocked.includes(a.id) && a.check(stats, signIn))
 }

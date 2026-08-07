@@ -19,7 +19,7 @@ function resetStore() {
 describe('v1.3.2 custom focus duration', () => {
   beforeEach(resetStore)
 
-  it('clamps the focus duration to at least 15 minutes', () => {
+  it('clamps the focus duration to at least 10 minutes', () => {
     render(
       <MemoryRouter>
         <Settings />
@@ -27,7 +27,7 @@ describe('v1.3.2 custom focus duration', () => {
     )
     const focusInput = screen.getByDisplayValue('25')
     fireEvent.change(focusInput, { target: { value: '5' } })
-    expect(useAppStore.getState().settings.pomodoroMinutes).toBe(15)
+    expect(useAppStore.getState().settings.pomodoroMinutes).toBe(10)
     fireEvent.change(focusInput, { target: { value: '45' } })
     expect(useAppStore.getState().settings.pomodoroMinutes).toBe(45)
   })

@@ -8,7 +8,7 @@ function todo(id: string, updatedAt: string, title: string): Todo {
     title,
     notes: '',
     dueDate: '',
-    priority: 0,
+    priority: 2,
     completed: false,
     completedAt: '',
     createdAt: '2026-01-01T00:00:00.000Z',
@@ -46,7 +46,9 @@ const base: AppData = {
     roundsBeforeLongBreak: 4,
     reminderMinutes: 10,
     whiteNoiseVolume: 0.5,
-    uiSound: 'soft'
+    uiSound: 'soft',
+    courseSort: 'time',
+    todoSort: 'time'
   },
   courses: [],
   todos: [],

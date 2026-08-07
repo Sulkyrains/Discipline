@@ -63,6 +63,7 @@ describe('v1.9.10 whitelist management row', () => {
       </MemoryRouter>
     )
     const initial = useAppStore.getState().appWhitelist.length
+    fireEvent.click(screen.getByText(/展开全部/))
     fireEvent.click(screen.getByText('删除'))
     const dangerButtons = screen.getAllByLabelText('删除')
     expect(dangerButtons.length).toBe(initial)

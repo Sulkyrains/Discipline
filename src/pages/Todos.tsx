@@ -17,11 +17,11 @@ interface TodoForm {
   title: string
   notes: string
   dueDate: string
-  priority: 1 | 2 | 3
+  priority?: 1 | 2 | 3
   startMinute?: number
   endMinute?: number
   reminderMinutes?: number
-  color: CourseColor
+  color: CourseColor | null
   tags: string[]
 }
 
@@ -29,8 +29,8 @@ const emptyForm = (): TodoForm => ({
   title: '',
   notes: '',
   dueDate: '',
-  priority: 2,
-  color: 'indigo',
+  priority: undefined,
+  color: null,
   tags: []
 })
 
@@ -45,6 +45,8 @@ export default function Todos() {
   const setTaskId = useFocusStore((s) => s.setTaskId)
   const todoQuickTags = useAppStore((s) => s.todoQuickTags)
   const addTodoQuickTag = useAppStore((s) => s.addTodoQuickTag)
+  const todoSort = useAppStore((s) => s.settings.todoSort)
+  const setSettings = useAppStore((s) => s.setSettings)
   const navigate = useNavigate()
 
   const [filter, setFilter] = useState<Filter>('all')
@@ -75,9 +77,16 @@ export default function Todos() {
   const filtered = [...todos]
     .sort((a, b) => {
       if (a.completed !== b.completed) return a.completed ? 1 : -1
-      if (a.priority !== b.priority) return b.priority - a.priority
-      if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate)
-      return b.createdAt.localeCompare(a.createdAt)
+      if (todoSort === 'priority') {
+        const pa = a.priority ?? 0
+        const pb = b.priority ?? 0
+        if (pa !== pb) return pb - pa
+      }
+      const timeKey = (td: Todo): string =>
+        `${td.startMinute !== undefined ? String(td.startMinute).padStart(4, '0') : '9999'}-${
+          td.dueDate || '9999-99-99'
+        }-${td.createdAt}`
+      return timeKey(a).localeCompare(timeKey(b))
     })
     .filter((td) => {
       if (filter === 'done') return td.completed
@@ -99,11 +108,14 @@ export default function Todos() {
       title: todo.title,
       notes: todo.notes,
       dueDate: todo.dueDate,
-      priority: (todo.priority === 0 ? 2 : todo.priority) as 1 | 2 | 3,
+      priority:
+        (todo as { priority?: unknown }).priority === 0
+          ? undefined
+          : (todo.priority as 1 | 2 | 3 | undefined),
       startMinute: todo.startMinute,
       endMinute: todo.endMinute,
       reminderMinutes: todo.reminderMinutes,
-      color: todo.color ?? 'indigo',
+      color: todo.color ?? null,
       tags: todo.tags ?? []
     })
     setEditing(todo)
@@ -120,9 +132,16 @@ export default function Todos() {
         setBatchError(true)
         return
       }
+      const counts = colorCounts(todos)
       for (const line of lines) {
         const existing = todos.find((td) => td.title.trim() === line)
-        const color = existing ? (existing.color ?? 'indigo') : form.color
+        let color: CourseColor
+        if (existing) color = existing.color ?? 'indigo'
+        else if (form.color) color = form.color
+        else {
+          color = leastUsedColor(counts)
+          counts.set(color, (counts.get(color) ?? 0) + 1)
+        }
         addTodo({
           title: line,
           notes: '',
@@ -143,12 +162,12 @@ export default function Todos() {
     const sameTitle = todos.filter((td) => td.title.trim() === form.title.trim() && td.id !== selfId)
     const renamed =
       editing !== 'new' && editing !== null && editing.title.trim() !== form.title.trim()
-    const color =
+    const color: CourseColor =
       renamed || editing === 'new'
         ? sameTitle.length > 0
           ? (sameTitle[0].color ?? 'indigo')
-          : form.color
-        : form.color
+          : form.color ?? leastUsedColor(colorCounts(todos))
+        : form.color ?? 'indigo'
     const payload = { ...form, title: form.title.trim(), color, tags: [...form.tags] }
     if (editing === 'new') {
       addTodo(payload)
@@ -200,6 +219,29 @@ export default function Todos() {
 
   const priorityLabel = (p: number) => t(lang, `pri${Math.max(1, Math.min(3, p))}` as 'pri1')
 
+  const colorCounts = (list: Todo[]): Map<string, number> => {
+    const counts = new Map<string, number>()
+    for (const c of COURSE_COLORS) counts.set(c, 0)
+    for (const td of list) {
+      const col = td.color ?? 'indigo'
+      counts.set(col, (counts.get(col) ?? 0) + 1)
+    }
+    return counts
+  }
+
+  const leastUsedColor = (counts: Map<string, number>): CourseColor => {
+    let best: CourseColor = 'indigo'
+    let bestCount = Infinity
+    for (const c of COURSE_COLORS) {
+      const n = counts.get(c) ?? 0
+      if (n < bestCount) {
+        best = c
+        bestCount = n
+      }
+    }
+    return best
+  }
+
   return (
     <div className="page page-todos">
       <header className="page-head">
@@ -215,6 +257,21 @@ export default function Todos() {
       </header>
 
       {focusActive ? <div className="banner banner-lock">{t(lang, 'lockedBanner')}</div> : null}
+
+      <div className="seg seg-sm sort-seg">
+        <button
+          className={`seg-item${todoSort === 'time' ? ' active' : ''}`}
+          onClick={() => setSettings({ todoSort: 'time' })}
+        >
+          {t(lang, 'sortTime')}
+        </button>
+        <button
+          className={`seg-item${todoSort === 'priority' ? ' active' : ''}`}
+          onClick={() => setSettings({ todoSort: 'priority' })}
+        >
+          {t(lang, 'sortPriority')}
+        </button>
+      </div>
 
       <div className="filter-chips">
         <button className={`sound-chip${filter === 'all' ? ' active' : ''}`} onClick={() => setFilter('all')}>
@@ -251,7 +308,11 @@ export default function Todos() {
                 {todo.notes ? <span className="muted todo-notes">{todo.notes}</span> : null}
                 <span className="todo-meta">
                   <i className={`todo-color-dot color-${todo.color ?? 'indigo'}`} />
-                  <span className={`chip chip-pri-${todo.priority}`}>{priorityLabel(todo.priority)}</span>
+                  {todo.priority ? (
+                    <span className={`chip chip-pri-${todo.priority}`}>
+                      {priorityLabel(todo.priority)}
+                    </span>
+                  ) : null}
                   {todo.dueDate ? (
                     <span className={`chip${todo.dueDate < today && !todo.completed ? ' chip-overdue' : ''}`}>
                       {todo.dueDate < today && !todo.completed ? `${t(lang, 'overdue')} · ` : ''}
@@ -370,9 +431,16 @@ export default function Todos() {
               <span>{t(lang, 'priority')}</span>
               <select
                 className="select"
-                value={form.priority}
-                onChange={(e) => setForm({ ...form, priority: Number(e.target.value) as 1 | 2 | 3 })}
+                value={form.priority ?? ''}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    priority:
+                      e.target.value === '' ? undefined : (Number(e.target.value) as 1 | 2 | 3)
+                  })
+                }
               >
+                <option value="">{t(lang, 'none')}</option>
                 {[1, 2, 3].map((p) => (
                   <option key={p} value={p}>
                     {t(lang, `pri${p}` as 'pri1')}
@@ -427,6 +495,13 @@ export default function Todos() {
           <div className="field">
             <span>{t(lang, 'color')}</span>
             <div className="color-picker">
+              <button
+                type="button"
+                className={`sound-chip${form.color === null ? ' active' : ''}`}
+                onClick={() => setForm({ ...form, color: null })}
+              >
+                {t(lang, 'colorAuto')}
+              </button>
               {COURSE_COLORS.map((c) => (
                 <button
                   key={c}

@@ -23,7 +23,7 @@ function todos(completed: number): Todo[] {
     title: 'x',
     notes: '',
     dueDate: '',
-    priority: 0,
+    priority: 2,
     completed: true,
     completedAt: '2026-08-01T00:00:00.000Z',
     createdAt: '2026-08-01T00:00:00.000Z',

@@ -154,15 +154,15 @@ describe('v1.9 home today courses', () => {
 describe('v1.9 focus duration control', () => {
   beforeEach(resetStores)
 
-  it('updates settings and the idle countdown via input with a 15 minute floor', () => {
+  it('updates settings and the idle countdown via input with a 10 minute floor', () => {
     render(<Focus />)
     const input = screen.getByLabelText('专注时长（分钟）') as HTMLInputElement
     fireEvent.change(input, { target: { value: '60' } })
     expect(useAppStore.getState().settings.pomodoroMinutes).toBe(60)
     expect(useFocusStore.getState().timer.remainingSeconds).toBe(60 * 60)
     fireEvent.change(input, { target: { value: '10' } })
-    expect(useAppStore.getState().settings.pomodoroMinutes).toBe(15)
-    expect(useFocusStore.getState().timer.remainingSeconds).toBe(15 * 60)
+    expect(useAppStore.getState().settings.pomodoroMinutes).toBe(10)
+    expect(useFocusStore.getState().timer.remainingSeconds).toBe(10 * 60)
   })
 
   it('applies quick chips', () => {
