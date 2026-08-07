@@ -8,7 +8,7 @@ import './styles/base.css'
 import './styles/components.css'
 import './styles/pages.css'
 
-const APP_VERSION = '1.2.2'
+const APP_VERSION = '1.2.3'
 const VERSION_KEY = 'discipline-app-version'
 
 if (!__SINGLE_FILE__) {
