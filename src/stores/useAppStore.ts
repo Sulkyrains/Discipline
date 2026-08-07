@@ -46,7 +46,15 @@ interface AppStoreState extends AppData {
   addCourse: (course: Omit<Course, 'id'>) => void
   updateCourse: (id: string, patch: Partial<Course>) => void
   removeCourse: (id: string) => void
-  addTodo: (input: { title: string; notes: string; dueDate: string; priority: 1 | 2 | 3 }) => void
+  addTodo: (input: {
+    title: string
+    notes: string
+    dueDate: string
+    priority: 1 | 2 | 3
+    startMinute?: number
+    endMinute?: number
+    reminderMinutes?: number
+  }) => void
   updateTodo: (id: string, patch: Partial<Todo>) => void
   toggleTodo: (id: string) => AchievementDef[]
   removeTodo: (id: string) => void
@@ -139,6 +147,9 @@ export const useAppStore = create<AppStoreState>()(
           title: input.title,
           notes: input.notes,
           dueDate: input.dueDate,
+          startMinute: input.startMinute,
+          endMinute: input.endMinute,
+          reminderMinutes: input.reminderMinutes,
           priority: input.priority,
           completed: false,
           completedAt: '',

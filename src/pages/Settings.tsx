@@ -14,8 +14,10 @@ import ConfirmDialog from '../components/ConfirmDialog'
 const THEME_NAMES: Record<ThemeId, { zh: string; en: string; dots: string[] }> = {
   'minimal-dark': { zh: '极简深色', en: 'Minimal dark', dots: ['#0B0F14', '#7C9CF5'] },
   'forest-light': { zh: '森林浅色', en: 'Forest light', dots: ['#F4F1E8', '#3E7C59'] },
-  vibrant: { zh: '活力彩色', en: 'Vibrant', dots: ['#FFF7EB', '#FF5C8A'] },
-  china: { zh: '中国风·朱砂', en: 'China cinnabar', dots: ['#A63A32', '#C89B3C'] }
+  vibrant: { zh: '活力粉色', en: 'Soft pink', dots: ['#FFF4F2', '#E0789C'] },
+  china: { zh: '中国风·朱砂', en: 'China cinnabar', dots: ['#A63A32', '#C89B3C'] },
+  gray: { zh: '灰色调', en: 'Gray', dots: ['#26292E', '#9AA1AB'] },
+  auto: { zh: '随时间渐变', en: 'Time gradient', dots: ['#F2F5FC', '#7C9CF5'] }
 }
 
 const DOCK_PATHS: Array<{ path: string; key: I18nKey }> = [

@@ -536,22 +536,33 @@
   margin-bottom: 10px;
 }
 
-.bound-task {
+.bind-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.bind-row .field {
+  flex: 1;
+}
+
+.app-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.app-picker-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.bound-task-title {
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.bound-task-title.done {
-  color: var(--muted);
-  text-decoration: line-through;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 650;
+  text-align: left;
 }
 
 /* Stats charts */

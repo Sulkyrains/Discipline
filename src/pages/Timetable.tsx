@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { t } from '../lib/i18n'
 import type { Course, CourseColor, Parity } from '../types'
 import { COURSE_COLORS } from '../types'
-import { minuteToHHMM, nowMinute } from '../lib/format'
+import { minuteToHHMM, nowMinute, timeToMinute } from '../lib/format'
 import {
   courseWeekLabel,
   coursesOnDay,
@@ -10,7 +10,6 @@ import {
   currentWeekNumber,
   isCourseOngoing,
   nextCourse,
-  TIME_OPTIONS,
   WEEKDAY_EN,
   WEEKDAY_ZH
 } from '../lib/timetable'
@@ -19,8 +18,6 @@ import { useFocusStore } from '../stores/useFocusStore'
 import Sheet from '../components/Sheet'
 import EmptyState from '../components/EmptyState'
 import ConfirmDialog from '../components/ConfirmDialog'
-
-const REMINDER_OPTIONS = [0, 5, 10, 15, 30]
 
 interface CourseForm {
   name: string
@@ -304,31 +301,27 @@ export default function Timetable() {
           <div className="form-row">
             <label className="field">
               <span>{t(lang, 'startTime')}</span>
-              <select
-                className="select"
-                value={form.startMinute}
-                onChange={(e) => setForm({ ...form, startMinute: Number(e.target.value) })}
-              >
-                {TIME_OPTIONS.map((m) => (
-                  <option key={m} value={m}>
-                    {minuteToHHMM(m)}
-                  </option>
-                ))}
-              </select>
+              <input
+                className="input"
+                type="time"
+                value={minuteToHHMM(form.startMinute)}
+                onChange={(e) => {
+                  const m = timeToMinute(e.target.value)
+                  if (m !== null) setForm({ ...form, startMinute: m })
+                }}
+              />
             </label>
             <label className="field">
               <span>{t(lang, 'endTime')}</span>
-              <select
-                className="select"
-                value={form.endMinute}
-                onChange={(e) => setForm({ ...form, endMinute: Number(e.target.value) })}
-              >
-                {TIME_OPTIONS.map((m) => (
-                  <option key={m} value={m}>
-                    {minuteToHHMM(m)}
-                  </option>
-                ))}
-              </select>
+              <input
+                className="input"
+                type="time"
+                value={minuteToHHMM(form.endMinute)}
+                onChange={(e) => {
+                  const m = timeToMinute(e.target.value)
+                  if (m !== null) setForm({ ...form, endMinute: m })
+                }}
+              />
             </label>
           </div>
           {errors.time ? <span className="form-error">{errors.time}</span> : null}
@@ -392,17 +385,17 @@ export default function Timetable() {
           </label>
           <label className="field">
             <span>{t(lang, 'reminder')}</span>
-            <select
-              className="select"
+            <input
+              className="input"
+              type="number"
+              min={0}
+              max={60}
+              step={5}
               value={form.reminderMinutes}
-              onChange={(e) => setForm({ ...form, reminderMinutes: Number(e.target.value) })}
-            >
-              {REMINDER_OPTIONS.map((m) => (
-                <option key={m} value={m}>
-                  {m === 0 ? t(lang, 'none') : `${m} ${t(lang, 'minutesBefore')}`}
-                </option>
-              ))}
-            </select>
+              onChange={(e) =>
+                setForm({ ...form, reminderMinutes: Math.max(0, Math.min(60, Number(e.target.value) || 0)) })
+              }
+            />
           </label>
           <div className="form-actions">
             {editing !== 'new' && editing ? (

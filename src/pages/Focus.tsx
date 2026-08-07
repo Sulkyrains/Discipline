@@ -3,6 +3,8 @@ import { t } from '../lib/i18n'
 import { isFocusActive, minutesToSeconds, type TimerPhase } from '../lib/timer'
 import { dateKey, todayKey } from '../lib/format'
 import { SOUNDS } from '../lib/audio'
+import { COMMON_APPS } from '../lib/appWhitelist'
+import { listInstalledApps } from '../lib/focusLock'
 import { playUiSound } from '../lib/uiSound'
 import { useAppStore } from '../stores/useAppStore'
 import { useFocusStore } from '../stores/useFocusStore'
@@ -12,6 +14,7 @@ import type { WhitelistApp } from '../types'
 import ProgressRing from '../components/ProgressRing'
 import ConfirmDialog from '../components/ConfirmDialog'
 import Confetti from '../components/Confetti'
+import Sheet from '../components/Sheet'
 
 function fmtSeconds(total: number): string {
   const m = Math.floor(total / 60)
@@ -40,12 +43,10 @@ export default function Focus() {
 
   const [confirmAbandon, setConfirmAbandon] = useState(false)
   const [confetti, setConfetti] = useState(false)
-  const [newAppName, setNewAppName] = useState('')
-  const [newAppPkg, setNewAppPkg] = useState('')
-  const [whitelistError, setWhitelistError] = useState(false)
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [installedApps, setInstalledApps] = useState<WhitelistApp[]>([])
 
   const active = isFocusActive(timer)
-  const boundTodo = todos.find((td) => td.id === taskId)
   const abandonedToday = abandonDates.filter((d) => dateKey(new Date(d)) === todayKey()).length
   const abandonBlocked = abandonedToday >= 3
 
@@ -95,6 +96,7 @@ export default function Focus() {
     if (!taskId) return
     playUiSound('pop')
     const unlocked = toggleTodo(taskId)
+    setTaskId(null)
     for (const def of unlocked) {
       useToastStore.getState().push({
         title: `🏆 ${t(lang, 'viewAchievements')} · ${lang === 'zh' ? def.zh : def.en}`,
@@ -109,19 +111,11 @@ export default function Focus() {
     setTaskId(id || null)
   }
 
-  const addWhitelist = () => {
-    const name = newAppName.trim()
-    const pkg = newAppPkg.trim()
-    if (!name || !pkg) {
-      setWhitelistError(true)
-      return
-    }
-    const app: WhitelistApp = { id: pkg, name, system: false }
-    addWhitelistApp(app)
-    setNewAppName('')
-    setNewAppPkg('')
-    setWhitelistError(false)
+  const openPicker = async () => {
     playUiSound('soft')
+    const apps = await listInstalledApps()
+    setInstalledApps(apps.length > 0 ? apps.map((a) => ({ id: a.id, name: a.name, system: false })) : COMMON_APPS)
+    setPickerOpen(true)
   }
 
   const phaseMinutes =
@@ -227,12 +221,20 @@ export default function Focus() {
         </div>
       ) : null}
 
-      {!active ? (
-        <div className="card bind-card">
+      <div className="card bind-card">
+        <div className="bind-row">
           <label className="field">
-            <span>{t(lang, 'bindTask')}</span>
-            <select className="select" value={taskId ?? ''} onChange={(e) => setTaskId(e.target.value || null)}>
-              <option value="">{t(lang, 'noTaskHint')}</option>
+            <span>{t(lang, 'switchTask')}</span>
+            <select
+              className="select"
+              value={taskId ?? ''}
+              onChange={(e) => switchBoundTask(e.target.value)}
+            >
+              {!taskId || !todos.some((td) => !td.completed && td.id === taskId) ? (
+                <option value="" disabled>
+                  {t(lang, 'selectTask')}
+                </option>
+              ) : null}
               {todos
                 .filter((td) => !td.completed)
                 .map((td) => (
@@ -242,43 +244,17 @@ export default function Focus() {
                 ))}
             </select>
           </label>
-        </div>
-      ) : (
-        <div className="card bind-card">
-          <h3 className="section-title">{t(lang, 'bindTask')}</h3>
-          <div className="bound-task">
-            {boundTodo ? (
-              <>
-                <span className={`bound-task-title${boundTodo.completed ? ' done' : ''}`}>
-                  {boundTodo.title}
-                </span>
-                <button className="btn btn-primary btn-sm" onClick={completeBoundTask}>
-                  {t(lang, 'completeTask')}
-                </button>
-              </>
-            ) : (
-              <span className="muted small">{t(lang, 'noTaskHint')}</span>
-            )}
-          </div>
-          <label className="field">
-            <span>{t(lang, 'switchTask')}</span>
-            <select
-              className="select"
-              value={taskId ?? ''}
-              onChange={(e) => switchBoundTask(e.target.value)}
+          {active ? (
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={completeBoundTask}
+              disabled={!taskId}
             >
-              <option value="">{t(lang, 'noTaskHint')}</option>
-              {todos
-                .filter((td) => !td.completed && td.id !== taskId)
-                .map((td) => (
-                  <option key={td.id} value={td.id}>
-                    {td.title}
-                  </option>
-                ))}
-            </select>
-          </label>
+              {t(lang, 'completeTask')}
+            </button>
+          ) : null}
         </div>
-      )}
+      </div>
 
       <div className="card whitelist-card">
         <div className="whitelist-head">
@@ -293,7 +269,6 @@ export default function Focus() {
               <div key={app.id} className="whitelist-row">
                 <span className="whitelist-name">{app.name}</span>
                 {app.system ? <span className="chip">{t(lang, 'systemApp')}</span> : null}
-                <span className="muted small whitelist-pkg">{app.id}</span>
                 {!active ? (
                   <button
                     className="btn btn-danger btn-sm"
@@ -307,35 +282,9 @@ export default function Focus() {
           </div>
         )}
         {!active ? (
-          <div className="whitelist-add">
-            <label className="field">
-              <span>{t(lang, 'appName')}</span>
-              <input
-                className="input"
-                value={newAppName}
-                onChange={(e) => {
-                  setNewAppName(e.target.value)
-                  setWhitelistError(false)
-                }}
-              />
-            </label>
-            <label className="field">
-              <span>{t(lang, 'packageName')}</span>
-              <input
-                className="input"
-                value={newAppPkg}
-                placeholder="com.example.app"
-                onChange={(e) => {
-                  setNewAppPkg(e.target.value)
-                  setWhitelistError(false)
-                }}
-              />
-            </label>
-            {whitelistError ? <span className="form-error">{t(lang, 'courseNameRequired')}</span> : null}
-            <button className="btn btn-primary btn-sm" onClick={addWhitelist}>
-              + {t(lang, 'addApp')}
-            </button>
-          </div>
+          <button className="btn btn-primary btn-sm" onClick={() => void openPicker()}>
+            + {t(lang, 'whitelistAdd')}
+          </button>
         ) : null}
         <p className="muted small">{t(lang, 'whitelistHint')}</p>
       </div>
@@ -379,6 +328,35 @@ export default function Focus() {
         onConfirm={confirmAbandonAction}
         onCancel={() => setConfirmAbandon(false)}
       />
+
+      <Sheet
+        open={pickerOpen}
+        title={t(lang, 'whitelistPickerTitle')}
+        onClose={() => setPickerOpen(false)}
+      >
+        <div className="app-picker-list">
+          {installedApps.filter((a) => !appWhitelist.some((w) => w.id === a.id)).length === 0 ? (
+            <p className="muted">{t(lang, 'emptyWhitelist')}</p>
+          ) : (
+            installedApps
+              .filter((a) => !appWhitelist.some((w) => w.id === a.id))
+              .map((a) => (
+                <button
+                  key={a.id}
+                  type="button"
+                  className="app-picker-row"
+                  onClick={() => {
+                    addWhitelistApp(a)
+                    setPickerOpen(false)
+                    playUiSound('soft')
+                  }}
+                >
+                  {a.name}
+                </button>
+              ))
+          )}
+        </div>
+      </Sheet>
 
       {confetti ? <Confetti /> : null}
     </div>

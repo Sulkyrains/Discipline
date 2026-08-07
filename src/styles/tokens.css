@@ -52,23 +52,23 @@
 }
 
 [data-theme='vibrant'] {
-  --bg: #fff7eb;
-  --bg-glow-1: rgba(255, 92, 138, 0.14);
-  --bg-glow-2: rgba(108, 92, 231, 0.12);
+  --bg: #fff4f2;
+  --bg-glow-1: rgba(224, 120, 156, 0.12);
+  --bg-glow-2: rgba(138, 127, 214, 0.1);
   --surface: #ffffff;
-  --surface-2: #fff0f5;
-  --surface-3: #f1ecff;
-  --text: #241f31;
-  --muted: #8a7f93;
-  --border: rgba(36, 31, 49, 0.1);
-  --primary: #ff5c8a;
-  --primary-2: #6c5ce7;
-  --accent: #ffb347;
-  --danger: #e5484d;
-  --success: #2ebd85;
-  --warn: #f0a020;
-  --logo-bg: #fff7eb;
-  --chart-grid: rgba(36, 31, 49, 0.1);
+  --surface-2: #fbebf1;
+  --surface-3: #f2eefb;
+  --text: #2a2430;
+  --muted: #8d7f8a;
+  --border: rgba(42, 36, 48, 0.1);
+  --primary: #e0789c;
+  --primary-2: #8a7fd6;
+  --accent: #f0a0b8;
+  --danger: #d65b6f;
+  --success: #5fa98c;
+  --warn: #d9a441;
+  --logo-bg: #fff4f2;
+  --chart-grid: rgba(42, 36, 48, 0.1);
   color-scheme: light;
 }
 
@@ -91,6 +91,48 @@
   --logo-bg: #f4eee3;
   --chart-grid: rgba(46, 42, 37, 0.1);
   --font: 'Noto Serif SC', 'Songti SC', 'STSong', 'SimSun', 'Microsoft YaHei', serif;
+  color-scheme: light;
+}
+
+[data-theme='gray'] {
+  --bg: #26292e;
+  --bg-glow-1: rgba(255, 255, 255, 0.05);
+  --bg-glow-2: rgba(255, 255, 255, 0.03);
+  --surface: #2e3238;
+  --surface-2: #383d45;
+  --surface-3: #434952;
+  --text: #e8eaee;
+  --muted: #9aa1ab;
+  --border: rgba(255, 255, 255, 0.08);
+  --primary: #9aa1ab;
+  --primary-2: #c3c8cf;
+  --accent: #b7bdc5;
+  --danger: #c98a8a;
+  --success: #93b5a5;
+  --warn: #c9b08a;
+  --logo-bg: #26292e;
+  --chart-grid: rgba(255, 255, 255, 0.06);
+  color-scheme: dark;
+}
+
+[data-theme='auto'] {
+  --bg: #f2f5fc;
+  --bg-glow-1: rgba(124, 156, 245, 0.12);
+  --bg-glow-2: rgba(94, 234, 212, 0.08);
+  --surface: #fbfcff;
+  --surface-2: #eef2fb;
+  --surface-3: #e2e9f7;
+  --text: #26303f;
+  --muted: #6f7c92;
+  --border: rgba(38, 48, 63, 0.1);
+  --primary: #7c9cf5;
+  --primary-2: #5eead4;
+  --accent: #f5a97c;
+  --danger: #f4717f;
+  --success: #6bd89a;
+  --warn: #eac06e;
+  --logo-bg: #f2f5fc;
+  --chart-grid: rgba(38, 48, 63, 0.08);
   color-scheme: light;
 }
 

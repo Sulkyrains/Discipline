@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { t } from '../lib/i18n'
 import type { Todo } from '../types'
-import { addDays, dateKey, formatDateCN, todayKey } from '../lib/format'
+import { addDays, dateKey, formatDateCN, minuteToHHMM, timeToMinute, todayKey } from '../lib/format'
 import { useAppStore } from '../stores/useAppStore'
 import { useFocusStore } from '../stores/useFocusStore'
 import { useToastStore } from '../stores/useToastStore'
@@ -17,6 +17,9 @@ interface TodoForm {
   notes: string
   dueDate: string
   priority: 1 | 2 | 3
+  startMinute?: number
+  endMinute?: number
+  reminderMinutes?: number
 }
 
 const emptyForm = (): TodoForm => ({ title: '', notes: '', dueDate: '', priority: 2 })
@@ -83,7 +86,10 @@ export default function Todos() {
       title: todo.title,
       notes: todo.notes,
       dueDate: todo.dueDate,
-      priority: (todo.priority === 0 ? 2 : todo.priority) as 1 | 2 | 3
+      priority: (todo.priority === 0 ? 2 : todo.priority) as 1 | 2 | 3,
+      startMinute: todo.startMinute,
+      endMinute: todo.endMinute,
+      reminderMinutes: todo.reminderMinutes
     })
     setEditing(todo)
   }
@@ -99,7 +105,15 @@ export default function Todos() {
         return
       }
       for (const line of lines) {
-        addTodo({ title: line, notes: '', dueDate: form.dueDate, priority: form.priority })
+        addTodo({
+          title: line,
+          notes: '',
+          dueDate: form.dueDate,
+          priority: form.priority,
+          startMinute: form.startMinute,
+          endMinute: form.endMinute,
+          reminderMinutes: form.reminderMinutes
+        })
       }
       setEditing(null)
       return
@@ -186,6 +200,13 @@ export default function Todos() {
                     <span className={`chip${todo.dueDate < today && !todo.completed ? ' chip-overdue' : ''}`}>
                       {todo.dueDate < today && !todo.completed ? `${t(lang, 'overdue')} · ` : ''}
                       {formatDateCN(todo.dueDate)}
+                    </span>
+                  ) : null}
+                  {todo.startMinute !== undefined ? (
+                    <span className="chip">
+                      {minuteToHHMM(todo.startMinute)}
+                      {todo.endMinute !== undefined ? `–${minuteToHHMM(todo.endMinute)}` : ''}
+                      {todo.reminderMinutes ? ` · 🔔${todo.reminderMinutes}` : ''}
                     </span>
                   ) : null}
                   {todo.focusCount > 0 ? <span className="chip">🎯 ×{todo.focusCount}</span> : null}
@@ -299,6 +320,49 @@ export default function Todos() {
               </select>
             </label>
           </div>
+          <div className="form-row">
+            <label className="field">
+              <span>{t(lang, 'startTime')}</span>
+              <input
+                className="input"
+                type="time"
+                value={form.startMinute !== undefined ? minuteToHHMM(form.startMinute) : ''}
+                onChange={(e) => {
+                  const m = timeToMinute(e.target.value)
+                  setForm({ ...form, startMinute: m ?? undefined })
+                }}
+              />
+            </label>
+            <label className="field">
+              <span>{t(lang, 'endTime')}</span>
+              <input
+                className="input"
+                type="time"
+                value={form.endMinute !== undefined ? minuteToHHMM(form.endMinute) : ''}
+                onChange={(e) => {
+                  const m = timeToMinute(e.target.value)
+                  setForm({ ...form, endMinute: m ?? undefined })
+                }}
+              />
+            </label>
+          </div>
+          <label className="field">
+            <span>{t(lang, 'reminderShort')}</span>
+            <input
+              className="input"
+              type="number"
+              min={0}
+              max={60}
+              step={5}
+              value={form.reminderMinutes ?? 0}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  reminderMinutes: Math.max(0, Math.min(60, Number(e.target.value) || 0))
+                })
+              }
+            />
+          </label>
           <div className="sound-chips date-chips">
             {dateQuick.map((d) => (
               <button

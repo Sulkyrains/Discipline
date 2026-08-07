@@ -1,11 +1,18 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { THEME_META } from './lib/theme'
-import { isNative, notify, scheduleClassReminders, upcomingClassReminders } from './lib/notifications'
+import {
+  isNative,
+  notify,
+  scheduleClassReminders,
+  todoReminderAt,
+  upcomingClassReminders
+} from './lib/notifications'
 import { t } from './lib/i18n'
 import { todayKey } from './lib/format'
 import { computeSignIns } from './lib/stats'
 import { playUiSound } from './lib/uiSound'
+import { applyAutoTheme, clearAutoTheme } from './lib/autoTheme'
 import { syncFocusLockActive, syncFocusLockWhitelist } from './lib/focusLock'
 import { useAppStore } from './stores/useAppStore'
 import { useAuthStore } from './stores/useAuthStore'
@@ -43,6 +50,7 @@ function RouteFallback() {
 export default function App() {
   const settings = useAppStore((s) => s.settings)
   const courses = useAppStore((s) => s.courses)
+  const todos = useAppStore((s) => s.todos)
   const location = useLocation()
   const focusActive = useFocusStore((s) => s.active)
   const appWhitelist = useAppStore((s) => s.appWhitelist)
@@ -52,8 +60,15 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = settings.theme
+    if (settings.theme === 'auto') {
+      applyAutoTheme(new Date())
+      const iv = window.setInterval(() => applyAutoTheme(new Date()), 60 * 1000)
+      return () => window.clearInterval(iv)
+    }
+    clearAutoTheme()
     const meta = document.querySelector('meta[name="theme-color"]')
     if (meta) meta.setAttribute('content', THEME_META[settings.theme])
+    return undefined
   }, [settings.theme])
 
   useEffect(() => {
@@ -156,11 +171,24 @@ export default function App() {
           useToastStore.getState().push({ title: t(lang, 'classReminder'), body, kind: 'info' })
         }
       }
+      const todoCandidates = todos.filter(
+        (td) => !td.completed && td.dueDate === todayKey()
+      )
+      for (const td of todoCandidates) {
+        const at = todoReminderAt(td)
+        if (!at) continue
+        const diffSec = Math.round((at.getTime() - now.getTime()) / 1000)
+        if (diffSec <= 45 && diffSec >= -30 && !firedRef.current.has('todo-' + td.id)) {
+          firedRef.current.add('todo-' + td.id)
+          void notify(t(lang, 'todoReminder'), td.title)
+          useToastStore.getState().push({ title: t(lang, 'todoReminder'), body: td.title, kind: 'info' })
+        }
+      }
     }
     check()
     const iv = window.setInterval(check, 20000)
     return () => window.clearInterval(iv)
-  }, [courses, settings.semesterStart, settings.reminderMinutes])
+  }, [courses, todos, settings.semesterStart, settings.reminderMinutes])
 
   useEffect(() => {
     if (!isNative()) return

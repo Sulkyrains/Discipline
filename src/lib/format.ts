@@ -51,6 +51,25 @@ export function minuteToHHMM(m: number): string {
   return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`
 }
 
+export function timeToMinute(value: string): number | null {
+  const s = value.trim()
+  if (!s) return null
+  let h = 0
+  let m = 0
+  if (s.includes(':')) {
+    const parts = s.split(':')
+    h = Number(parts[0])
+    m = Number(parts[1])
+  } else if (/^\d{3,4}$/.test(s)) {
+    h = Number(s.slice(0, s.length - 2))
+    m = Number(s.slice(-2))
+  } else {
+    return null
+  }
+  if (!Number.isInteger(h) || !Number.isInteger(m) || h < 0 || h > 23 || m < 0 || m > 59) return null
+  return h * 60 + m
+}
+
 export function nowMinute(): number {
   const d = new Date()
   return d.getHours() * 60 + d.getMinutes()

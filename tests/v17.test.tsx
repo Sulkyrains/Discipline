@@ -190,7 +190,7 @@ describe('v1.7 china theme', () => {
       </MemoryRouter>
     )
     const options = document.querySelectorAll('.theme-option')
-    expect(options.length).toBe(4)
+    expect(options.length).toBe(6)
     fireEvent.click(screen.getByText('中国风·朱砂'))
     expect(useAppStore.getState().settings.theme).toBe('china')
   })

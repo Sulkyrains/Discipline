@@ -18,6 +18,19 @@ export function defaultWhitelist(): WhitelistApp[] {
   return DEFAULT_SYSTEM_APPS.map((a) => ({ ...a }))
 }
 
+export const COMMON_APPS: WhitelistApp[] = [
+  { id: 'com.tencent.mm', name: '微信', system: false },
+  { id: 'com.tencent.mobileqq', name: 'QQ', system: false },
+  { id: 'com.ss.android.ugc.aweme', name: '抖音', system: false },
+  { id: 'tv.danmaku.bili', name: '哔哩哔哩', system: false },
+  { id: 'com.zhihu.android', name: '知乎', system: false },
+  { id: 'com.sina.weibo', name: '微博', system: false },
+  { id: 'com.xingin.xhs', name: '小红书', system: false },
+  { id: 'com.netease.cloudmusic', name: '网易云音乐', system: false },
+  { id: 'com.eg.android.AlipayGphone', name: '支付宝', system: false },
+  { id: 'com.taobao.taobao', name: '淘宝', system: false }
+]
+
 export function whitelistPackages(list: WhitelistApp[]): string[] {
   return list.map((a) => a.id)
 }

@@ -1,6 +1,6 @@
 export type Language = 'zh' | 'en'
 export type Parity = 'all' | 'odd' | 'even'
-export type ThemeId = 'minimal-dark' | 'forest-light' | 'vibrant' | 'china'
+export type ThemeId = 'minimal-dark' | 'forest-light' | 'vibrant' | 'china' | 'gray' | 'auto'
 export type UiSoundId = 'off' | 'soft' | 'pop' | 'tick' | 'bell'
 
 export const COURSE_COLORS = ['indigo', 'mint', 'sun', 'coral', 'sky', 'rose', 'violet', 'teal', 'amber'] as const
@@ -27,6 +27,9 @@ export interface Todo {
   title: string
   notes: string
   dueDate: string // YYYY-MM-DD or ''
+  startMinute?: number // optional planned start time
+  endMinute?: number // optional planned end time
+  reminderMinutes?: number // optional reminder, 0..60 minutes before start
   priority: 0 | 1 | 2 | 3
   completed: boolean
   completedAt: string // ISO or ''

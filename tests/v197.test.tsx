@@ -92,11 +92,10 @@ describe('v1.9.7 app whitelist', () => {
     expect(useAppStore.getState().appWhitelist).toHaveLength(DEFAULT_SYSTEM_APPS.length)
   })
 
-  it('lets the user add an app from the focus page when idle', () => {
+  it('lets the user add an app from the app picker when idle', async () => {
     render(<Focus />)
-    fireEvent.change(screen.getByLabelText('应用名称'), { target: { value: '微信' } })
-    fireEvent.change(screen.getByLabelText('包名'), { target: { value: 'com.tencent.mm' } })
-    fireEvent.click(screen.getByText(/添加应用/))
+    fireEvent.click(screen.getByText(/从应用列表添加/))
+    fireEvent.click(await screen.findByText('微信'))
     expect(useAppStore.getState().appWhitelist.some((a) => a.id === 'com.tencent.mm')).toBe(true)
   })
 
@@ -108,7 +107,7 @@ describe('v1.9.7 app whitelist', () => {
     })
     render(<Focus />)
     expect(screen.getByText('专注中不可编辑白名单')).toBeInTheDocument()
-    expect(screen.queryByText(/添加应用/)).toBeNull()
+    expect(screen.queryByText(/从应用列表添加/)).toBeNull()
     expect(screen.queryAllByText('删除')).toHaveLength(0)
   })
 })

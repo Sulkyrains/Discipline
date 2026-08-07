@@ -1,6 +1,6 @@
 import { Capacitor } from '@capacitor/core'
 import { LocalNotifications } from '@capacitor/local-notifications'
-import type { Course } from '../types'
+import type { Course, Todo } from '../types'
 import { dateKey } from './format'
 import { courseInWeek, currentWeekNumber } from './timetable'
 
@@ -97,6 +97,16 @@ export function upcomingClassReminders(
     }
   }
   return candidates.sort((a, b) => a.at.getTime() - b.at.getTime())
+}
+
+export function todoReminderAt(todo: Todo): Date | null {
+  if (!todo.dueDate || typeof todo.startMinute !== 'number' || (todo.reminderMinutes ?? 0) <= 0) {
+    return null
+  }
+  const [y, m, d] = todo.dueDate.split('-').map(Number)
+  const at = new Date(y, (m ?? 1) - 1, d ?? 1, Math.floor(todo.startMinute / 60), todo.startMinute % 60)
+  at.setMinutes(at.getMinutes() - (todo.reminderMinutes ?? 0))
+  return at
 }
 
 export async function scheduleClassReminders(
