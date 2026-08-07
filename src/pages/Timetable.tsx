@@ -25,7 +25,7 @@ interface CourseForm {
   name: string
   location: string
   teacher: string
-  dayOfWeek: number
+  weekdays: number[]
   startMinute: number
   endMinute: number
   weekStart: number
@@ -35,12 +35,12 @@ interface CourseForm {
   reminderMinutes: number
 }
 
-function emptyForm(): CourseForm {
+function emptyForm(day = 1): CourseForm {
   return {
     name: '',
     location: '',
     teacher: '',
-    dayOfWeek: 1,
+    weekdays: [day],
     startMinute: 480,
     endMinute: 510,
     weekStart: 1,
@@ -64,7 +64,7 @@ export default function Timetable() {
   const [editing, setEditing] = useState<Course | 'new' | null>(null)
   const [form, setForm] = useState<CourseForm>(emptyForm)
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const [errors, setErrors] = useState<{ name?: string; time?: string; weeks?: string }>({})
+  const [errors, setErrors] = useState<{ name?: string; time?: string; weeks?: string; day?: string }>({})
 
   const todayDOW = ((new Date().getDay() + 6) % 7) + 1
   const todayWeek = currentWeekNumber(semesterStart)
@@ -78,12 +78,13 @@ export default function Timetable() {
     if (editing === null || !form.name.trim()) return []
     return courses.filter((c) => {
       if (editing !== 'new' && c.id === editing.id) return false
-      return courseOverlaps(c, form)
+      if (!form.weekdays.includes(c.dayOfWeek)) return false
+      return courseOverlaps(c, { ...form, dayOfWeek: c.dayOfWeek })
     })
   }, [courses, form, editing])
 
   const openNew = () => {
-    setForm(emptyForm())
+    setForm(emptyForm(day))
     setErrors({})
     setEditing('new')
   }
@@ -93,7 +94,7 @@ export default function Timetable() {
       name: course.name,
       location: course.location,
       teacher: course.teacher,
-      dayOfWeek: course.dayOfWeek,
+      weekdays: [course.dayOfWeek],
       startMinute: course.startMinute,
       endMinute: course.endMinute,
       weekStart: course.weekStart,
@@ -107,18 +108,41 @@ export default function Timetable() {
   }
 
   const save = () => {
-    const nextErrors: { name?: string; time?: string; weeks?: string } = {}
+    const nextErrors: { name?: string; time?: string; weeks?: string; day?: string } = {}
     if (!form.name.trim()) nextErrors.name = t(lang, 'courseNameRequired')
+    if (form.weekdays.length === 0) nextErrors.day = t(lang, 'courseDayRequired')
     if (form.endMinute <= form.startMinute) nextErrors.time = t(lang, 'timeInvalid')
     if (form.weekEnd < form.weekStart) nextErrors.weeks = t(lang, 'weeksInvalid')
     setErrors(nextErrors)
     if (Object.keys(nextErrors).length > 0) return
+    const base = {
+      name: form.name.trim(),
+      location: form.location,
+      teacher: form.teacher,
+      startMinute: form.startMinute,
+      endMinute: form.endMinute,
+      weekStart: form.weekStart,
+      weekEnd: form.weekEnd,
+      parity: form.parity,
+      color: form.color,
+      reminderMinutes: form.reminderMinutes
+    }
     if (editing === 'new') {
-      addCourse({ ...form, name: form.name.trim() })
+      for (const w of form.weekdays) addCourse({ ...base, dayOfWeek: w })
     } else if (editing) {
-      updateCourse(editing.id, { ...form, name: form.name.trim() })
+      updateCourse(editing.id, { ...base, dayOfWeek: form.weekdays[0] })
+      for (const w of form.weekdays.slice(1)) addCourse({ ...base, dayOfWeek: w })
     }
     setEditing(null)
+  }
+
+  const toggleWeekday = (d: number) => {
+    setForm((f) => ({
+      ...f,
+      weekdays: f.weekdays.includes(d)
+        ? f.weekdays.filter((x) => x !== d)
+        : [...f.weekdays, d].sort((a, b) => a - b)
+    }))
   }
 
   return (
@@ -213,34 +237,40 @@ export default function Timetable() {
               <input className="input" value={form.teacher} onChange={(e) => setForm({ ...form, teacher: e.target.value })} />
             </label>
           </div>
-          <div className="form-row">
-            <label className="field">
-              <span>{t(lang, 'weekday')}</span>
-              <select
-                className="select"
-                value={form.dayOfWeek}
-                onChange={(e) => setForm({ ...form, dayOfWeek: Number(e.target.value) })}
-              >
-                {WEEKDAY_ZH.map((wz, i) => (
-                  <option key={i + 1} value={i + 1}>
-                    {lang === 'zh' ? `星期${wz}` : WEEKDAY_EN[i]}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="field">
-              <span>{t(lang, 'parity')}</span>
-              <select
-                className="select"
-                value={form.parity}
-                onChange={(e) => setForm({ ...form, parity: e.target.value as Parity })}
-              >
-                <option value="all">{t(lang, 'parityAll')}</option>
-                <option value="odd">{t(lang, 'parityOdd')}</option>
-                <option value="even">{t(lang, 'parityEven')}</option>
-              </select>
-            </label>
+          <div className="field">
+            <span>{t(lang, 'weekday')} *</span>
+            <div className="sound-chips">
+              {WEEKDAY_ZH.map((wz, i) => {
+                const d = i + 1
+                return (
+                  <button
+                    key={d}
+                    type="button"
+                    className={`sound-chip${form.weekdays.includes(d) ? ' active' : ''}`}
+                    onClick={() => toggleWeekday(d)}
+                  >
+                    {lang === 'zh' ? `周${wz}` : WEEKDAY_EN[i]}
+                  </button>
+                )
+              })}
+            </div>
+            {form.weekdays.length > 1 ? (
+              <p className="muted small">{t(lang, 'courseBatchCount', { n: form.weekdays.length })}</p>
+            ) : null}
+            {errors.day ? <span className="form-error">{errors.day}</span> : null}
           </div>
+          <label className="field">
+            <span>{t(lang, 'parity')}</span>
+            <select
+              className="select"
+              value={form.parity}
+              onChange={(e) => setForm({ ...form, parity: e.target.value as Parity })}
+            >
+              <option value="all">{t(lang, 'parityAll')}</option>
+              <option value="odd">{t(lang, 'parityOdd')}</option>
+              <option value="even">{t(lang, 'parityEven')}</option>
+            </select>
+          </label>
           <div className="form-row">
             <label className="field">
               <span>{t(lang, 'startTime')}</span>

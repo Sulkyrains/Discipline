@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import BottomNav from '../src/components/BottomNav'
 import Timetable from '../src/pages/Timetable'
 import Todos from '../src/pages/Todos'
+import { WEEKDAY_ZH } from '../src/lib/timetable'
 import { useAppStore } from '../src/stores/useAppStore'
 import { useFocusStore } from '../src/stores/useFocusStore'
 
@@ -96,6 +97,76 @@ describe('v1.3 add-course flow', () => {
     expect(screen.getByText('请输入课程名称')).toBeInTheDocument()
     expect(useAppStore.getState().courses).toHaveLength(0)
     expect(screen.getByRole('dialog')).toBeInTheDocument()
+  })
+
+  it('batch creates one course per selected weekday', () => {
+    render(
+      <MemoryRouter>
+        <Timetable />
+      </MemoryRouter>
+    )
+    fireEvent.click(screen.getByText(/添加课程/))
+    fireEvent.change(screen.getByPlaceholderText('高等数学'), {
+      target: { value: '英语' }
+    })
+    fireEvent.click(screen.getByText('周一'))
+    fireEvent.click(screen.getByText('周三'))
+    fireEvent.click(screen.getByText('保存课程'))
+    const courses = useAppStore.getState().courses
+    expect(courses.length).toBeGreaterThanOrEqual(2)
+    expect(courses.some((c) => c.dayOfWeek === 1 && c.name === '英语')).toBe(true)
+    expect(courses.some((c) => c.dayOfWeek === 3 && c.name === '英语')).toBe(true)
+  })
+
+  it('requires at least one weekday', () => {
+    render(
+      <MemoryRouter>
+        <Timetable />
+      </MemoryRouter>
+    )
+    fireEvent.click(screen.getByText(/添加课程/))
+    const todayDow = ((new Date().getDay() + 6) % 7) + 1
+    fireEvent.click(screen.getByText(`周${WEEKDAY_ZH[todayDow - 1]}`))
+    fireEvent.change(screen.getByPlaceholderText('高等数学'), {
+      target: { value: '体育' }
+    })
+    fireEvent.click(screen.getByText('保存课程'))
+    expect(screen.getByText('请选择星期')).toBeInTheDocument()
+    expect(useAppStore.getState().courses).toHaveLength(0)
+  })
+})
+
+describe('v1.5 batch add-todo', () => {
+  beforeEach(resetStores)
+
+  it('adds one todo per line with the shared date and priority', () => {
+    render(
+      <MemoryRouter>
+        <Todos />
+      </MemoryRouter>
+    )
+    fireEvent.click(screen.getByText(/添加待办/))
+    fireEvent.click(screen.getByText('批量添加'))
+    fireEvent.change(screen.getByPlaceholderText(/每行一条待办/), {
+      target: { value: '任务一\n任务二\n任务三' }
+    })
+    fireEvent.click(screen.getByText('保存'))
+    const todos = useAppStore.getState().todos
+    expect(todos).toHaveLength(3)
+    expect(todos.map((x) => x.title)).toEqual(expect.arrayContaining(['任务一', '任务二', '任务三']))
+  })
+
+  it('does not batch-add when the textarea is empty', () => {
+    render(
+      <MemoryRouter>
+        <Todos />
+      </MemoryRouter>
+    )
+    fireEvent.click(screen.getByText(/添加待办/))
+    fireEvent.click(screen.getByText('批量添加'))
+    fireEvent.click(screen.getByText('保存'))
+    expect(screen.getByText('请至少输入一条待办')).toBeInTheDocument()
+    expect(useAppStore.getState().todos).toHaveLength(0)
   })
 })
 

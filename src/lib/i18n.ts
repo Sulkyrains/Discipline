@@ -195,6 +195,8 @@ const zh = {
   courseNameRequired: '请输入课程名称',
   timeInvalid: '结束时间需晚于开始时间',
   weeksInvalid: '结束周不能早于开始周',
+  courseDayRequired: '请选择星期',
+  courseBatchCount: '将创建 {n} 条课程',
   courseConflict: '与已有课程时间重叠：',
   loading: '加载中…',
   checkinCalendar: '打卡日历',
@@ -204,7 +206,14 @@ const zh = {
   nextMonth: '下个月',
   todayCheckin: '今日打卡',
   checkinMet: '今日已打卡成功',
-  checkinRemaining: '还差 {n} 分钟达成打卡'
+  checkinRemaining: '还差 {n} 分钟达成打卡',
+  singleAdd: '单个添加',
+  batchAdd: '批量添加',
+  batchPh: '每行一条待办，将统一使用下方日期与优先级',
+  batchCount: '将添加 {n} 条待办',
+  batchEmpty: '请至少输入一条待办',
+  tomorrowShort: '明天',
+  dayAfterShort: '后天'
 }
 
 const en: Record<keyof typeof zh, string> = {
@@ -402,6 +411,8 @@ const en: Record<keyof typeof zh, string> = {
   courseNameRequired: 'Course name is required',
   timeInvalid: 'End time must be after start time',
   weeksInvalid: 'End week cannot be before start week',
+  courseDayRequired: 'Select at least one weekday',
+  courseBatchCount: 'Will create {n} courses',
   courseConflict: 'Time conflict with:',
   loading: 'Loading…',
   checkinCalendar: 'Check-in Calendar',
@@ -411,7 +422,14 @@ const en: Record<keyof typeof zh, string> = {
   nextMonth: 'Next month',
   todayCheckin: 'Today check-in',
   checkinMet: "Today's check-in complete",
-  checkinRemaining: '{n} more minutes to check in'
+  checkinRemaining: '{n} more minutes to check in',
+  singleAdd: 'Single',
+  batchAdd: 'Batch',
+  batchPh: 'One task per line; date and priority below apply to all',
+  batchCount: 'Will add {n} tasks',
+  batchEmpty: 'Enter at least one task',
+  tomorrowShort: 'Tomorrow',
+  dayAfterShort: 'Day after tomorrow'
 }
 
 export type I18nKey = keyof typeof zh

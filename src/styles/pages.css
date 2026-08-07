@@ -175,6 +175,14 @@
   font-weight: 650;
 }
 
+.todo-mode {
+  margin-bottom: 14px;
+}
+
+.date-chips {
+  margin-top: -4px;
+}
+
 @keyframes splash-in {
   from {
     opacity: 0;

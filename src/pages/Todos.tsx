@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { t } from '../lib/i18n'
 import type { Todo } from '../types'
-import { formatDateCN, todayKey } from '../lib/format'
+import { addDays, dateKey, formatDateCN, todayKey } from '../lib/format'
 import { useAppStore } from '../stores/useAppStore'
 import { useFocusStore } from '../stores/useFocusStore'
 import { useToastStore } from '../stores/useToastStore'
@@ -36,8 +36,16 @@ export default function Todos() {
   const [editing, setEditing] = useState<Todo | 'new' | null>(null)
   const [form, setForm] = useState<TodoForm>(emptyForm)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [mode, setMode] = useState<'single' | 'batch'>('single')
+  const [batchText, setBatchText] = useState('')
+  const [batchError, setBatchError] = useState(false)
 
   const today = todayKey()
+  const dateQuick = [
+    { label: t(lang, 'today'), key: today },
+    { label: t(lang, 'tomorrowShort'), key: dateKey(addDays(new Date(), 1)) },
+    { label: t(lang, 'dayAfterShort'), key: dateKey(addDays(new Date(), 2)) }
+  ]
   const filtered = [...todos]
     .sort((a, b) => {
       if (a.completed !== b.completed) return a.completed ? 1 : -1
@@ -53,6 +61,9 @@ export default function Todos() {
 
   const openNew = () => {
     setForm(emptyForm())
+    setMode('single')
+    setBatchText('')
+    setBatchError(false)
     setEditing('new')
   }
 
@@ -62,6 +73,21 @@ export default function Todos() {
   }
 
   const save = () => {
+    if (editing === 'new' && mode === 'batch') {
+      const lines = batchText
+        .split('\n')
+        .map((s) => s.trim())
+        .filter(Boolean)
+      if (lines.length === 0) {
+        setBatchError(true)
+        return
+      }
+      for (const line of lines) {
+        addTodo({ title: line, notes: '', dueDate: form.dueDate, priority: form.priority })
+      }
+      setEditing(null)
+      return
+    }
     if (!form.title.trim()) return
     if (editing === 'new') {
       addTodo({ ...form, title: form.title.trim() })
@@ -158,25 +184,73 @@ export default function Todos() {
         onClose={() => setEditing(null)}
       >
         <div className="form">
-          <label className="field">
-            <span>{t(lang, 'todoTitle')} *</span>
-            <input
-              className="input"
-              value={form.title}
-              placeholder="复习高数第二章"
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-              autoFocus
-            />
-          </label>
-          <label className="field">
-            <span>{t(lang, 'notes')}</span>
-            <textarea
-              className="textarea"
-              rows={2}
-              value={form.notes}
-              onChange={(e) => setForm({ ...form, notes: e.target.value })}
-            />
-          </label>
+          {editing === 'new' ? (
+            <div className="seg seg-sm todo-mode">
+              <button
+                type="button"
+                className={`seg-item${mode === 'single' ? ' active' : ''}`}
+                onClick={() => setMode('single')}
+              >
+                {t(lang, 'singleAdd')}
+              </button>
+              <button
+                type="button"
+                className={`seg-item${mode === 'batch' ? ' active' : ''}`}
+                onClick={() => setMode('batch')}
+              >
+                {t(lang, 'batchAdd')}
+              </button>
+            </div>
+          ) : null}
+          {mode === 'single' || editing !== 'new' ? (
+            <>
+              <label className="field">
+                <span>{t(lang, 'todoTitle')} *</span>
+                <input
+                  className="input"
+                  value={form.title}
+                  placeholder="复习高数第二章"
+                  onChange={(e) => setForm({ ...form, title: e.target.value })}
+                  autoFocus
+                />
+              </label>
+              <label className="field">
+                <span>{t(lang, 'notes')}</span>
+                <textarea
+                  className="textarea"
+                  rows={2}
+                  value={form.notes}
+                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                />
+              </label>
+            </>
+          ) : (
+            <label className="field">
+              <span>{t(lang, 'todoTitle')} *</span>
+              <textarea
+                className="textarea"
+                rows={5}
+                value={batchText}
+                placeholder={t(lang, 'batchPh')}
+                autoFocus
+                onChange={(e) => {
+                  setBatchText(e.target.value)
+                  setBatchError(false)
+                }}
+              />
+              {batchError ? <span className="form-error">{t(lang, 'batchEmpty')}</span> : null}
+              {batchText.trim() ? (
+                <p className="muted small">
+                  {t(lang, 'batchCount', {
+                    n: batchText
+                      .split('\n')
+                      .map((s) => s.trim())
+                      .filter(Boolean).length
+                  })}
+                </p>
+              ) : null}
+            </label>
+          )}
           <div className="form-row">
             <label className="field">
               <span>{t(lang, 'dueDate')}</span>
@@ -201,6 +275,18 @@ export default function Todos() {
                 ))}
               </select>
             </label>
+          </div>
+          <div className="sound-chips date-chips">
+            {dateQuick.map((d) => (
+              <button
+                key={d.key}
+                type="button"
+                className={`sound-chip${form.dueDate === d.key ? ' active' : ''}`}
+                onClick={() => setForm({ ...form, dueDate: d.key })}
+              >
+                {d.label}
+              </button>
+            ))}
           </div>
           <div className="form-actions">
             {editing !== 'new' && editing ? (
