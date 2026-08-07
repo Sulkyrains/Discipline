@@ -180,20 +180,21 @@ describe('v1.3 focus-locked dock', () => {
         <Routes>
           <Route path="/" element={<div>home-indicator</div>} />
           <Route path="/timetable" element={<div>timetable-indicator</div>} />
+          <Route path="/stats" element={<div>stats-indicator</div>} />
         </Routes>
       </MemoryRouter>
     )
     act(() => {
       useFocusStore.setState({ active: true })
     })
-    const timetableLink = container.querySelector('a[href="/timetable"]')
-    expect(timetableLink?.className).toContain('disabled')
-    expect(timetableLink?.getAttribute('aria-disabled')).toBe('true')
+    const statsLink = container.querySelector('a[href="/stats"]')
+    expect(statsLink?.className).toContain('disabled')
+    expect(statsLink?.getAttribute('aria-disabled')).toBe('true')
     const todosLink = container.querySelector('a[href="/todos"]')
     expect(todosLink?.className).not.toContain('disabled')
 
-    fireEvent.click(timetableLink as Element)
+    fireEvent.click(statsLink as Element)
     expect(screen.getByText('home-indicator')).toBeInTheDocument()
-    expect(screen.queryByText('timetable-indicator')).toBeNull()
+    expect(screen.queryByText('stats-indicator')).toBeNull()
   })
 })

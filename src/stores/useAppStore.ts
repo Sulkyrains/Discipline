@@ -6,12 +6,14 @@ import type {
   FeedbackItem,
   FocusSession,
   Settings,
-  Todo
+  Todo,
+  WhitelistApp
 } from '../types'
 import { dateKey, nowISO, todayKey, uid } from '../lib/format'
 import { computeStats } from '../lib/stats'
 import { evaluateAchievements, type AchievementDef } from '../lib/achievements'
 import { DEFAULT_DOCK, migrateTodoPriority, normalizeDockOrder } from '../lib/migration'
+import { defaultWhitelist } from '../lib/appWhitelist'
 
 export const defaultSettings = (): Settings => ({
   theme: 'china',
@@ -32,9 +34,12 @@ interface AppStoreState extends AppData {
   signIns: string[]
   abandonDates: string[]
   dockOrder: string[]
+  appWhitelist: WhitelistApp[]
   setSettings: (partial: Partial<Settings>) => void
   setKeepOverdue: (v: boolean) => void
   setDockOrder: (paths: string[]) => void
+  addWhitelistApp: (app: WhitelistApp) => void
+  removeWhitelistApp: (id: string) => void
   signInToday: () => boolean
   recordAbandon: () => void
   clearOverdueTodos: () => number
@@ -83,12 +88,22 @@ export const useAppStore = create<AppStoreState>()(
       signIns: [],
       abandonDates: [],
       dockOrder: [...DEFAULT_DOCK],
+      appWhitelist: defaultWhitelist(),
 
       setSettings: (partial) => set({ settings: { ...get().settings, ...partial } }),
 
       setKeepOverdue: (v) => set({ keepOverdue: v }),
 
       setDockOrder: (paths) => set({ dockOrder: normalizeDockOrder(paths) }),
+
+      addWhitelistApp: (app) =>
+        set({
+          appWhitelist: get().appWhitelist.some((a) => a.id === app.id)
+            ? get().appWhitelist
+            : [...get().appWhitelist, app]
+        }),
+
+      removeWhitelistApp: (id) => set({ appWhitelist: get().appWhitelist.filter((a) => a.id !== id) }),
 
       signInToday: () => {
         const today = todayKey()
@@ -213,7 +228,8 @@ export const useAppStore = create<AppStoreState>()(
           mergedFor: null,
           signIns: [],
           abandonDates: [],
-          dockOrder: [...DEFAULT_DOCK]
+          dockOrder: [...DEFAULT_DOCK],
+          appWhitelist: defaultWhitelist()
         })
     }),
     {
@@ -229,7 +245,8 @@ export const useAppStore = create<AppStoreState>()(
         keepOverdue: s.keepOverdue,
         signIns: s.signIns,
         abandonDates: s.abandonDates,
-        dockOrder: s.dockOrder
+        dockOrder: s.dockOrder,
+        appWhitelist: s.appWhitelist
       }),
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<AppStoreState>
@@ -237,7 +254,11 @@ export const useAppStore = create<AppStoreState>()(
           ...current,
           ...p,
           dockOrder: normalizeDockOrder(p.dockOrder),
-          todos: migrateTodoPriority(p.todos ?? current.todos)
+          todos: migrateTodoPriority(p.todos ?? current.todos),
+          appWhitelist:
+            Array.isArray(p.appWhitelist) && p.appWhitelist.length > 0
+              ? p.appWhitelist
+              : defaultWhitelist()
         }
       }
     }

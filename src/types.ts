@@ -35,6 +35,12 @@ export interface Todo {
   focusCount: number
 }
 
+export interface WhitelistApp {
+  id: string // package name on Android, stable key on web
+  name: string
+  system: boolean
+}
+
 export interface FocusSession {
   id: string
   taskId: string

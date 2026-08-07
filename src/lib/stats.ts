@@ -29,6 +29,13 @@ export interface SignInStats {
   totalDays: number
 }
 
+export interface TaskFocusStat {
+  taskId: string
+  title: string
+  minutes: number
+  sessions: number
+}
+
 function dayIndexMap(sessions: FocusSession[]): {
   minutes: Map<string, number>
   sessions: Map<string, number>
@@ -140,4 +147,23 @@ export function computeSignIns(signIns: string[], today = new Date()): SignInSta
     cursor = addDays(cursor, -1)
   }
   return { currentStreak, totalDays: set.size }
+}
+
+export function taskFocusMinutes(sessions: FocusSession[], todos: Todo[]): TaskFocusStat[] {
+  const byTask = new Map<string, { minutes: number; sessions: number }>()
+  for (const s of sessions) {
+    if (!s.taskId) continue
+    const cur = byTask.get(s.taskId) ?? { minutes: 0, sessions: 0 }
+    cur.minutes += s.plannedMinutes
+    cur.sessions += 1
+    byTask.set(s.taskId, cur)
+  }
+  return [...byTask.entries()]
+    .map(([taskId, v]) => ({
+      taskId,
+      title: todos.find((t) => t.id === taskId)?.title ?? '—',
+      minutes: v.minutes,
+      sessions: v.sessions
+    }))
+    .sort((a, b) => b.minutes - a.minutes)
 }

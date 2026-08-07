@@ -6,6 +6,7 @@ import { t } from './lib/i18n'
 import { todayKey } from './lib/format'
 import { computeSignIns } from './lib/stats'
 import { playUiSound } from './lib/uiSound'
+import { syncFocusLockActive, syncFocusLockWhitelist } from './lib/focusLock'
 import { useAppStore } from './stores/useAppStore'
 import { useAuthStore } from './stores/useAuthStore'
 import { useFocusStore } from './stores/useFocusStore'
@@ -43,6 +44,8 @@ export default function App() {
   const settings = useAppStore((s) => s.settings)
   const courses = useAppStore((s) => s.courses)
   const location = useLocation()
+  const focusActive = useFocusStore((s) => s.active)
+  const appWhitelist = useAppStore((s) => s.appWhitelist)
   const firedRef = useRef<Set<string>>(new Set())
   const [entered, setEntered] = useState(false)
   const [overdueCount, setOverdueCount] = useState<number | null>(null)
@@ -92,6 +95,14 @@ export default function App() {
   useEffect(() => {
     useAuthStore.getState().init()
   }, [])
+
+  useEffect(() => {
+    void syncFocusLockActive(focusActive)
+  }, [focusActive])
+
+  useEffect(() => {
+    void syncFocusLockWhitelist(appWhitelist)
+  }, [appWhitelist])
 
   useEffect(() => {
     const unsub = useFocusStore.getState().registerEventHandler((e) => {

@@ -4,4 +4,5 @@
     <string name="title_activity_main">Discipline</string>
     <string name="package_name">com.discipline.app</string>
     <string name="custom_url_scheme">com.discipline.app</string>
+    <string name="accessibility_service_description">专注锁机：专注期间仅允许白名单中的应用，其余应用将自动返回桌面。</string>
 </resources>

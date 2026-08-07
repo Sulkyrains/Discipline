@@ -15,6 +15,7 @@ import {
   WEEKDAY_ZH
 } from '../lib/timetable'
 import { useAppStore } from '../stores/useAppStore'
+import { useFocusStore } from '../stores/useFocusStore'
 import Sheet from '../components/Sheet'
 import EmptyState from '../components/EmptyState'
 import ConfirmDialog from '../components/ConfirmDialog'
@@ -60,6 +61,7 @@ export default function Timetable() {
   const addCourse = useAppStore((s) => s.addCourse)
   const updateCourse = useAppStore((s) => s.updateCourse)
   const removeCourse = useAppStore((s) => s.removeCourse)
+  const focusActive = useFocusStore((s) => s.active)
 
   const [week, setWeek] = useState(() => currentWeekNumber(semesterStart))
   const [day, setDay] = useState(() => ((new Date().getDay() + 6) % 7) + 1)
@@ -177,6 +179,8 @@ export default function Timetable() {
         </button>
       </header>
 
+      {focusActive ? <div className="banner banner-lock">{t(lang, 'courseLockBanner')}</div> : null}
+
       <div className="week-stepper">
         <button className="btn btn-ghost btn-icon" onClick={() => setWeek((w) => Math.max(1, w - 1))} aria-label={t(lang, 'weekPrev')}>
           ‹
@@ -205,7 +209,12 @@ export default function Timetable() {
           <EmptyState emoji="🗓️" text={t(lang, 'noCourseOnDay')} />
         ) : (
           dayCourses.map((course) => (
-            <button key={course.id} className="card course-item" onClick={() => openEdit(course)}>
+            <button
+              key={course.id}
+              className="card course-item"
+              onClick={() => openEdit(course)}
+              disabled={focusActive}
+            >
               <span className={`course-bar color-${course.color}`} />
               <div className="course-main">
                 <div className="course-row">

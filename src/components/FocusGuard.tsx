@@ -1,7 +1,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useFocusStore } from '../stores/useFocusStore'
 
-const WHITELIST = ['/focus', '/todos']
+const WHITELIST = ['/focus', '/todos', '/timetable']
 
 export default function FocusGuard() {
   const active = useFocusStore((s) => s.active)

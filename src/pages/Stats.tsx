@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react'
-import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { t } from '../lib/i18n'
 import { formatDuration } from '../lib/format'
-import { computeStats, dailySeries } from '../lib/stats'
+import { computeStats, dailySeries, taskFocusMinutes } from '../lib/stats'
 import { useAppStore } from '../stores/useAppStore'
 import { Link } from 'react-router-dom'
+
+const PALETTE = ['#7c9cf5', '#4fbf9f', '#eac06e', '#f4717f', '#6fc3f5', '#9d7bf5', '#f28ba8', '#3fc3b2', '#e8a23d']
 
 export default function Stats() {
   const lang = useAppStore((s) => s.settings.language)
@@ -14,6 +16,16 @@ export default function Stats() {
 
   const stats = useMemo(() => computeStats(sessions, todos), [sessions, todos])
   const series = useMemo(() => dailySeries(sessions, range), [sessions, range])
+  const taskStats = useMemo(() => taskFocusMinutes(sessions, todos), [sessions, todos])
+  const taskData = useMemo(() => {
+    const top = taskStats.slice(0, 6)
+    const bound = taskStats.reduce((a, b) => a + b.minutes, 0)
+    const unbound = stats.totalMinutes - bound
+    const rows = top.map((ts) => ({ name: ts.title, value: ts.minutes }))
+    if (unbound > 0) rows.push({ name: t(lang, 'unboundTask'), value: unbound })
+    return rows
+  }, [taskStats, stats.totalMinutes, lang])
+  const maxTaskMinutes = taskStats[0]?.minutes ?? 1
 
   return (
     <div className="page page-stats">
@@ -102,6 +114,73 @@ export default function Stats() {
               </BarChart>
             </ResponsiveContainer>
           </div>
+        )}
+      </div>
+
+      <div className="card chart-card">
+        <h3 className="section-title">{t(lang, 'taskDistribution')}</h3>
+        {taskData.length === 0 ? (
+          <p className="muted chart-empty">{t(lang, 'noData')}</p>
+        ) : (
+          <>
+            <div className="chart-wrap">
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie
+                    data={taskData}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={55}
+                    outerRadius={90}
+                    paddingAngle={2}
+                    stroke="none"
+                  >
+                    {taskData.map((_, i) => (
+                      <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      background: 'var(--surface)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 12,
+                      fontSize: 13
+                    }}
+                    formatter={(value) => [`${String(value)} ${t(lang, 'focusMinutes')}`]}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="donut-legend">
+              {taskData.map((d, i) => (
+                <span key={i} className="donut-legend-item">
+                  <i style={{ background: PALETTE[i % PALETTE.length] }} />
+                  {d.name} · {d.value}min
+                </span>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      <div className="card task-focus-list">
+        <h3 className="section-title">{t(lang, 'taskFocusDetail')}</h3>
+        {taskStats.length === 0 ? (
+          <p className="muted">{t(lang, 'noData')}</p>
+        ) : (
+          taskStats.map((ts) => (
+            <div key={ts.taskId} className="task-focus-row">
+              <div className="task-focus-head">
+                <strong>{ts.title}</strong>
+                <span className="muted small">
+                  {t(lang, 'taskMinutes', { n: ts.minutes })} · {t(lang, 'focusTimes', { n: ts.sessions })}
+                </span>
+              </div>
+              <div className="progress-bar task-focus-bar">
+                <span style={{ width: `${Math.min(100, (ts.minutes / maxTaskMinutes) * 100)}%` }} />
+              </div>
+            </div>
+          ))
         )}
       </div>
 

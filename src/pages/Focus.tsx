@@ -8,6 +8,7 @@ import { useAppStore } from '../stores/useAppStore'
 import { useFocusStore } from '../stores/useFocusStore'
 import { useSoundStore } from '../stores/useSoundStore'
 import { useToastStore } from '../stores/useToastStore'
+import type { WhitelistApp } from '../types'
 import ProgressRing from '../components/ProgressRing'
 import ConfirmDialog from '../components/ConfirmDialog'
 import Confetti from '../components/Confetti'
@@ -24,6 +25,10 @@ export default function Focus() {
   const recordAbandon = useAppStore((s) => s.recordAbandon)
   const lang = settings.language
   const todos = useAppStore((s) => s.todos)
+  const appWhitelist = useAppStore((s) => s.appWhitelist)
+  const addWhitelistApp = useAppStore((s) => s.addWhitelistApp)
+  const removeWhitelistApp = useAppStore((s) => s.removeWhitelistApp)
+  const toggleTodo = useAppStore((s) => s.toggleTodo)
   const timer = useFocusStore((s) => s.timer)
   const taskId = useFocusStore((s) => s.taskId)
   const setTaskId = useFocusStore((s) => s.setTaskId)
@@ -35,8 +40,12 @@ export default function Focus() {
 
   const [confirmAbandon, setConfirmAbandon] = useState(false)
   const [confetti, setConfetti] = useState(false)
+  const [newAppName, setNewAppName] = useState('')
+  const [newAppPkg, setNewAppPkg] = useState('')
+  const [whitelistError, setWhitelistError] = useState(false)
 
   const active = isFocusActive(timer)
+  const boundTodo = todos.find((td) => td.id === taskId)
   const abandonedToday = abandonDates.filter((d) => dateKey(new Date(d)) === todayKey()).length
   const abandonBlocked = abandonedToday >= 3
 
@@ -80,6 +89,39 @@ export default function Focus() {
     const clamped = Math.max(15, Math.min(180, Number.isFinite(minutes) ? minutes : 15))
     useAppStore.getState().setSettings({ pomodoroMinutes: clamped })
     useFocusStore.getState().setDuration(clamped)
+  }
+
+  const completeBoundTask = () => {
+    if (!taskId) return
+    playUiSound('pop')
+    const unlocked = toggleTodo(taskId)
+    for (const def of unlocked) {
+      useToastStore.getState().push({
+        title: `🏆 ${t(lang, 'viewAchievements')} · ${lang === 'zh' ? def.zh : def.en}`,
+        body: lang === 'zh' ? def.descZh : def.descEn,
+        kind: 'achieve'
+      })
+    }
+  }
+
+  const switchBoundTask = (id: string) => {
+    playUiSound('soft')
+    setTaskId(id || null)
+  }
+
+  const addWhitelist = () => {
+    const name = newAppName.trim()
+    const pkg = newAppPkg.trim()
+    if (!name || !pkg) {
+      setWhitelistError(true)
+      return
+    }
+    const app: WhitelistApp = { id: pkg, name, system: false }
+    addWhitelistApp(app)
+    setNewAppName('')
+    setNewAppPkg('')
+    setWhitelistError(false)
+    playUiSound('soft')
   }
 
   const phaseMinutes =
@@ -201,7 +243,102 @@ export default function Focus() {
             </select>
           </label>
         </div>
-      ) : null}
+      ) : (
+        <div className="card bind-card">
+          <h3 className="section-title">{t(lang, 'bindTask')}</h3>
+          <div className="bound-task">
+            {boundTodo ? (
+              <>
+                <span className={`bound-task-title${boundTodo.completed ? ' done' : ''}`}>
+                  {boundTodo.title}
+                </span>
+                <button className="btn btn-primary btn-sm" onClick={completeBoundTask}>
+                  {t(lang, 'completeTask')}
+                </button>
+              </>
+            ) : (
+              <span className="muted small">{t(lang, 'noTaskHint')}</span>
+            )}
+          </div>
+          <label className="field">
+            <span>{t(lang, 'switchTask')}</span>
+            <select
+              className="select"
+              value={taskId ?? ''}
+              onChange={(e) => switchBoundTask(e.target.value)}
+            >
+              <option value="">{t(lang, 'noTaskHint')}</option>
+              {todos
+                .filter((td) => !td.completed && td.id !== taskId)
+                .map((td) => (
+                  <option key={td.id} value={td.id}>
+                    {td.title}
+                  </option>
+                ))}
+            </select>
+          </label>
+        </div>
+      )}
+
+      <div className="card whitelist-card">
+        <div className="whitelist-head">
+          <h3 className="section-title">{t(lang, 'whitelistTitle')}</h3>
+          {active ? <span className="chip chip-lock">{t(lang, 'whitelistLocked')}</span> : null}
+        </div>
+        {appWhitelist.length === 0 ? (
+          <p className="muted small">{t(lang, 'emptyWhitelist')}</p>
+        ) : (
+          <div className="whitelist-list">
+            {appWhitelist.map((app) => (
+              <div key={app.id} className="whitelist-row">
+                <span className="whitelist-name">{app.name}</span>
+                {app.system ? <span className="chip">{t(lang, 'systemApp')}</span> : null}
+                <span className="muted small whitelist-pkg">{app.id}</span>
+                {!active ? (
+                  <button
+                    className="btn btn-danger btn-sm"
+                    onClick={() => removeWhitelistApp(app.id)}
+                  >
+                    {t(lang, 'delete')}
+                  </button>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        )}
+        {!active ? (
+          <div className="whitelist-add">
+            <label className="field">
+              <span>{t(lang, 'appName')}</span>
+              <input
+                className="input"
+                value={newAppName}
+                onChange={(e) => {
+                  setNewAppName(e.target.value)
+                  setWhitelistError(false)
+                }}
+              />
+            </label>
+            <label className="field">
+              <span>{t(lang, 'packageName')}</span>
+              <input
+                className="input"
+                value={newAppPkg}
+                placeholder="com.example.app"
+                onChange={(e) => {
+                  setNewAppPkg(e.target.value)
+                  setWhitelistError(false)
+                }}
+              />
+            </label>
+            {whitelistError ? <span className="form-error">{t(lang, 'courseNameRequired')}</span> : null}
+            <button className="btn btn-primary btn-sm" onClick={addWhitelist}>
+              + {t(lang, 'addApp')}
+            </button>
+          </div>
+        ) : null}
+        <p className="muted small">{t(lang, 'whitelistHint')}</p>
+      </div>
 
       <div className="card sound-card">
         <h3 className="section-title">{t(lang, 'whiteNoise')}</h3>

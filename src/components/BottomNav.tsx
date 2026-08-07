@@ -5,7 +5,7 @@ import { findDropIndex, reorderDock } from '../lib/migration'
 import { useAppStore } from '../stores/useAppStore'
 import { useFocusStore } from '../stores/useFocusStore'
 
-const FOCUS_WHITELIST = ['/focus', '/todos']
+const FOCUS_WHITELIST = ['/focus', '/todos', '/timetable']
 const LONG_PRESS_MS = 600
 
 function HomeIcon() {
