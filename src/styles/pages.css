@@ -1350,19 +1350,43 @@
   letter-spacing: 0.08em;
 }
 
-/* UI design preview badge */
-.ui-preview-badge {
+/* UI design preview switcher */
+.ui-switcher {
   position: fixed;
-  left: 12px;
-  bottom: calc(84px + env(safe-area-inset-bottom));
+  right: 12px;
+  bottom: calc(86px + env(safe-area-inset-bottom));
   z-index: 60;
-  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
   border-radius: 999px;
   background: var(--surface);
   border: 1px solid var(--accent);
-  color: var(--muted);
-  font-size: 11px;
   box-shadow: var(--shadow-2);
+}
+
+.ui-switcher-label {
+  font-size: 11px;
+  color: var(--muted);
+  padding: 0 4px;
+}
+
+.ui-switcher-btn {
+  border: 0;
+  width: 30px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.ui-switcher-btn.active {
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: #fff;
 }
 
 /* Focus page — variant A polish */

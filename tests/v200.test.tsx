@@ -138,30 +138,37 @@ describe('v2.0.0 ui design preview variants', () => {
     expect(isVariantB()).toBe(true)
   })
 
-  it('defaults to variant a without the preview switch', () => {
+  it('defaults to variant b and resolves variant a from the hash query', () => {
+    expect(currentUiVariant()).toBe('b')
+    window.location.hash = '#/focus?ui=a'
     expect(currentUiVariant()).toBe('a')
+    expect(isVariantB()).toBe(false)
   })
 
-  it('applies the variant-b class to the focus page', () => {
-    window.location.hash = '#/focus?ui=b'
+  it('applies the variant-b class to the focus page by default and variant-a on demand', () => {
     const { container } = render(
       <MemoryRouter>
         <Focus />
       </MemoryRouter>
     )
     expect(container.querySelector('.page-focus.variant-b')).not.toBeNull()
+    window.location.hash = '#/focus?ui=a'
+    const a = render(
+      <MemoryRouter>
+        <Focus />
+      </MemoryRouter>
+    )
+    expect(a.container.querySelector('.page-focus.variant-b')).toBeNull()
     window.location.hash = ''
   })
 
-  it('applies the variant-b class to the stats page', () => {
-    window.location.hash = '#/stats?ui=b'
+  it('applies the variant-b class to the stats page by default', () => {
     const { container } = render(
       <MemoryRouter>
         <Stats />
       </MemoryRouter>
     )
     expect(container.querySelector('.page-stats.variant-b')).not.toBeNull()
-    window.location.hash = ''
   })
 
   it('renders the seven-day check-in heat strip on stats', () => {
