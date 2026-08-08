@@ -1,8 +1,35 @@
 import { supabase, SUPABASE_URL } from './supabase'
 
 export const DERIVED_EMAIL_SUFFIX = '@discipline.app'
-export const MAX_AVATAR_BYTES = 2 * 1024 * 1024
+export const MAX_AVATAR_BYTES = 10 * 1024 * 1024
 export const PRESET_AVATARS = ['🦊', '🐼', '🐯', '🦁', '🐨', '🐸', '🐙', '🦄', '🌈', '⭐', '🍀', '🔥'] as const
+
+export async function compressAvatarFile(file: File): Promise<File> {
+  try {
+    if (typeof document === 'undefined' || typeof document.createElement !== 'function') return file
+    const probe = document.createElement('canvas')
+    if (typeof probe.getContext !== 'function' || !probe.getContext('2d')) return file
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new Image()
+      el.onload = () => resolve(el)
+      el.onerror = () => reject(new Error('decode failed'))
+      el.src = URL.createObjectURL(file)
+    })
+    const MAX_SIDE = 512
+    const scale = Math.min(1, MAX_SIDE / Math.max(img.width, img.height))
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.max(1, Math.round(img.width * scale))
+    canvas.height = Math.max(1, Math.round(img.height * scale))
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return file
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.85))
+    if (!blob) return file
+    return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' })
+  } catch {
+    return file
+  }
+}
 
 export function isDerivedEmail(email: string): boolean {
   return email.endsWith(DERIVED_EMAIL_SUFFIX)

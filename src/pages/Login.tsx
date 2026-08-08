@@ -172,7 +172,11 @@ export default function Login() {
           </>
         ) : null}
 
-        {errorText() ? <p className="form-error">{errorText()}</p> : null}
+        {errorText() ? (
+          <div className="auth-error-banner" role="alert">
+            ⚠️ {errorText()}
+          </div>
+        ) : null}
 
         <button
           className="btn btn-primary btn-lg"

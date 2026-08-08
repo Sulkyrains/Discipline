@@ -9,6 +9,7 @@ import {
   isValidEmail,
   lookupAuthEmailByNickname,
   MAX_AVATAR_BYTES,
+  compressAvatarFile,
   uploadAvatarFile,
   upsertProfile
 } from '../lib/account'
@@ -245,7 +246,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ error: 'avatarTooLarge' })
       return false
     }
-    const url = await uploadAvatarFile(user.id, file)
+    const optimized = await compressAvatarFile(file)
+    const url = await uploadAvatarFile(user.id, optimized)
     if (!url) {
       set({ error: 'auth' })
       return false

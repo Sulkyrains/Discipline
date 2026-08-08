@@ -1774,6 +1774,19 @@ input[type='range'] {
   line-height: 1.5;
 }
 
+.auth-error-banner {
+  margin: 2px 0 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--danger);
+  background: var(--surface-3);
+  background: color-mix(in srgb, var(--danger) 14%, var(--surface));
+  color: var(--danger);
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 .account-head {
   display: flex;
   align-items: center;
