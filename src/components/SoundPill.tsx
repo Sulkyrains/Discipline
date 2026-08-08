@@ -5,11 +5,14 @@ import { useSoundStore } from '../stores/useSoundStore'
 
 export default function SoundPill() {
   const lang = useAppStore((s) => s.settings.language)
+  const customSounds = useAppStore((s) => s.customSounds)
   const sound = useSoundStore((s) => s.sound)
   const stop = useSoundStore((s) => s.stop)
 
   if (!sound) return null
-  const def = ALL_TRACKS.find((s) => s.id === sound)
+  const builtin = ALL_TRACKS.find((s) => s.id === sound)
+  const custom = customSounds.find((c) => c.id === sound)
+  const name = builtin ? (lang === 'zh' ? builtin.zh : builtin.en) : custom ? custom.name : sound
 
   return (
     <button className="sound-pill" onClick={stop} aria-label={t(lang, 'stopSound')}>
@@ -19,7 +22,7 @@ export default function SoundPill() {
         <i />
       </span>
       <span>
-        {t(lang, 'soundNowPlaying')} · {lang === 'zh' ? def?.zh : def?.en}
+        {t(lang, 'soundNowPlaying')} · {name}
       </span>
       <span className="sound-pill-stop">×</span>
     </button>

@@ -50,6 +50,14 @@ export interface WhitelistApp {
   system: boolean
 }
 
+export interface CustomSound {
+  id: string // custom:<uid>
+  name: string
+  kind: 'noise' | 'music'
+  size: number
+  createdAt: string
+}
+
 export interface FocusSession {
   id: string
   taskId: string

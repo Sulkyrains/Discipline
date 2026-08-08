@@ -1,6 +1,9 @@
+import { getCustomAudioUrl, isCustomSoundId } from './customAudio'
+
 export type NoiseId = 'rain' | 'stream' | 'ocean' | 'campfire' | 'forest' | 'thunder' | 'insects' | 'wind'
 export type MusicId = 'piano-calm' | 'piano-relax' | 'piano-beautiful'
-export type SoundId = NoiseId | MusicId
+export type CustomSoundId = `custom:${string}`
+export type SoundId = NoiseId | MusicId | CustomSoundId
 
 export interface SoundDef {
   id: SoundId
@@ -28,7 +31,12 @@ export const MUSIC: SoundDef[] = [
 
 export const ALL_TRACKS: SoundDef[] = [...SOUNDS, ...MUSIC]
 
-export function soundUrl(id: SoundId): string {
+export function customTrackDef(id: string, name: string): SoundDef {
+  return { id: id as SoundId, zh: name, en: name, file: '' }
+}
+
+export async function soundUrl(id: SoundId): Promise<string> {
+  if (isCustomSoundId(id)) return getCustomAudioUrl(id)
   const def = ALL_TRACKS.find((s) => s.id === id)
   return def ? import.meta.env.BASE_URL + def.file : ''
 }
@@ -135,7 +143,7 @@ export class SoundEngine {
   }
 
   private async loadBuffer(ctx: AudioContext, id: SoundId): Promise<AudioBuffer> {
-    const url = soundUrl(id)
+    const url = await soundUrl(id)
     if (this.cache.has(url)) return this.cache.get(url) as AudioBuffer
     let pending = this.loading.get(url)
     if (!pending) {

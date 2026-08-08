@@ -4,6 +4,7 @@ import type {
   AppData,
   Course,
   CourseColor,
+  CustomSound,
   FeedbackItem,
   FocusSession,
   Settings,
@@ -15,6 +16,7 @@ import { computeSignIns, computeStats } from '../lib/stats'
 import { evaluateAchievements, type AchievementDef } from '../lib/achievements'
 import { DEFAULT_DOCK, normalizeDockOrder } from '../lib/migration'
 import { defaultWhitelist } from '../lib/appWhitelist'
+import { clearAllCustomAudio } from '../lib/customAudio'
 
 const DEFAULT_QUICK_TAGS = ['学习', '工作', '生活', '运动', '阅读']
 
@@ -43,6 +45,7 @@ interface AppStoreState extends AppData {
   dockOrder: string[]
   appWhitelist: WhitelistApp[]
   todoQuickTags: string[]
+  customSounds: CustomSound[]
   lastDailySplashDate: string
   hasOnboarded: boolean
   setSettings: (partial: Partial<Settings>) => void
@@ -55,6 +58,8 @@ interface AppStoreState extends AppData {
   setOnboarded: () => void
   signInToday: () => boolean
   recordAbandon: () => void
+  addCustomSound: (input: { name: string; kind: 'noise' | 'music'; size: number }) => string
+  removeCustomSound: (id: string) => void
   clearOverdueTodos: () => number
   addCourse: (course: Omit<Course, 'id'>) => void
   updateCourse: (id: string, patch: Partial<Course>) => void
@@ -113,6 +118,7 @@ export const useAppStore = create<AppStoreState>()(
       dockOrder: [...DEFAULT_DOCK],
       appWhitelist: defaultWhitelist(),
       todoQuickTags: [...DEFAULT_QUICK_TAGS],
+      customSounds: [],
       lastDailySplashDate: '',
       hasOnboarded: false,
 
@@ -150,6 +156,20 @@ export const useAppStore = create<AppStoreState>()(
       },
 
       recordAbandon: () => set({ abandonDates: [...get().abandonDates, nowISO()] }),
+
+      addCustomSound: ({ name, kind, size }) => {
+        const id = `custom:${uid()}`
+        set({
+          customSounds: [
+            ...get().customSounds,
+            { id, name, kind, size, createdAt: nowISO() }
+          ]
+        })
+        return id
+      },
+
+      removeCustomSound: (id) =>
+        set({ customSounds: get().customSounds.filter((c) => c.id !== id) }),
 
       clearOverdueTodos: () => {
         const stale = get().todos.filter((td) => !td.completed && td.dueDate !== '' && td.dueDate < todayKey())
@@ -259,7 +279,9 @@ export const useAppStore = create<AppStoreState>()(
         return s.courses.length + s.todos.length + s.sessions.length + s.unlocked.length + s.feedback.length
       },
 
-      clearLocalData: () =>
+      clearLocalData: () => {
+        const ids = get().customSounds.map((c) => c.id)
+        void clearAllCustomAudio(ids)
         set({
           settings: defaultSettings(),
           courses: [],
@@ -273,9 +295,11 @@ export const useAppStore = create<AppStoreState>()(
           dockOrder: [...DEFAULT_DOCK],
           appWhitelist: defaultWhitelist(),
           todoQuickTags: [...DEFAULT_QUICK_TAGS],
+          customSounds: [],
           lastDailySplashDate: '',
           hasOnboarded: false
         })
+      }
     }),
     {
       name: 'discipline-data-v1',
@@ -293,6 +317,7 @@ export const useAppStore = create<AppStoreState>()(
         dockOrder: s.dockOrder,
         appWhitelist: s.appWhitelist,
         todoQuickTags: s.todoQuickTags,
+        customSounds: s.customSounds,
         lastDailySplashDate: s.lastDailySplashDate,
         hasOnboarded: s.hasOnboarded
       }),
@@ -317,7 +342,8 @@ export const useAppStore = create<AppStoreState>()(
           todoQuickTags:
             Array.isArray(p.todoQuickTags) && p.todoQuickTags.length > 0
               ? p.todoQuickTags
-              : [...DEFAULT_QUICK_TAGS]
+              : [...DEFAULT_QUICK_TAGS],
+          customSounds: Array.isArray(p.customSounds) ? p.customSounds : []
         }
       }
     }

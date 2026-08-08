@@ -1,13 +1,13 @@
 {
   "name": "discipline",
   "private": true,
-  "version": "1.9.22",
+  "version": "1.9.23",
   "type": "module",
   "description": "Discipline 自律 —— 课程表 · 专注 · 待办 · 成就（PWA + Android APK）",
   "scripts": {
     "dev": "vite",
     "build": "npm run icons && tsc --noEmit && vite build && node scripts/write-version.mjs",
-      "build:gh-pages": "npm run icons && tsc --noEmit && vite build --base=./ && node scripts/write-version.mjs",
+    "build:gh-pages": "npm run icons && tsc --noEmit && vite build --base=./ && node scripts/write-version.mjs",
     "build:html": "npm run icons && tsc --noEmit && vite build --config vite.singlefile.config.ts && node scripts/copy-html.mjs && node scripts/write-version.mjs",
     "preview": "vite preview",
     "test": "vitest run",
@@ -38,6 +38,7 @@
     "@types/react": "^18.3.8",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.2",
+    "fake-indexeddb": "^6.2.5",
     "gh-pages": "^6.1.1",
     "jsdom": "^25.0.1",
     "netlify-cli": "^27.1.0",
@@ -47,6 +48,7 @@
     "vite": "^5.4.8",
     "vite-plugin-pwa": "^0.20.5",
     "vite-plugin-singlefile": "^2.3.3",
-    "vitest": "^2.1.3"
+    "vitest": "^2.1.3",
+    "wrangler": "^4.120.0"
   }
 }

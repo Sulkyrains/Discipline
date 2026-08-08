@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState, type ChangeEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { t, type I18nKey } from '../lib/i18n'
 import type { Settings as SettingsType, ThemeId, UiSoundId } from '../types'
@@ -11,7 +11,16 @@ import { useToastStore } from '../stores/useToastStore'
 import { APP_VERSION } from '../version'
 import { applyUpdateNow } from '../lib/update'
 import { useUpdateStore } from '../stores/useUpdateStore'
+import { useSoundStore } from '../stores/useSoundStore'
 import ConfirmDialog from '../components/ConfirmDialog'
+import {
+  dedupeCustomName,
+  deleteCustomAudio,
+  maxCustomAudioBytes,
+  saveCustomAudio
+} from '../lib/customAudio'
+import type { CustomSound } from '../types'
+import type { SoundId } from '../lib/audio'
 
 const THEME_NAMES: Record<ThemeId, { zh: string; en: string; dots: string[] }> = {
   'minimal-dark': { zh: '极简深色', en: 'Minimal dark', dots: ['#0B0F14', '#7C9CF5'] },
@@ -42,6 +51,9 @@ export default function Settings() {
   const clearLocalData = useAppStore((s) => s.clearLocalData)
   const dockOrder = useAppStore((s) => s.dockOrder)
   const setDockOrder = useAppStore((s) => s.setDockOrder)
+  const customSounds = useAppStore((s) => s.customSounds)
+  const addCustomSound = useAppStore((s) => s.addCustomSound)
+  const removeCustomSound = useAppStore((s) => s.removeCustomSound)
   const user = useAuthStore((s) => s.user)
   const signOut = useAuthStore((s) => s.signOut)
   const mergeWithCloud = useAuthStore((s) => s.mergeWithCloud)
@@ -49,10 +61,64 @@ export default function Settings() {
   const [permState, setPermState] = useState<'unknown' | 'granted' | 'denied'>('unknown')
   const [confirmClear, setConfirmClear] = useState(false)
   const [dockCollapsed, setDockCollapsed] = useState(true)
+  const [importKind, setImportKind] = useState<'noise' | 'music'>('music')
+  const [previewId, setPreviewId] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const updateStatus = useUpdateStore((s) => s.status)
   const updateChecking = updateStatus === 'checking'
   const updateRemote = useUpdateStore((s) => s.lastRemote)
   const lastCheckedAt = useUpdateStore((s) => s.lastCheckedAt)
+
+  const startImport = (kind: 'noise' | 'music') => {
+    setImportKind(kind)
+    fileInputRef.current?.click()
+  }
+
+  const onImportFile = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    if (!file.type.startsWith('audio/')) {
+      useToastStore.getState().push({ title: t(lang, 'audioTypeOnly'), kind: 'warn' })
+      return
+    }
+    if (file.size > maxCustomAudioBytes()) {
+      useToastStore.getState().push({ title: t(lang, 'fileTooLarge'), kind: 'warn' })
+      return
+    }
+    const name = dedupeCustomName(
+      file.name,
+      customSounds.map((c) => c.name)
+    )
+    const id = addCustomSound({ name, kind: importKind, size: file.size })
+    try {
+      await saveCustomAudio(id, file)
+      useToastStore.getState().push({ title: t(lang, 'importSuccess'), kind: 'success' })
+    } catch {
+      removeCustomSound(id)
+      useToastStore.getState().push({ title: t(lang, 'importFail'), kind: 'warn' })
+    }
+  }
+
+  const togglePreview = (c: CustomSound) => {
+    if (previewId === c.id) {
+      useSoundStore.getState().stop()
+      setPreviewId(null)
+      return
+    }
+    useSoundStore.getState().play(c.id as SoundId)
+    setPreviewId(c.id)
+  }
+
+  const onDeleteCustom = async (c: CustomSound) => {
+    removeCustomSound(c.id)
+    await deleteCustomAudio(c.id)
+    if (previewId === c.id) {
+      useSoundStore.getState().stop()
+      setPreviewId(null)
+    }
+    useToastStore.getState().push({ title: t(lang, 'customSoundDeleted'), kind: 'info' })
+  }
 
   const enableNotifications = async () => {
     const ok = await requestNotificationPermission()
@@ -309,6 +375,55 @@ export default function Settings() {
             onChange={(e) => setSettings({ whiteNoiseVolume: Number(e.target.value) / 100 })}
           />
         </label>
+      </section>
+
+      <section className="card settings-section">
+        <h3 className="section-title">{t(lang, 'importSounds')}</h3>
+        <div className="settings-actions">
+          <button className="btn btn-primary btn-sm" onClick={() => startImport('music')}>
+            🎵 {t(lang, 'importMusic')}
+          </button>
+          <button className="btn btn-ghost btn-sm" onClick={() => startImport('noise')}>
+            🌊 {t(lang, 'importNoise')}
+          </button>
+        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="audio/*"
+          hidden
+          onChange={(e) => void onImportFile(e)}
+        />
+        <p className="muted small">{t(lang, 'importHint')}</p>
+        {customSounds.length === 0 ? (
+          <p className="muted small">{t(lang, 'emptyCustomSounds')}</p>
+        ) : (
+          <div className="custom-sound-list">
+            {customSounds.map((c) => (
+              <div key={c.id} className="custom-sound-row">
+                <span className="custom-sound-icon">{c.kind === 'music' ? '🎵' : '🌊'}</span>
+                <span className="custom-sound-name">{c.name}</span>
+                <span className="muted small">{Math.round(c.size / 1024)} KB</span>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-icon"
+                  aria-label={previewId === c.id ? t(lang, 'stopSound') : t(lang, 'previewSound')}
+                  onClick={() => togglePreview(c)}
+                >
+                  {previewId === c.id ? '⏹' : '▶'}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger btn-icon"
+                  aria-label={t(lang, 'delete')}
+                  onClick={() => void onDeleteCustom(c)}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="card settings-section">

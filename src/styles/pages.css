@@ -115,12 +115,19 @@
 }
 
 .cal-day {
-  height: 44px;
+  height: 48px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   border-radius: 10px;
   font-size: 13px;
+  gap: 1px;
 }
 
 .cal-day.empty {
@@ -140,11 +147,146 @@
 
 .cal-day.future {
   opacity: 0.35;
+  cursor: default;
+}
+
+.cal-day:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.cal-day-num {
+  line-height: 1;
+}
+
+.cal-marks {
+  display: flex;
+  gap: 4px;
+  height: 12px;
+  align-items: center;
+}
+
+.cal-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-style: normal;
+}
+
+.cal-mark-checkin {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.cal-mark-signin {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--primary);
+  line-height: 1;
+}
+
+.cal-legend {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.cal-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .cal-foot {
   margin-top: 12px;
   text-align: center;
+}
+
+/* Check-in channels (either-or) */
+.checkin-channels {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.checkin-channel {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+}
+
+.checkin-channel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.checkin-channel-head strong {
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.checkin-channel.met {
+  border-color: var(--primary);
+}
+
+.checkin-channel.met .checkin-channel-head strong {
+  color: var(--primary);
+}
+
+.checkin-or {
+  align-self: center;
+  width: 30px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Day detail */
+.day-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.day-detail-date {
+  text-align: center;
+  font-weight: 600;
+}
+
+.day-detail-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 14px;
+}
+
+.day-detail-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.checkin-met {
+  color: var(--primary);
+  font-weight: 700;
 }
 
 /* Today check-in summary */
@@ -1185,6 +1327,71 @@
   align-items: center;
   justify-content: center;
   font-size: 16px;
+}
+
+.focus-fs-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.focus-fs-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.focus-fs-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+
+@media (orientation: landscape) and (min-width: 640px) {
+  .focus-fs-body {
+    flex-direction: row;
+    gap: 48px;
+  }
+
+  .focus-fs-info {
+    align-items: flex-start;
+  }
+}
+
+/* Custom sound list */
+.custom-sound-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.custom-sound-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.custom-sound-icon {
+  font-size: 16px;
+  flex: none;
+}
+
+.custom-sound-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 650;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .sound-chips {

@@ -232,7 +232,7 @@ describe('v1.9.11 multi-path check-in', () => {
         <Checkins />
       </MemoryRouter>
     )
-    expect(screen.getByText('完成待办')).toBeInTheDocument()
+    expect(screen.getByText(/完成待办/)).toBeInTheDocument()
     expect(screen.getByText(/今日已打卡成功/)).toBeInTheDocument()
   })
 })

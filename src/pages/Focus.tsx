@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 
 import { t } from '../lib/i18n'
 import { isFocusActive, minutesToSeconds, type TimerPhase } from '../lib/timer'
 import { dateKey, minuteToHHMM, todayKey } from '../lib/format'
-import { MUSIC, SOUNDS, isMusicId } from '../lib/audio'
+import { MUSIC, SOUNDS, customTrackDef } from '../lib/audio'
 import { COMMON_APPS } from '../lib/appWhitelist'
 import { listInstalledApps } from '../lib/focusLock'
 import { playUiSound } from '../lib/uiSound'
@@ -31,6 +31,7 @@ export default function Focus() {
   const recordAbandon = useAppStore((s) => s.recordAbandon)
   const lang = settings.language
   const todos = useAppStore((s) => s.todos)
+  const customSounds = useAppStore((s) => s.customSounds)
   const appWhitelist = useAppStore((s) => s.appWhitelist)
   const addWhitelistApp = useAppStore((s) => s.addWhitelistApp)
   const removeWhitelistApp = useAppStore((s) => s.removeWhitelistApp)
@@ -54,6 +55,12 @@ export default function Focus() {
   const [taskPickerOpen, setTaskPickerOpen] = useState(false)
   const [fsMode, setFsMode] = useState<'off' | 'system' | 'inapp'>('off')
   const pendingStart = useRef(false)
+  const lockedOrientationRef = useRef(false)
+
+  const customNoise = customSounds.filter((c) => c.kind === 'noise').map((c) => customTrackDef(c.id, c.name))
+  const customMusic = customSounds.filter((c) => c.kind === 'music').map((c) => customTrackDef(c.id, c.name))
+  const musicTracks = [...MUSIC, ...customMusic]
+  const noiseTracks = [...SOUNDS, ...customNoise]
 
   const active = isFocusActive(timer)
   const uiVol = settings.uiSoundVolume
@@ -103,10 +110,20 @@ export default function Focus() {
   const enterFullscreen = async () => {
     playUiSound('soft', uiVol)
     const el = document.documentElement
+    type OrientationLike = { lock?: (t: string) => Promise<void>; unlock?: () => void }
+    const orient = (screen as unknown as { orientation?: OrientationLike }).orientation
     try {
       if (document.fullscreenEnabled && typeof el.requestFullscreen === 'function') {
         await el.requestFullscreen()
         setFsMode('system')
+        try {
+          if (orient && typeof orient.lock === 'function') {
+            await orient.lock('landscape')
+            lockedOrientationRef.current = true
+          }
+        } catch {
+          /* orientation lock unsupported or denied; fullscreen still active */
+        }
         return
       }
     } catch {
@@ -116,7 +133,18 @@ export default function Focus() {
   }
 
   const exitFullscreen = () => {
-    if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined)
+    if (lockedOrientationRef.current) {
+      try {
+        const orient = (screen as unknown as { orientation?: { unlock?: () => void } }).orientation
+        orient?.unlock?.()
+      } catch {
+        /* ignore */
+      }
+      lockedOrientationRef.current = false
+    }
+    if (document.fullscreenElement && typeof document.exitFullscreen === 'function') {
+      void document.exitFullscreen().catch(() => undefined)
+    }
     setFsMode('off')
   }
 
@@ -130,14 +158,36 @@ export default function Focus() {
 
   useEffect(() => {
     if (timer.status !== 'running') {
-      if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined)
+      if (lockedOrientationRef.current) {
+        try {
+          const orient = (screen as unknown as { orientation?: { unlock?: () => void } }).orientation
+          orient?.unlock?.()
+        } catch {
+          /* ignore */
+        }
+        lockedOrientationRef.current = false
+      }
+      if (document.fullscreenElement && typeof document.exitFullscreen === 'function') {
+        void document.exitFullscreen().catch(() => undefined)
+      }
       setFsMode('off')
     }
   }, [timer.status])
 
   useEffect(() => {
     return () => {
-      if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined)
+      if (lockedOrientationRef.current) {
+        try {
+          const orient = (screen as unknown as { orientation?: { unlock?: () => void } }).orientation
+          orient?.unlock?.()
+        } catch {
+          /* ignore */
+        }
+        lockedOrientationRef.current = false
+      }
+      if (document.fullscreenElement && typeof document.exitFullscreen === 'function') {
+        void document.exitFullscreen().catch(() => undefined)
+      }
     }
   }, [])
 
@@ -448,7 +498,7 @@ export default function Focus() {
       <div className="card sound-card">
         <h3 className="section-title">{t(lang, 'whiteNoise')}</h3>
         <div className="sound-chips">
-          {SOUNDS.map((s) => (
+          {noiseTracks.map((s) => (
             <button
               key={s.id}
               className={`sound-chip${sound === s.id ? ' active' : ''}`}
@@ -458,7 +508,7 @@ export default function Focus() {
             </button>
           ))}
         </div>
-        {sound && !isMusicId(sound) ? (
+        {sound && !musicTracks.some((m) => m.id === sound) ? (
           <label className="field volume-field">
             <span>
               {t(lang, 'volume')}: {Math.round(volume * 100)}%
@@ -477,7 +527,7 @@ export default function Focus() {
       <div className="card sound-card">
         <h3 className="section-title">🎵 {t(lang, 'pureMusic')}</h3>
         <div className="sound-chips">
-          {MUSIC.map((m) => (
+          {musicTracks.map((m) => (
             <button
               key={m.id}
               className={`sound-chip${sound === m.id ? ' active' : ''}`}
@@ -487,7 +537,7 @@ export default function Focus() {
             </button>
           ))}
         </div>
-        {sound && isMusicId(sound) ? (
+        {sound && musicTracks.some((m) => m.id === sound) ? (
           <label className="field volume-field">
             <span>
               {t(lang, 'volume')}: {Math.round(volume * 100)}%
@@ -508,12 +558,17 @@ export default function Focus() {
           <button className="btn btn-ghost focus-fs-close" onClick={exitFullscreen} aria-label={t(lang, 'exitFullscreen')}>
             ✕
           </button>
-          <ProgressRing size={260} stroke={12} progress={progress}>
-            <span className="timer-phase-label">{t(lang, timer.phase)}</span>
-            <strong className="timer-time">{fmtSeconds(timer.remainingSeconds)}</strong>
-            <span className="timer-rounds">{t(lang, 'roundsDone', { n: timer.roundsCompleted })}</span>
-          </ProgressRing>
-          <p className="muted">{t(lang, 'tapToExit')}</p>
+          <div className="focus-fs-body">
+            <ProgressRing size={240} stroke={12} progress={progress}>
+              <span className="timer-phase-label">{t(lang, timer.phase)}</span>
+              <strong className="timer-time">{fmtSeconds(timer.remainingSeconds)}</strong>
+              <span className="timer-rounds">{t(lang, 'roundsDone', { n: timer.roundsCompleted })}</span>
+            </ProgressRing>
+            <div className="focus-fs-info">
+              <span className="focus-fs-label">{t(lang, 'focusLandscapeHint')}</span>
+              <p className="muted">{t(lang, 'tapToExit')}</p>
+            </div>
+          </div>
         </div>
       ) : null}
 

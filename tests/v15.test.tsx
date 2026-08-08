@@ -40,7 +40,7 @@ describe('v1.4 check-in calendar', () => {
     expect(screen.getByText('打卡日历')).toBeInTheDocument()
     expect(screen.getByText(/累计打卡 1 天/)).toBeInTheDocument()
     expect(document.querySelector('.cal-day.done')).not.toBeNull()
-    expect(screen.getByText('25 / 15 min')).toBeInTheDocument()
+    expect(screen.getByText('25 / 15')).toBeInTheDocument()
     expect(screen.getByText(/今日已打卡成功/)).toBeInTheDocument()
   })
 
@@ -64,7 +64,7 @@ describe('v1.4 check-in calendar', () => {
     )
     expect(screen.getByText(/累计打卡 0 天/)).toBeInTheDocument()
     expect(document.querySelector('.cal-day.done')).toBeNull()
-    expect(screen.getByText('10 / 15 min')).toBeInTheDocument()
-    expect(screen.getByText(/还差 5 分钟达成打卡/)).toBeInTheDocument()
+    expect(screen.getByText('10 / 15')).toBeInTheDocument()
+    expect(screen.getByText(/还差专注 5 分钟 或/)).toBeInTheDocument()
   })
 })
