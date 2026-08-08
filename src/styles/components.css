@@ -772,3 +772,169 @@
   background: var(--course);
   flex: none;
 }
+
+/* Time wheel */
+.time-wheel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: 180px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-2);
+  padding: 0 4px;
+}
+
+.wheel-col {
+  position: relative;
+  flex: 1;
+  height: 100%;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.wheel-items {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  transition: transform 0.18s ease;
+}
+
+.wheel-col.dragging .wheel-items {
+  transition: none;
+}
+
+.wheel-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  font-weight: 650;
+  color: var(--muted);
+  border-radius: 10px;
+}
+
+.wheel-item.active {
+  color: var(--primary);
+  font-weight: 800;
+  background: var(--surface-2);
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+.wheel-mask {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 60px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.wheel-mask-top {
+  top: 0;
+  background: linear-gradient(to bottom, var(--surface-2), rgba(0, 0, 0, 0));
+}
+
+.wheel-mask-bottom {
+  bottom: 0;
+  background: linear-gradient(to top, var(--surface-2), rgba(0, 0, 0, 0));
+}
+
+.wheel-colon {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--muted);
+  flex: none;
+}
+
+.wheel-stepper {
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 2;
+}
+
+.wheel-step {
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.85;
+}
+
+.wheel-step:active {
+  transform: scale(0.92);
+}
+
+.time-wheel-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.time-wheel-row .field {
+  margin-bottom: 0;
+}
+
+/* Swipe to delete */
+.swipe-item {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+}
+
+.swipe-delete {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 84px;
+  border: 0;
+  background: var(--danger);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 0;
+}
+
+.swipe-item.revealed .swipe-delete {
+  opacity: 1;
+}
+
+.swipe-content {
+  position: relative;
+  z-index: 1;
+  background: transparent;
+  border-radius: inherit;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  transition: transform 0.22s ease;
+  will-change: transform;
+}
+
+.swipe-content.swiping {
+  transition: none;
+}

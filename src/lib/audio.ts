@@ -1,4 +1,6 @@
-export type SoundId = 'rain' | 'stream' | 'ocean' | 'campfire' | 'forest' | 'thunder' | 'insects' | 'wind'
+export type NoiseId = 'rain' | 'stream' | 'ocean' | 'campfire' | 'forest' | 'thunder' | 'insects' | 'wind'
+export type MusicId = 'piano-calm' | 'piano-relax' | 'piano-beautiful'
+export type SoundId = NoiseId | MusicId
 
 export interface SoundDef {
   id: SoundId
@@ -18,9 +20,25 @@ export const SOUNDS: SoundDef[] = [
   { id: 'wind', zh: '山风', en: 'Mountain wind', file: 'audio/wind.mp3' }
 ]
 
+export const MUSIC: SoundDef[] = [
+  { id: 'piano-calm', zh: '钢琴·宁静', en: 'Calm Piano', file: 'audio/piano-calm.mp3' },
+  { id: 'piano-relax', zh: '钢琴·舒缓', en: 'Relaxing Piano', file: 'audio/piano-relax.mp3' },
+  { id: 'piano-beautiful', zh: '钢琴·唯美', en: 'Beautiful Piano', file: 'audio/piano-beautiful.mp3' }
+]
+
+export const ALL_TRACKS: SoundDef[] = [...SOUNDS, ...MUSIC]
+
 export function soundUrl(id: SoundId): string {
-  const def = SOUNDS.find((s) => s.id === id)
+  const def = ALL_TRACKS.find((s) => s.id === id)
   return def ? import.meta.env.BASE_URL + def.file : ''
+}
+
+export function findTrack(id: SoundId | null | undefined): SoundDef | undefined {
+  return id ? ALL_TRACKS.find((s) => s.id === id) : undefined
+}
+
+export function isMusicId(id: SoundId | null | undefined): boolean {
+  return !!id && MUSIC.some((m) => m.id === id)
 }
 
 interface ActiveTrack {

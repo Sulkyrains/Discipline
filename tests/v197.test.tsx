@@ -191,8 +191,9 @@ describe('v1.9.7 focus opens timetable', () => {
       </MemoryRouter>
     )
     expect(screen.getByText(/添加课程/)).toBeInTheDocument()
-    const item = container.querySelector('.course-item') as HTMLButtonElement
-    expect(item.disabled).toBe(true)
+    const item = container.querySelector('.course-item') as HTMLElement
+    expect(item.getAttribute('aria-disabled')).toBe('true')
+    expect(item.getAttribute('role')).toBe('button')
     expect(screen.getByText('专注中 · 可新增课程')).toBeInTheDocument()
   })
 })

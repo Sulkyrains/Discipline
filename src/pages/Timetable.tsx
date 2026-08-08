@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { t } from '../lib/i18n'
 import type { Course, CourseColor, Parity } from '../types'
 import { COURSE_COLORS } from '../types'
-import { minuteToHHMM, nowMinute, timeToMinute } from '../lib/format'
+import { minuteToHHMM, nowMinute } from '../lib/format'
 import {
   courseWeekLabel,
   coursesOnDay,
@@ -18,6 +18,9 @@ import { useFocusStore } from '../stores/useFocusStore'
 import Sheet from '../components/Sheet'
 import EmptyState from '../components/EmptyState'
 import ConfirmDialog from '../components/ConfirmDialog'
+import TimeWheel from '../components/TimeWheel'
+import SwipeDelete from '../components/SwipeDelete'
+import { requestNotificationPermission } from '../lib/notifications'
 
 interface CourseForm {
   name: string
@@ -53,6 +56,8 @@ function emptyForm(day = 1): CourseForm {
   }
 }
 
+let reminderPermissionAsked = false
+
 export default function Timetable() {
   const lang = useAppStore((s) => s.settings.language)
   const semesterStart = useAppStore((s) => s.settings.semesterStart)
@@ -69,6 +74,7 @@ export default function Timetable() {
   const [editing, setEditing] = useState<Course | 'new' | null>(null)
   const [form, setForm] = useState<CourseForm>(emptyForm)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<Course | null>(null)
   const [errors, setErrors] = useState<{ name?: string; time?: string; weeks?: string; day?: string }>({})
 
   const todayDOW = ((new Date().getDay() + 6) % 7) + 1
@@ -131,6 +137,10 @@ export default function Timetable() {
     if (form.weekEnd < form.weekStart) nextErrors.weeks = t(lang, 'weeksInvalid')
     setErrors(nextErrors)
     if (Object.keys(nextErrors).length > 0) return
+    if (form.reminderMinutes > 0 && !reminderPermissionAsked) {
+      reminderPermissionAsked = true
+      void requestNotificationPermission()
+    }
     const base = {
       name: form.name.trim(),
       location: form.location,
@@ -166,6 +176,11 @@ export default function Timetable() {
       }
     }
     setEditing(null)
+  }
+
+  const requestDelete = (course: Course) => {
+    setDeleteTarget(course)
+    setConfirmDelete(true)
   }
 
   const toggleWeekday = (d: number) => {
@@ -236,36 +251,50 @@ export default function Timetable() {
           <EmptyState emoji="🗓️" text={t(lang, 'noCourseOnDay')} />
         ) : (
           sortedDayCourses.map((course) => (
-            <button
+            <SwipeDelete
               key={course.id}
-              className="card course-item"
-              onClick={() => openEdit(course)}
+              onDelete={() => requestDelete(course)}
               disabled={focusActive}
+              deleteLabel={t(lang, 'delete')}
             >
-              <span className={`course-bar color-${course.color}`} />
-              <div className="course-main">
-                <div className="course-row">
-                  <strong className="course-name">{course.name}</strong>
-                  {course.priority ? (
-                    <span className={`chip chip-pri-${course.priority}`}>
-                      {t(lang, `pri${course.priority}` as 'pri1')}
-                    </span>
-                  ) : null}
-                  {ongoingId === course.id ? <span className="badge badge-live">{t(lang, 'ongoing')}</span> : null}
-                  {upcomingId === course.id ? <span className="badge badge-next">{t(lang, 'nextUp')}</span> : null}
+              <div
+                role="button"
+                tabIndex={focusActive ? -1 : 0}
+                aria-disabled={focusActive}
+                className="card course-item"
+                onClick={() => openEdit(course)}
+                onKeyDown={(e) => {
+                  if (!focusActive && (e.key === 'Enter' || e.key === ' ')) {
+                    e.preventDefault()
+                    openEdit(course)
+                  }
+                }}
+              >
+                <span className={`course-bar color-${course.color}`} />
+                <div className="course-main">
+                  <div className="course-row">
+                    <strong className="course-name">{course.name}</strong>
+                    {course.priority ? (
+                      <span className={`chip chip-pri-${course.priority}`}>
+                        {t(lang, `pri${course.priority}` as 'pri1')}
+                      </span>
+                    ) : null}
+                    {ongoingId === course.id ? <span className="badge badge-live">{t(lang, 'ongoing')}</span> : null}
+                    {upcomingId === course.id ? <span className="badge badge-next">{t(lang, 'nextUp')}</span> : null}
+                  </div>
+                  <span className="course-time">
+                    {minuteToHHMM(course.startMinute)} – {minuteToHHMM(course.endMinute)}
+                  </span>
+                  <span className="course-meta muted">
+                    {[course.location, course.teacher, courseWeekLabel(course)].filter(Boolean).join(' · ')}
+                  </span>
+                  {course.notes ? <span className="course-meta muted course-notes">📝 {course.notes}</span> : null}
                 </div>
-                <span className="course-time">
-                  {minuteToHHMM(course.startMinute)} – {minuteToHHMM(course.endMinute)}
-                </span>
-                <span className="course-meta muted">
-                  {[course.location, course.teacher, courseWeekLabel(course)].filter(Boolean).join(' · ')}
-                </span>
-                {course.notes ? <span className="course-meta muted course-notes">📝 {course.notes}</span> : null}
+                {course.reminderMinutes > 0 ? (
+                  <span className="course-reminder">🔔 {course.reminderMinutes}m</span>
+                ) : null}
               </div>
-              {course.reminderMinutes > 0 ? (
-                <span className="course-reminder">🔔 {course.reminderMinutes}m</span>
-              ) : null}
-            </button>
+            </SwipeDelete>
           ))
         )}
       </div>
@@ -343,26 +372,18 @@ export default function Timetable() {
           <div className="form-row">
             <label className="field">
               <span>{t(lang, 'startTime')}</span>
-              <input
-                className="input"
-                type="time"
-                value={minuteToHHMM(form.startMinute)}
-                onChange={(e) => {
-                  const m = timeToMinute(e.target.value)
-                  if (m !== null) setForm({ ...form, startMinute: m })
-                }}
+              <TimeWheel
+                value={form.startMinute}
+                onChange={(m) => setForm({ ...form, startMinute: m })}
+                ariaLabel={t(lang, 'startTime')}
               />
             </label>
             <label className="field">
               <span>{t(lang, 'endTime')}</span>
-              <input
-                className="input"
-                type="time"
-                value={minuteToHHMM(form.endMinute)}
-                onChange={(e) => {
-                  const m = timeToMinute(e.target.value)
-                  if (m !== null) setForm({ ...form, endMinute: m })
-                }}
+              <TimeWheel
+                value={form.endMinute}
+                onChange={(m) => setForm({ ...form, endMinute: m })}
+                ariaLabel={t(lang, 'endTime')}
               />
             </label>
           </div>
@@ -462,16 +483,20 @@ export default function Timetable() {
       <ConfirmDialog
         open={confirmDelete}
         title={t(lang, 'deleteCourse')}
-        body={(editing as Course | null)?.name ?? ''}
+        body={deleteTarget?.name ?? ''}
         danger
         confirmText={t(lang, 'delete')}
         cancelText={t(lang, 'cancel')}
         onConfirm={() => {
-          if (editing && editing !== 'new') removeCourse(editing.id)
+          if (deleteTarget) removeCourse(deleteTarget.id)
           setConfirmDelete(false)
           setEditing(null)
+          setDeleteTarget(null)
         }}
-        onCancel={() => setConfirmDelete(false)}
+        onCancel={() => {
+          setConfirmDelete(false)
+          setDeleteTarget(null)
+        }}
       />
     </div>
   )

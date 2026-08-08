@@ -6,6 +6,7 @@ import { autoThemeVars } from '../src/lib/autoTheme'
 import { todoReminderAt } from '../src/lib/notifications'
 import { THEME_ORDER } from '../src/lib/theme'
 import { defaultWhitelist } from '../src/lib/appWhitelist'
+import { WHEEL_ITEM_HEIGHT } from '../src/components/TimeWheel'
 import App from '../src/App'
 import Focus from '../src/pages/Focus'
 import Settings from '../src/pages/Settings'
@@ -14,6 +15,23 @@ import Todos from '../src/pages/Todos'
 import { defaultSettings, useAppStore } from '../src/stores/useAppStore'
 import { useFocusStore } from '../src/stores/useFocusStore'
 import type { Todo } from '../src/types'
+
+function dragWheel(label: string, hourDelta: number, minuteDelta: number) {
+  const wheel = screen.getByLabelText(label) as HTMLElement
+  const hours = wheel.querySelector('[data-wheel="hours"]') as HTMLElement
+  const minutes = wheel.querySelector('[data-wheel="minutes"]') as HTMLElement
+  const base = { bubbles: true, cancelable: true, clientY: 120 }
+  act(() => {
+    hours.dispatchEvent(new MouseEvent('pointerdown', base))
+    hours.dispatchEvent(new MouseEvent('pointermove', { ...base, clientY: 120 - hourDelta * WHEEL_ITEM_HEIGHT }))
+    hours.dispatchEvent(new MouseEvent('pointerup', base))
+  })
+  act(() => {
+    minutes.dispatchEvent(new MouseEvent('pointerdown', base))
+    minutes.dispatchEvent(new MouseEvent('pointermove', { ...base, clientY: 120 - minuteDelta * WHEEL_ITEM_HEIGHT }))
+    minutes.dispatchEvent(new MouseEvent('pointerup', base))
+  })
+}
 
 function resetStores() {
   useAppStore.setState({
@@ -84,8 +102,8 @@ describe('v1.9.8 course time inputs', () => {
     )
     fireEvent.click(screen.getByText(/添加课程/))
     fireEvent.change(screen.getByPlaceholderText('高等数学'), { target: { value: '线性代数' } })
-    fireEvent.change(screen.getByLabelText('开始时间'), { target: { value: '09:05' } })
-    fireEvent.change(screen.getByLabelText('结束时间'), { target: { value: '10:20' } })
+    dragWheel('开始时间', 1, 5)
+    dragWheel('结束时间', 2, -10)
     fireEvent.change(screen.getByLabelText('课前提醒'), { target: { value: '45' } })
     fireEvent.click(screen.getByText('保存课程'))
     const course = useAppStore.getState().courses[0]
@@ -102,8 +120,7 @@ describe('v1.9.8 course time inputs', () => {
     )
     fireEvent.click(screen.getByText(/添加课程/))
     fireEvent.change(screen.getByPlaceholderText('高等数学'), { target: { value: '体育' } })
-    fireEvent.change(screen.getByLabelText('开始时间'), { target: { value: '09:00' } })
-    fireEvent.change(screen.getByLabelText('结束时间'), { target: { value: '08:30' } })
+    dragWheel('开始时间', 1, 0)
     fireEvent.click(screen.getByText('保存课程'))
     expect(screen.getByText('结束时间需晚于开始时间')).toBeInTheDocument()
     expect(useAppStore.getState().courses).toHaveLength(0)
@@ -121,8 +138,9 @@ describe('v1.9.8 todo time fields', () => {
     )
     fireEvent.click(screen.getByText(/添加待办/))
     fireEvent.change(screen.getByPlaceholderText('复习高数第二章'), { target: { value: '写作业' } })
-    fireEvent.change(screen.getByLabelText('开始时间'), { target: { value: '09:00' } })
-    fireEvent.change(screen.getByLabelText('结束时间'), { target: { value: '10:00' } })
+    fireEvent.click(screen.getByText('设置时间'))
+    dragWheel('开始时间', 1, 0)
+    dragWheel('结束时间', 1, 0)
     fireEvent.change(screen.getByLabelText('提醒'), { target: { value: '30' } })
     fireEvent.click(screen.getByText('保存'))
     const saved = useAppStore.getState().todos[0]

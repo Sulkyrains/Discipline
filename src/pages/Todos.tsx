@@ -3,13 +3,15 @@ import { useNavigate } from 'react-router-dom'
 import { t } from '../lib/i18n'
 import type { CourseColor, Todo } from '../types'
 import { COURSE_COLORS } from '../types'
-import { addDays, dateKey, formatDateCN, minuteToHHMM, timeToMinute, todayKey } from '../lib/format'
+import { addDays, dateKey, formatDateCN, minuteToHHMM, todayKey } from '../lib/format'
 import { useAppStore } from '../stores/useAppStore'
 import { useFocusStore } from '../stores/useFocusStore'
 import { useToastStore } from '../stores/useToastStore'
 import Sheet from '../components/Sheet'
 import EmptyState from '../components/EmptyState'
 import ConfirmDialog from '../components/ConfirmDialog'
+import TimeWheel from '../components/TimeWheel'
+import SwipeDelete from '../components/SwipeDelete'
 
 type Filter = 'all' | 'done' | string
 
@@ -53,6 +55,7 @@ export default function Todos() {
   const [editing, setEditing] = useState<Todo | 'new' | null>(null)
   const [form, setForm] = useState<TodoForm>(emptyForm)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<Todo | null>(null)
   const [mode, setMode] = useState<'single' | 'batch'>('single')
   const [batchText, setBatchText] = useState('')
   const [batchError, setBatchError] = useState(false)
@@ -217,6 +220,11 @@ export default function Todos() {
     navigate('/focus')
   }
 
+  const requestDelete = (todo: Todo) => {
+    setDeleteTarget(todo)
+    setConfirmDelete(true)
+  }
+
   const priorityLabel = (p: number) => t(lang, `pri${Math.max(1, Math.min(3, p))}` as 'pri1')
 
   const colorCounts = (list: Todo[]): Map<string, number> => {
@@ -295,51 +303,68 @@ export default function Todos() {
           <EmptyState emoji="📝" text={t(lang, 'emptyTodos')} />
         ) : (
           filtered.map((todo) => (
-            <div key={todo.id} className={`card todo-item${todo.completed ? ' done' : ''}`}>
-              <button
-                className={`check${todo.completed ? ' checked' : ''}`}
-                onClick={() => onToggle(todo.id)}
-                aria-label={todo.completed ? 'undone' : 'done'}
-              >
-                {todo.completed ? '✓' : ''}
-              </button>
-              <button className="todo-content" onClick={() => (focusActive ? undefined : openEdit(todo))} disabled={focusActive}>
-                <strong>{todo.title}</strong>
-                {todo.notes ? <span className="muted todo-notes">{todo.notes}</span> : null}
-                <span className="todo-meta">
-                  <i className={`todo-color-dot color-${todo.color ?? 'indigo'}`} />
-                  {todo.priority ? (
-                    <span className={`chip chip-pri-${todo.priority}`}>
-                      {priorityLabel(todo.priority)}
-                    </span>
-                  ) : null}
-                  {todo.dueDate ? (
-                    <span className={`chip${todo.dueDate < today && !todo.completed ? ' chip-overdue' : ''}`}>
-                      {todo.dueDate < today && !todo.completed ? `${t(lang, 'overdue')} · ` : ''}
-                      {formatDateCN(todo.dueDate)}
-                    </span>
-                  ) : null}
-                  {todo.startMinute !== undefined ? (
-                    <span className="chip">
-                      {minuteToHHMM(todo.startMinute)}
-                      {todo.endMinute !== undefined ? `–${minuteToHHMM(todo.endMinute)}` : ''}
-                      {todo.reminderMinutes ? ` · 🔔${todo.reminderMinutes}` : ''}
-                    </span>
-                  ) : null}
-                  {todo.focusCount > 0 ? <span className="chip">🎯 ×{todo.focusCount}</span> : null}
-                  {(todo.tags ?? []).map((tag) => (
-                    <span key={tag} className="chip chip-tag">
-                      #{tag}
-                    </span>
-                  ))}
-                </span>
-              </button>
-              {!focusActive && !todo.completed ? (
-                <button className="btn btn-ghost btn-icon todo-focus" onClick={() => startFocusWith(todo)} aria-label={t(lang, 'focusWithTask')}>
-                  ▶
+            <SwipeDelete
+              key={todo.id}
+              onDelete={() => requestDelete(todo)}
+              disabled={focusActive}
+              deleteLabel={t(lang, 'delete')}
+            >
+              <div className={`card todo-item${todo.completed ? ' done' : ''}`}>
+                <button
+                  className={`check${todo.completed ? ' checked' : ''}`}
+                  data-no-swipe
+                  onClick={() => onToggle(todo.id)}
+                  aria-label={todo.completed ? 'undone' : 'done'}
+                >
+                  {todo.completed ? '✓' : ''}
                 </button>
-              ) : null}
-            </div>
+                <button
+                  className="todo-content"
+                  onClick={() => (focusActive ? undefined : openEdit(todo))}
+                  disabled={focusActive}
+                >
+                  <strong>{todo.title}</strong>
+                  {todo.notes ? <span className="muted todo-notes">{todo.notes}</span> : null}
+                  <span className="todo-meta">
+                    <i className={`todo-color-dot color-${todo.color ?? 'indigo'}`} />
+                    {todo.priority ? (
+                      <span className={`chip chip-pri-${todo.priority}`}>
+                        {priorityLabel(todo.priority)}
+                      </span>
+                    ) : null}
+                    {todo.dueDate ? (
+                      <span className={`chip${todo.dueDate < today && !todo.completed ? ' chip-overdue' : ''}`}>
+                        {todo.dueDate < today && !todo.completed ? `${t(lang, 'overdue')} · ` : ''}
+                        {formatDateCN(todo.dueDate)}
+                      </span>
+                    ) : null}
+                    {todo.startMinute !== undefined ? (
+                      <span className="chip">
+                        {minuteToHHMM(todo.startMinute)}
+                        {todo.endMinute !== undefined ? `–${minuteToHHMM(todo.endMinute)}` : ''}
+                        {todo.reminderMinutes ? ` · 🔔${todo.reminderMinutes}` : ''}
+                      </span>
+                    ) : null}
+                    {todo.focusCount > 0 ? <span className="chip">🎯 ×{todo.focusCount}</span> : null}
+                    {(todo.tags ?? []).map((tag) => (
+                      <span key={tag} className="chip chip-tag">
+                        #{tag}
+                      </span>
+                    ))}
+                  </span>
+                </button>
+                {!focusActive && !todo.completed ? (
+                  <button
+                    className="btn btn-ghost btn-icon todo-focus"
+                    data-no-swipe
+                    onClick={() => startFocusWith(todo)}
+                    aria-label={t(lang, 'focusWithTask')}
+                  >
+                    ▶
+                  </button>
+                ) : null}
+              </div>
+            </SwipeDelete>
           ))
         )}
       </div>
@@ -449,32 +474,53 @@ export default function Todos() {
               </select>
             </label>
           </div>
-          <div className="form-row">
-            <label className="field">
-              <span>{t(lang, 'startTime')}</span>
-              <input
-                className="input"
-                type="time"
-                value={form.startMinute !== undefined ? minuteToHHMM(form.startMinute) : ''}
-                onChange={(e) => {
-                  const m = timeToMinute(e.target.value)
-                  setForm({ ...form, startMinute: m ?? undefined })
-                }}
-              />
-            </label>
-            <label className="field">
-              <span>{t(lang, 'endTime')}</span>
-              <input
-                className="input"
-                type="time"
-                value={form.endMinute !== undefined ? minuteToHHMM(form.endMinute) : ''}
-                onChange={(e) => {
-                  const m = timeToMinute(e.target.value)
-                  setForm({ ...form, endMinute: m ?? undefined })
-                }}
-              />
-            </label>
+          <div className="field">
+            <span>{t(lang, 'startTime')}</span>
+            <div className="sound-chips">
+              <button
+                type="button"
+                className={`sound-chip${form.startMinute !== undefined ? ' active' : ''}`}
+                onClick={() =>
+                  setForm({
+                    ...form,
+                    startMinute: form.startMinute ?? 480,
+                    endMinute: form.endMinute ?? 540
+                  })
+                }
+              >
+                {t(lang, 'setTime')}
+              </button>
+              <button
+                type="button"
+                className={`sound-chip${form.startMinute === undefined ? ' active' : ''}`}
+                onClick={() =>
+                  setForm({ ...form, startMinute: undefined, endMinute: undefined, reminderMinutes: undefined })
+                }
+              >
+                {t(lang, 'noTime')}
+              </button>
+            </div>
           </div>
+          {form.startMinute !== undefined ? (
+            <div className="time-wheel-row">
+              <label className="field">
+                <span>{t(lang, 'startTime')}</span>
+                <TimeWheel
+                  value={form.startMinute}
+                  onChange={(m) => setForm({ ...form, startMinute: m })}
+                  ariaLabel={t(lang, 'startTime')}
+                />
+              </label>
+              <label className="field">
+                <span>{t(lang, 'endTime')}</span>
+                <TimeWheel
+                  value={form.endMinute ?? form.startMinute + 30}
+                  onChange={(m) => setForm({ ...form, endMinute: m })}
+                  ariaLabel={t(lang, 'endTime')}
+                />
+              </label>
+            </div>
+          ) : null}
           <label className="field">
             <span>{t(lang, 'reminderShort')}</span>
             <input
@@ -582,16 +628,20 @@ export default function Todos() {
       <ConfirmDialog
         open={confirmDelete}
         title={t(lang, 'delete')}
-        body={(editing as Todo | null)?.title ?? ''}
+        body={deleteTarget?.title ?? ''}
         danger
         confirmText={t(lang, 'delete')}
         cancelText={t(lang, 'cancel')}
         onConfirm={() => {
-          if (editing && editing !== 'new') removeTodo(editing.id)
+          if (deleteTarget) removeTodo(deleteTarget.id)
           setConfirmDelete(false)
           setEditing(null)
+          setDeleteTarget(null)
         }}
-        onCancel={() => setConfirmDelete(false)}
+        onCancel={() => {
+          setConfirmDelete(false)
+          setDeleteTarget(null)
+        }}
       />
     </div>
   )

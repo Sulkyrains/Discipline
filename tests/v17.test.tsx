@@ -6,7 +6,7 @@ import { join } from 'node:path'
 import App from '../src/App'
 import Focus from '../src/pages/Focus'
 import Settings from '../src/pages/Settings'
-import { SOUNDS, SoundEngine } from '../src/lib/audio'
+import { ALL_TRACKS, MUSIC, SOUNDS, SoundEngine } from '../src/lib/audio'
 import { playUiSound } from '../src/lib/uiSound'
 import { THEME_META, THEME_ORDER } from '../src/lib/theme'
 import { useAppStore } from '../src/stores/useAppStore'
@@ -102,7 +102,7 @@ function resetStores() {
 describe('v1.7 real white noise assets', () => {
   const audioDir = join(process.cwd(), 'public', 'audio')
 
-  it('ships eight non-empty mp3 files for offline use', () => {
+  it('ships all eleven non-empty mp3 files for offline use', () => {
     expect(existsSync(audioDir)).toBe(true)
     const files = readdirSync(audioDir)
       .filter((f) => f.endsWith('.mp3'))
@@ -112,6 +112,9 @@ describe('v1.7 real white noise assets', () => {
       'forest.mp3',
       'insects.mp3',
       'ocean.mp3',
+      'piano-beautiful.mp3',
+      'piano-calm.mp3',
+      'piano-relax.mp3',
       'rain.mp3',
       'stream.mp3',
       'thunder.mp3',
@@ -138,6 +141,17 @@ describe('v1.7 real white noise assets', () => {
       expect(s.en.length).toBeGreaterThan(0)
       expect(s.file.endsWith(`${s.id}.mp3`)).toBe(true)
     }
+  })
+
+  it('MUSIC exposes three calm piano tracks with labels and files', () => {
+    expect(MUSIC.map((m) => m.id)).toEqual(['piano-calm', 'piano-relax', 'piano-beautiful'])
+    for (const m of MUSIC) {
+      expect(m.zh.length).toBeGreaterThan(0)
+      expect(m.en.length).toBeGreaterThan(0)
+      expect(m.file.endsWith(`${m.id}.mp3`)).toBe(true)
+      expect(statSync(join(process.cwd(), 'public', m.file)).size).toBeGreaterThan(100_000)
+    }
+    expect(ALL_TRACKS).toHaveLength(11)
   })
 })
 

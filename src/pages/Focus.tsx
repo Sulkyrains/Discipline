@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 
 import { t } from '../lib/i18n'
 import { isFocusActive, minutesToSeconds, type TimerPhase } from '../lib/timer'
 import { dateKey, minuteToHHMM, todayKey } from '../lib/format'
-import { SOUNDS } from '../lib/audio'
+import { MUSIC, SOUNDS, isMusicId } from '../lib/audio'
 import { COMMON_APPS } from '../lib/appWhitelist'
 import { listInstalledApps } from '../lib/focusLock'
 import { playUiSound } from '../lib/uiSound'
@@ -52,6 +52,7 @@ export default function Focus() {
   const [wlCollapsed, setWlCollapsed] = useState(true)
   const [confirmBind, setConfirmBind] = useState(false)
   const [taskPickerOpen, setTaskPickerOpen] = useState(false)
+  const [fsMode, setFsMode] = useState<'off' | 'system' | 'inapp'>('off')
   const pendingStart = useRef(false)
 
   const active = isFocusActive(timer)
@@ -98,6 +99,47 @@ export default function Focus() {
     e.stopPropagation()
     setConfirmAbandon(true)
   }
+
+  const enterFullscreen = async () => {
+    playUiSound('soft', uiVol)
+    const el = document.documentElement
+    try {
+      if (document.fullscreenEnabled && typeof el.requestFullscreen === 'function') {
+        await el.requestFullscreen()
+        setFsMode('system')
+        return
+      }
+    } catch {
+      /* fall back to in-app fullscreen */
+    }
+    setFsMode('inapp')
+  }
+
+  const exitFullscreen = () => {
+    if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined)
+    setFsMode('off')
+  }
+
+  useEffect(() => {
+    const onChange = () => {
+      if (!document.fullscreenElement) setFsMode((m) => (m === 'system' ? 'off' : m))
+    }
+    document.addEventListener('fullscreenchange', onChange)
+    return () => document.removeEventListener('fullscreenchange', onChange)
+  }, [])
+
+  useEffect(() => {
+    if (timer.status !== 'running') {
+      if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined)
+      setFsMode('off')
+    }
+  }, [timer.status])
+
+  useEffect(() => {
+    return () => {
+      if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined)
+    }
+  }, [])
 
   const changeDuration = (minutes: number) => {
     const clamped = Math.max(10, Math.min(300, Number.isFinite(minutes) ? minutes : 10))
@@ -208,6 +250,11 @@ export default function Focus() {
             {timer.status === 'paused' ? t(lang, 'resume') : t(lang, 'start')}
           </button>
         )}
+        {timer.status === 'running' && timer.phase === 'focus' ? (
+          <button className="btn btn-ghost btn-lg" onClick={() => void (fsMode !== 'off' ? exitFullscreen() : enterFullscreen())}>
+            {fsMode !== 'off' ? t(lang, 'exitFullscreen') : t(lang, 'fullscreen')}
+          </button>
+        ) : null}
         {timer.phase === 'focus' && timer.status !== 'idle' ? (
           <button
             className="btn btn-danger btn-ghost-danger"
@@ -411,7 +458,7 @@ export default function Focus() {
             </button>
           ))}
         </div>
-        {sound ? (
+        {sound && !isMusicId(sound) ? (
           <label className="field volume-field">
             <span>
               {t(lang, 'volume')}: {Math.round(volume * 100)}%
@@ -426,6 +473,49 @@ export default function Focus() {
           </label>
         ) : null}
       </div>
+
+      <div className="card sound-card">
+        <h3 className="section-title">🎵 {t(lang, 'pureMusic')}</h3>
+        <div className="sound-chips">
+          {MUSIC.map((m) => (
+            <button
+              key={m.id}
+              className={`sound-chip${sound === m.id ? ' active' : ''}`}
+              onClick={() => toggleSound(m.id)}
+            >
+              {sound === m.id ? '◉' : '○'} {lang === 'zh' ? m.zh : m.en}
+            </button>
+          ))}
+        </div>
+        {sound && isMusicId(sound) ? (
+          <label className="field volume-field">
+            <span>
+              {t(lang, 'volume')}: {Math.round(volume * 100)}%
+            </span>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={Math.round(volume * 100)}
+              onChange={(e) => setVolume(Number(e.target.value) / 100)}
+            />
+          </label>
+        ) : null}
+      </div>
+
+      {fsMode === 'inapp' ? (
+        <div className="focus-fs-overlay" onClick={exitFullscreen}>
+          <button className="btn btn-ghost focus-fs-close" onClick={exitFullscreen} aria-label={t(lang, 'exitFullscreen')}>
+            ✕
+          </button>
+          <ProgressRing size={260} stroke={12} progress={progress}>
+            <span className="timer-phase-label">{t(lang, timer.phase)}</span>
+            <strong className="timer-time">{fmtSeconds(timer.remainingSeconds)}</strong>
+            <span className="timer-rounds">{t(lang, 'roundsDone', { n: timer.roundsCompleted })}</span>
+          </ProgressRing>
+          <p className="muted">{t(lang, 'tapToExit')}</p>
+        </div>
+      ) : null}
 
       <ConfirmDialog
         open={confirmAbandon}

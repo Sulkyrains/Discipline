@@ -1,5 +1,5 @@
 import { t } from '../lib/i18n'
-import { SOUNDS } from '../lib/audio'
+import { ALL_TRACKS } from '../lib/audio'
 import { useAppStore } from '../stores/useAppStore'
 import { useSoundStore } from '../stores/useSoundStore'
 
@@ -9,7 +9,7 @@ export default function SoundPill() {
   const stop = useSoundStore((s) => s.stop)
 
   if (!sound) return null
-  const def = SOUNDS.find((s) => s.id === sound)
+  const def = ALL_TRACKS.find((s) => s.id === sound)
 
   return (
     <button className="sound-pill" onClick={stop} aria-label={t(lang, 'stopSound')}>
