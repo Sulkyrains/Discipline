@@ -45,6 +45,20 @@ export function quoteForDate(d = new Date()): Quote {
   return QUOTES[dayOfYear(d) % QUOTES.length]
 }
 
+export function quotePeriod(hour: number): number {
+  return hour < 12 ? 0 : hour < 18 ? 1 : 2
+}
+
+export function quoteForDatePeriod(d = new Date(), hour = d.getHours()): Quote {
+  const base = dayOfYear(d) * 3 + quotePeriod(hour)
+  return QUOTES[((base % QUOTES.length) + QUOTES.length) % QUOTES.length]
+}
+
+export function quoteByPeriodOffset(d: Date, hour: number, offset: number): Quote {
+  const base = dayOfYear(d) * 3 + quotePeriod(hour) + offset
+  return QUOTES[((base % QUOTES.length) + QUOTES.length) % QUOTES.length]
+}
+
 export function quoteByIndex(i: number): Quote {
   const idx = ((i % QUOTES.length) + QUOTES.length) % QUOTES.length
   return QUOTES[idx]

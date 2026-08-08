@@ -2,48 +2,39 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Logo from '../components/Logo'
 import { t } from '../lib/i18n'
+import { isValidNickname } from '../lib/authIdentity'
 import { useAppStore } from '../stores/useAppStore'
 import { useAuthStore } from '../stores/useAuthStore'
-import { useToastStore } from '../stores/useToastStore'
 
 export default function Login() {
   const lang = useAppStore((s) => s.settings.language)
   const navigate = useNavigate()
   const signIn = useAuthStore((s) => s.signIn)
   const signUp = useAuthStore((s) => s.signUp)
-  const resetPassword = useAuthStore((s) => s.resetPassword)
   const error = useAuthStore((s) => s.error)
   const loading = useAuthStore((s) => s.loading)
   const [mode, setMode] = useState<'in' | 'up'>('in')
-  const [email, setEmail] = useState('')
+  const [identity, setIdentity] = useState('')
   const [password, setPassword] = useState('')
-  const [sendingReset, setSendingReset] = useState(false)
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
-    if (loading || !email.trim() || password.length < 6) return
-    const ok = mode === 'in' ? await signIn(email.trim(), password) : await signUp(email.trim(), password)
+    if (loading || !identity.trim() || password.length < 6) return
+    const ok =
+      mode === 'in'
+        ? await signIn(identity.trim(), password)
+        : await signUp(identity.trim(), password)
     if (ok) navigate('/', { replace: true })
   }
 
   const errorText = () => {
     if (!error) return ''
     if (error === 'config') return t(lang, 'errorConfig')
+    if (error === 'confirmEmail') return t(lang, 'confirmEmailHint')
+    if (error === 'nicknameTaken') return t(lang, 'nicknameTaken')
+    if (error === 'nicknameInvalid') return t(lang, 'nicknameInvalid')
     if (error === 'checkEmail') return t(lang, 'checkEmail')
-    if (error === 'reset') return t(lang, 'resetFail')
     return t(lang, 'errorAuth')
-  }
-
-  const onReset = async () => {
-    if (!email.trim() || sendingReset) return
-    setSendingReset(true)
-    const ok = await resetPassword(email.trim())
-    setSendingReset(false)
-    useAuthStore.setState({ error: null })
-    useToastStore.getState().push({
-      title: ok ? t(lang, 'resetSent') : t(lang, 'resetFail'),
-      kind: ok ? 'success' : 'warn'
-    })
   }
 
   return (
@@ -59,14 +50,18 @@ export default function Login() {
 
       <form className="card login-form" onSubmit={submit}>
         <label className="field">
-          <span>{t(lang, 'email')}</span>
+          <span>{mode === 'in' ? t(lang, 'nicknameOrEmail') : t(lang, 'nickname')}</span>
           <input
             className="input"
-            type="email"
-            value={email}
-            autoComplete="email"
-            onChange={(e) => setEmail(e.target.value)}
+            type="text"
+            value={identity}
+            placeholder={mode === 'in' ? '' : t(lang, 'nicknamePh')}
+            autoComplete="username"
+            onChange={(e) => setIdentity(e.target.value)}
           />
+          {mode === 'up' && identity.trim() && !isValidNickname(identity) ? (
+            <span className="form-error">{t(lang, 'nicknameInvalid')}</span>
+          ) : null}
         </label>
         <label className="field">
           <span>{t(lang, 'password')}</span>
@@ -79,10 +74,8 @@ export default function Login() {
           />
         </label>
 
-        {mode === 'in' ? (
-          <button type="button" className="reset-link" disabled={sendingReset} onClick={() => void onReset()}>
-            {sendingReset ? '…' : t(lang, 'passwordReset')}
-          </button>
+        {mode === 'up' ? (
+          <p className="register-warning muted small">⚠️ {t(lang, 'registerWarning')}</p>
         ) : null}
 
         {errorText() ? <p className="form-error">{errorText()}</p> : null}

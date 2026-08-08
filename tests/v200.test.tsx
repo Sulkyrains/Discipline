@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { generateRoomCode } from '../src/lib/studyRoom'
 import { defaultSettings, useAppStore } from '../src/stores/useAppStore'
 import { useAuthStore } from '../src/stores/useAuthStore'
@@ -8,7 +8,6 @@ import { useFocusStore } from '../src/stores/useFocusStore'
 import Home from '../src/pages/Home'
 import Study from '../src/pages/Study'
 import StudyRoom from '../src/pages/StudyRoom'
-import Login from '../src/pages/Login'
 import Feedback from '../src/pages/Feedback'
 
 vi.mock('../src/lib/supabase', () => ({
@@ -86,23 +85,6 @@ describe('v2.0.0 study room', () => {
     expect(entry).not.toBeNull()
     expect(entry.getAttribute('href')).toBe('/study')
     expect(entry.textContent).toContain('线上自习室')
-  })
-})
-
-describe('v2.0.0 login reset password', () => {
-  beforeEach(resetStores)
-
-  it('calls resetPassword with the entered email', async () => {
-    const resetPassword = vi.fn(async () => true)
-    useAuthStore.setState({ resetPassword })
-    render(
-      <MemoryRouter>
-        <Login />
-      </MemoryRouter>
-    )
-    fireEvent.change(screen.getByLabelText('邮箱'), { target: { value: 'me@example.com' } })
-    fireEvent.click(screen.getByText('忘记密码'))
-    expect(resetPassword).toHaveBeenCalledWith('me@example.com')
   })
 })
 

@@ -1764,21 +1764,14 @@ input[type='range'] {
   padding: 20px;
 }
 
-.reset-link {
-  border: 0;
-  background: none;
-  color: var(--muted);
-  font-size: 12px;
-  text-align: right;
-  padding: 0;
-  margin: -4px 0 10px;
-  align-self: flex-end;
-  cursor: pointer;
-}
-
 .login-form .btn {
   width: 100%;
   margin-top: 6px;
+}
+
+.register-warning {
+  margin: -2px 0 8px;
+  line-height: 1.5;
 }
 
 .mode-switch {

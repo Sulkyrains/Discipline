@@ -184,7 +184,7 @@ export default function Settings() {
           <>
             <div className="settings-row">
               <span className="muted">{t(lang, 'signedInAs')}</span>
-              <strong>{user.email}</strong>
+              <strong>{user.nickname ?? user.email}</strong>
             </div>
             <div className="settings-row">
               <span className="muted">{t(lang, 'currentMode')}</span>

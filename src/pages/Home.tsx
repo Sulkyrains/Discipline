@@ -4,7 +4,7 @@ import { t } from '../lib/i18n'
 import { dateKey, formatDateCN, minuteToHHMM, nowMinute, todayKey } from '../lib/format'
 import { coursesOnDay, currentWeekNumber, isCourseOngoing, WEEKDAY_EN, WEEKDAY_ZH } from '../lib/timetable'
 import { computeSignIns, computeStats } from '../lib/stats'
-import { quoteByIndex } from '../lib/quotes'
+import { quoteByPeriodOffset } from '../lib/quotes'
 import { applyUpdateNow } from '../lib/update'
 import { useAppStore } from '../stores/useAppStore'
 import { useAuthStore } from '../stores/useAuthStore'
@@ -49,7 +49,7 @@ export default function Home() {
 
   const greeting =
     hour < 12 ? t(lang, 'greetingMorning') : hour < 18 ? t(lang, 'greetingAfternoon') : t(lang, 'greetingEvening')
-  const quote = quoteByIndex(quoteIdx)
+  const quote = quoteByPeriodOffset(now, now.getHours(), quoteIdx)
   const clock = `${String(clockNow.getHours()).padStart(2, '0')}:${String(clockNow.getMinutes()).padStart(2, '0')}`
   const weekdayLabel = lang === 'zh' ? `周${WEEKDAY_ZH[dow - 1]}` : WEEKDAY_EN[dow - 1]
 
@@ -70,7 +70,7 @@ export default function Home() {
         <div>
           <h1 className="home-greeting">
             {greeting}
-            {user ? `, ${user.email.split('@')[0]}` : ''}
+            {user ? `, ${user.nickname ?? user.email.split('@')[0]}` : ''}
           </h1>
           <p className="home-date">
             {now.getMonth() + 1}月{now.getDate()}日 {weekdayLabel} · {t(lang, 'weekLabel', { week })}

@@ -3,6 +3,7 @@ import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import type { UserInfo } from '../types'
 import { mergeCollections, pullRemote, pushLocal } from '../lib/sync'
 import { t } from '../lib/i18n'
+import { isEmailInput, isValidNickname, nicknameToEmail, normalizeNickname } from '../lib/authIdentity'
 import { useAppStore } from './useAppStore'
 import { useToastStore } from './useToastStore'
 
@@ -12,8 +13,8 @@ interface AuthState {
   error: string | null
   pendingMerge: boolean
   init: () => void
-  signIn: (email: string, password: string) => Promise<boolean>
-  signUp: (email: string, password: string) => Promise<boolean>
+  signIn: (nicknameOrEmail: string, password: string) => Promise<boolean>
+  signUp: (nickname: string, password: string) => Promise<boolean>
   resetPassword: (email: string) => Promise<boolean>
   signOut: () => Promise<void>
   setPendingMerge: (v: boolean) => void
@@ -30,6 +31,15 @@ function handleUser(user: UserInfo | null): void {
   }
 }
 
+function userInfoFromAuth(u: { id: string; email?: string | null; user_metadata?: unknown }): UserInfo {
+  const meta = (u.user_metadata ?? {}) as { nickname?: unknown }
+  return {
+    id: u.id,
+    email: u.email ?? '',
+    nickname: typeof meta.nickname === 'string' && meta.nickname ? meta.nickname : undefined
+  }
+}
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   loading: false,
@@ -40,45 +50,61 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (!supabase) return
     void supabase.auth.getSession().then(({ data }) => {
       const u = data.session?.user
-      handleUser(u ? { id: u.id, email: u.email ?? '' } : null)
+      handleUser(u ? userInfoFromAuth(u) : null)
     })
     supabase.auth.onAuthStateChange((_event, session) => {
       const u = session?.user
-      handleUser(u ? { id: u.id, email: u.email ?? '' } : null)
+      handleUser(u ? userInfoFromAuth(u) : null)
     })
   },
 
-  signIn: async (email, password) => {
+  signIn: async (nicknameOrEmail, password) => {
     if (!supabase) {
       set({ error: 'config' })
       return false
     }
     set({ loading: true, error: null })
+    const email = isEmailInput(nicknameOrEmail)
+      ? nicknameOrEmail.trim()
+      : await nicknameToEmail(nicknameOrEmail)
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error || !data.user) {
       set({ loading: false, error: 'auth' })
       return false
     }
-    handleUser({ id: data.user.id, email: data.user.email ?? '' })
+    handleUser(userInfoFromAuth(data.user))
     return true
   },
 
-  signUp: async (email, password) => {
+  signUp: async (nickname, password) => {
     if (!supabase) {
       set({ error: 'config' })
       return false
     }
+    const normalized = normalizeNickname(nickname)
+    if (!isValidNickname(nickname)) {
+      set({ loading: false, error: 'nicknameInvalid' })
+      return false
+    }
     set({ loading: true, error: null })
-    const { data, error } = await supabase.auth.signUp({ email, password })
+    const email = await nicknameToEmail(normalized)
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { nickname: normalized } }
+    })
     if (error) {
-      set({ loading: false, error: 'auth' })
+      set({
+        loading: false,
+        error: error.code === 'user_already_exists' ? 'nicknameTaken' : 'auth'
+      })
       return false
     }
     if (data.session?.user) {
-      handleUser({ id: data.session.user.id, email: data.session.user.email ?? '' })
+      handleUser(userInfoFromAuth(data.session.user))
       return true
     }
-    set({ loading: false, error: 'checkEmail' })
+    set({ loading: false, error: 'confirmEmail' })
     return false
   },
 
