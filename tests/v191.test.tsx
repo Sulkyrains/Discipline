@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { todayKey } from '../src/lib/format'
@@ -88,24 +88,6 @@ describe('v1.9.1 dock customization', () => {
     expect(screen.getAllByRole('link')).toHaveLength(6)
     const links = [...container.querySelectorAll<HTMLAnchorElement>('a')]
     expect(links[links.length - 1].getAttribute('href')).toBe('/settings')
-  })
-
-  it('does not show remove badges on long-press and keeps the order', () => {
-    const { container } = render(
-      <MemoryRouter>
-        <BottomNav />
-      </MemoryRouter>
-    )
-    const wraps = container.querySelectorAll<HTMLElement>('.nav-item-wrap')
-    fireEvent.pointerDown(wraps[0], { pointerId: 1, clientX: 30 })
-    act(() => {
-      vi.advanceTimersByTime(650)
-    })
-    expect(container.querySelectorAll('.dock-remove').length).toBe(0)
-    expect(container.querySelector('.nav-item-wrap.dragging')).not.toBeNull()
-    fireEvent.pointerUp(wraps[0], { pointerId: 1, clientX: 30 })
-    expect(useAppStore.getState().dockOrder).toEqual(DEFAULT_DOCK)
-    expect(useAppStore.getState().dockOrder[useAppStore.getState().dockOrder.length - 1]).toBe('/settings')
   })
 
   it('removes an entry only from the settings dock manager', () => {

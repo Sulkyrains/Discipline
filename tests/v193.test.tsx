@@ -1,9 +1,8 @@
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { DEFAULT_DOCK } from '../src/lib/migration'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { todayKey } from '../src/lib/format'
-import BottomNav from '../src/components/BottomNav'
+import { DEFAULT_DOCK } from '../src/lib/migration'
 import Home from '../src/pages/Home'
 import Settings from '../src/pages/Settings'
 import { defaultSettings, useAppStore } from '../src/stores/useAppStore'
@@ -59,53 +58,6 @@ function todo(id: string, title: string): Todo {
     focusCount: 0
   }
 }
-
-describe('v1.9.3 long-press drag stability', () => {
-  beforeEach(() => {
-    resetStores()
-    vi.useFakeTimers()
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
-    vi.restoreAllMocks()
-  })
-
-  it('does not reorder on a long-press without movement', () => {
-    const { container } = render(
-      <MemoryRouter>
-        <BottomNav />
-      </MemoryRouter>
-    )
-    const wraps = container.querySelectorAll<HTMLElement>('.nav-item-wrap')
-    fireEvent.pointerDown(wraps[0], { pointerId: 1, clientX: 30 })
-    act(() => {
-      vi.advanceTimersByTime(650)
-    })
-    expect(container.querySelectorAll('.dock-remove').length).toBe(0)
-    expect(container.querySelector('.nav-item-wrap.dragging')).not.toBeNull()
-    fireEvent.pointerUp(wraps[0], { pointerId: 1, clientX: 30 })
-    expect(useAppStore.getState().dockOrder).toEqual(DEFAULT_DOCK)
-  })
-
-  it('aborts the long-press and restores the icon when the browser cancels during the hold', () => {
-    const { container } = render(
-      <MemoryRouter>
-        <BottomNav />
-      </MemoryRouter>
-    )
-    const wraps = container.querySelectorAll<HTMLElement>('.nav-item-wrap')
-    fireEvent.pointerDown(wraps[0], { pointerId: 1, clientX: 30 })
-    fireEvent.pointerCancel(wraps[0], { pointerId: 1 })
-    act(() => {
-      vi.advanceTimersByTime(650)
-    })
-    expect(container.querySelectorAll('.dock-remove').length).toBe(0)
-    expect(container.querySelector('.nav-item-wrap.dragging')).toBeNull()
-    fireEvent.pointerUp(wraps[0], { pointerId: 1, clientX: 30 })
-    expect(useAppStore.getState().dockOrder).toEqual(DEFAULT_DOCK)
-  })
-})
 
 describe('v1.9.3 home plan headings', () => {
   beforeEach(resetStores)

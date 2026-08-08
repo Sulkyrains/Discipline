@@ -238,7 +238,6 @@ export default function Settings() {
 
       <section className="card settings-section">
         <h3 className="section-title">{t(lang, 'dockManage')}</h3>
-        <p className="muted small">{t(lang, 'dockLongPressHint')}</p>
         <div className="dock-manage-row">
           <span>{t(lang, 'navMe')}</span>
           <span className="muted small">{t(lang, 'dockFixed')}</span>
