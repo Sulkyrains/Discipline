@@ -13,6 +13,7 @@ import { applyUpdateNow } from '../lib/update'
 import { useUpdateStore } from '../stores/useUpdateStore'
 import { useSoundStore } from '../stores/useSoundStore'
 import ConfirmDialog from '../components/ConfirmDialog'
+import { isDerivedEmail } from '../lib/account'
 import {
   dedupeCustomName,
   deleteCustomAudio,
@@ -55,7 +56,12 @@ export default function Settings() {
   const addCustomSound = useAppStore((s) => s.addCustomSound)
   const removeCustomSound = useAppStore((s) => s.removeCustomSound)
   const user = useAuthStore((s) => s.user)
+  const authError = useAuthStore((s) => s.error)
   const signOut = useAuthStore((s) => s.signOut)
+  const updateNickname = useAuthStore((s) => s.updateNickname)
+  const bindEmail = useAuthStore((s) => s.bindEmail)
+  const uploadAvatar = useAuthStore((s) => s.uploadAvatar)
+  const sendResetEmail = useAuthStore((s) => s.sendResetEmail)
   const mergeWithCloud = useAuthStore((s) => s.mergeWithCloud)
   const navigate = useNavigate()
   const [permState, setPermState] = useState<'unknown' | 'granted' | 'denied'>('unknown')
@@ -64,10 +70,65 @@ export default function Settings() {
   const [importKind, setImportKind] = useState<'noise' | 'music'>('music')
   const [previewId, setPreviewId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
+  const [editNickname, setEditNickname] = useState(false)
+  const [nicknameInput, setNicknameInput] = useState('')
+  const [editEmail, setEditEmail] = useState(false)
+  const [emailInput, setEmailInput] = useState('')
   const updateStatus = useUpdateStore((s) => s.status)
   const updateChecking = updateStatus === 'checking'
   const updateRemote = useUpdateStore((s) => s.lastRemote)
   const lastCheckedAt = useUpdateStore((s) => s.lastCheckedAt)
+
+  const emailBound = !!user && !isDerivedEmail(user.email)
+  const authErrorText = authError
+    ? authError === 'nicknameTaken'
+      ? t(lang, 'nicknameTaken')
+      : authError === 'nicknameInvalid'
+        ? t(lang, 'nicknameInvalid')
+        : authError === 'emailInvalid'
+          ? t(lang, 'emailInvalid')
+          : authError === 'emailInUse'
+            ? t(lang, 'emailInUse')
+            : ''
+    : ''
+
+  const onAvatarChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    const ok = await uploadAvatar(file)
+    useToastStore.getState().push({
+      title: ok ? t(lang, 'avatarSaved') : t(lang, 'updateCheckFailed'),
+      kind: ok ? 'success' : 'warn'
+    })
+  }
+
+  const saveNickname = async () => {
+    const ok = await updateNickname(nicknameInput)
+    if (ok) {
+      setEditNickname(false)
+      setNicknameInput('')
+      useToastStore.getState().push({ title: t(lang, 'nicknameSaved'), kind: 'success' })
+    }
+  }
+
+  const saveEmail = async () => {
+    const ok = await bindEmail(emailInput)
+    if (ok) {
+      setEditEmail(false)
+      setEmailInput('')
+      useToastStore.getState().push({ title: t(lang, 'emailChangeSent'), kind: 'success' })
+    }
+  }
+
+  const resetByEmail = async () => {
+    const ok = await sendResetEmail()
+    useToastStore.getState().push({
+      title: ok ? t(lang, 'resetSent') : t(lang, 'resetFail'),
+      kind: ok ? 'success' : 'warn'
+    })
+  }
 
   const startImport = (kind: 'noise' | 'music') => {
     setImportKind(kind)
@@ -182,10 +243,101 @@ export default function Settings() {
         <h3 className="section-title">{t(lang, 'account')}</h3>
         {user ? (
           <>
-            <div className="settings-row">
-              <span className="muted">{t(lang, 'signedInAs')}</span>
-              <strong>{user.nickname ?? user.email}</strong>
+            <div className="account-head">
+              <button
+                type="button"
+                className={`avatar-circle${user.avatarUrl ? ' has-img' : ''}`}
+                onClick={() => avatarInputRef.current?.click()}
+                title={t(lang, 'changeAvatar')}
+              >
+                {user.avatarUrl ? (
+                  <img src={user.avatarUrl} alt={user.nickname ?? 'avatar'} />
+                ) : (
+                  <span>{user.nickname?.[0] ?? '?'}</span>
+                )}
+              </button>
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={(e) => void onAvatarChange(e)}
+              />
+              <div className="account-head-main">
+                <strong>{user.nickname ?? user.email}</strong>
+                <span className="muted small">{emailBound ? user.email : t(lang, 'emailNotBound')}</span>
+              </div>
+              <button className="btn btn-ghost btn-sm" onClick={() => avatarInputRef.current?.click()}>
+                {t(lang, 'changeAvatar')}
+              </button>
             </div>
+            <div className="settings-row">
+              <span className="muted">{t(lang, 'nickname')}</span>
+              <strong>{user.nickname ?? '—'}</strong>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => {
+                  setEditNickname(true)
+                  setNicknameInput(user.nickname ?? '')
+                }}
+              >
+                {t(lang, 'changeNickname')}
+              </button>
+            </div>
+            {editNickname ? (
+              <div className="settings-row">
+                <input
+                  className="input"
+                  value={nicknameInput}
+                  onChange={(e) => setNicknameInput(e.target.value)}
+                />
+                <button className="btn btn-primary btn-sm" onClick={() => void saveNickname()}>
+                  {t(lang, 'save')}
+                </button>
+                <button className="btn btn-ghost btn-sm" onClick={() => setEditNickname(false)}>
+                  {t(lang, 'cancel')}
+                </button>
+              </div>
+            ) : null}
+            <div className="settings-row">
+              <span className="muted">{t(lang, 'email')}</span>
+              <strong>{emailBound ? user.email : t(lang, 'emailNotBound')}</strong>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => {
+                  setEditEmail(true)
+                  setEmailInput(emailBound ? user.email : '')
+                }}
+              >
+                {emailBound ? t(lang, 'changeEmail') : t(lang, 'bindEmail')}
+              </button>
+            </div>
+            {editEmail ? (
+              <div className="settings-row">
+                <input
+                  className="input"
+                  type="email"
+                  value={emailInput}
+                  onChange={(e) => setEmailInput(e.target.value)}
+                />
+                <button className="btn btn-primary btn-sm" onClick={() => void saveEmail()}>
+                  {t(lang, 'save')}
+                </button>
+                <button className="btn btn-ghost btn-sm" onClick={() => setEditEmail(false)}>
+                  {t(lang, 'cancel')}
+                </button>
+              </div>
+            ) : null}
+            {authErrorText ? <p className="form-error">{authErrorText}</p> : null}
+            {emailBound ? (
+              <div className="settings-actions">
+                <button className="btn btn-ghost btn-sm" onClick={() => void resetByEmail()}>
+                  {t(lang, 'resetViaEmail')}
+                </button>
+              </div>
+            ) : (
+              <p className="muted small">⚠️ {t(lang, 'emailNotBound')} · {t(lang, 'bindEmailHint')}</p>
+            )}
             <div className="settings-row">
               <span className="muted">{t(lang, 'currentMode')}</span>
               <span className="chip chip-ok">{t(lang, 'loginMode')}</span>

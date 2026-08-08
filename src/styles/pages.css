@@ -1774,6 +1774,68 @@ input[type='range'] {
   line-height: 1.5;
 }
 
+.account-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.avatar-circle {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--surface-3);
+  color: var(--primary);
+  font-size: 22px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+  padding: 0;
+  flex: none;
+}
+
+.avatar-circle.has-img {
+  border-color: var(--primary);
+}
+
+.avatar-circle img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.account-head-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.account-head-main strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.avatar-pick-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatar-pick-row .avatar-circle {
+  width: 44px;
+  height: 44px;
+  font-size: 18px;
+  cursor: default;
+}
+
 .mode-switch {
   display: block;
   margin: 14px auto 0;

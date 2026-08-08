@@ -132,3 +132,35 @@ create policy "study_rooms owner delete" on public.study_rooms
   for delete using (auth.uid() = owner_id);
 
 create index if not exists idx_study_rooms_code on public.study_rooms (code);
+
+-- Discipline v2.0.4: 昵称映射与头像
+alter table public.profiles add column if not exists auth_email text;
+
+create unique index if not exists idx_profiles_nickname_lower on public.profiles (lower(nickname));
+
+create or replace function public.get_auth_email_by_nickname(p_nickname text)
+returns text
+language sql
+security definer
+set search_path = public
+as $$
+  select auth_email from public.profiles where lower(nickname) = lower(p_nickname) limit 1;
+$$;
+
+grant execute on function public.get_auth_email_by_nickname(text) to anon, authenticated;
+
+insert into storage.buckets (id, name, public)
+values ('avatars', 'avatars', true)
+on conflict (id) do nothing;
+
+create policy "avatars public read" on storage.objects
+  for select using (bucket_id = 'avatars');
+
+create policy "avatars own upload" on storage.objects
+  for insert with check (bucket_id = 'avatars' and auth.uid()::text = (storage.foldername(name))[1]);
+
+create policy "avatars own update" on storage.objects
+  for update using (bucket_id = 'avatars' and auth.uid()::text = (storage.foldername(name))[1]);
+
+create policy "avatars own delete" on storage.objects
+  for delete using (bucket_id = 'avatars' and auth.uid()::text = (storage.foldername(name))[1]);

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Logo from '../components/Logo'
 import { t } from '../lib/i18n'
@@ -16,6 +16,9 @@ export default function Login() {
   const [mode, setMode] = useState<'in' | 'up'>('in')
   const [identity, setIdentity] = useState('')
   const [password, setPassword] = useState('')
+  const [email, setEmail] = useState('')
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
@@ -23,8 +26,29 @@ export default function Login() {
     const ok =
       mode === 'in'
         ? await signIn(identity.trim(), password)
-        : await signUp(identity.trim(), password)
-    if (ok) navigate('/', { replace: true })
+        : await signUp(identity.trim(), password, email.trim() || undefined)
+    if (ok) {
+      if (mode === 'up' && avatarFile) {
+        await useAuthStore.getState().uploadAvatar(avatarFile)
+      }
+      navigate('/', { replace: true })
+    }
+  }
+
+  const onAvatarPick = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      useAuthStore.setState({ error: 'avatarTypeOnly' })
+      return
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      useAuthStore.setState({ error: 'avatarTooLarge' })
+      return
+    }
+    setAvatarFile(file)
+    setAvatarPreview(URL.createObjectURL(file))
   }
 
   const errorText = () => {
@@ -33,6 +57,10 @@ export default function Login() {
     if (error === 'confirmEmail') return t(lang, 'confirmEmailHint')
     if (error === 'nicknameTaken') return t(lang, 'nicknameTaken')
     if (error === 'nicknameInvalid') return t(lang, 'nicknameInvalid')
+    if (error === 'emailInvalid') return t(lang, 'emailInvalid')
+    if (error === 'emailInUse') return t(lang, 'emailInUse')
+    if (error === 'avatarTypeOnly') return t(lang, 'avatarTypeOnly')
+    if (error === 'avatarTooLarge') return t(lang, 'avatarTooLarge')
     if (error === 'checkEmail') return t(lang, 'checkEmail')
     return t(lang, 'errorAuth')
   }
@@ -63,6 +91,18 @@ export default function Login() {
             <span className="form-error">{t(lang, 'nicknameInvalid')}</span>
           ) : null}
         </label>
+        {mode === 'up' ? (
+          <label className="field">
+            <span>{t(lang, 'emailOptional')}</span>
+            <input
+              className="input"
+              type="email"
+              value={email}
+              autoComplete="email"
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </label>
+        ) : null}
         <label className="field">
           <span>{t(lang, 'password')}</span>
           <input
@@ -75,7 +115,21 @@ export default function Login() {
         </label>
 
         {mode === 'up' ? (
-          <p className="register-warning muted small">⚠️ {t(lang, 'registerWarning')}</p>
+          <>
+            <div className="field avatar-pick">
+              <span>{t(lang, 'avatar')} · {t(lang, 'optional')}</span>
+              <div className="avatar-pick-row">
+                <span className={`avatar-circle${avatarPreview ? ' has-img' : ''}`}>
+                  {avatarPreview ? <img src={avatarPreview} alt="avatar" /> : '🙂'}
+                </span>
+                <label className="btn btn-ghost btn-sm">
+                  {avatarFile ? t(lang, 'changeAvatar') : t(lang, 'uploadAvatar')}
+                  <input type="file" accept="image/*" hidden onChange={onAvatarPick} />
+                </label>
+              </div>
+            </div>
+            <p className="register-warning muted small">⚠️ {t(lang, 'registerWarning')}</p>
+          </>
         ) : null}
 
         {errorText() ? <p className="form-error">{errorText()}</p> : null}
