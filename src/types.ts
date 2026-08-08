@@ -97,6 +97,7 @@ export interface UserInfo {
   email: string
   nickname?: string
   avatarUrl?: string
+  avatarEmoji?: string
 }
 
 export interface AppData {

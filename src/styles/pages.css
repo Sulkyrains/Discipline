@@ -1836,6 +1836,37 @@ input[type='range'] {
   cursor: default;
 }
 
+.avatar-emoji {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.quick-avatar-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 6px 0 2px;
+}
+
+.quick-avatar-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--surface-2);
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.quick-avatar-btn.active {
+  border-color: var(--primary);
+  transform: scale(1.12);
+}
+
 .mode-switch {
   display: block;
   margin: 14px auto 0;

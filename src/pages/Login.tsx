@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import Logo from '../components/Logo'
 import { t } from '../lib/i18n'
 import { isValidNickname } from '../lib/authIdentity'
+import { PRESET_AVATARS } from '../lib/account'
 import { useAppStore } from '../stores/useAppStore'
 import { useAuthStore } from '../stores/useAuthStore'
 
@@ -19,6 +20,7 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const [presetEmoji, setPresetEmoji] = useState<string | null>(null)
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
@@ -28,8 +30,12 @@ export default function Login() {
         ? await signIn(identity.trim(), password)
         : await signUp(identity.trim(), password, email.trim() || undefined)
     if (ok) {
-      if (mode === 'up' && avatarFile) {
-        await useAuthStore.getState().uploadAvatar(avatarFile)
+      if (mode === 'up') {
+        if (presetEmoji) {
+          await useAuthStore.getState().setAvatarEmoji(presetEmoji)
+        } else if (avatarFile) {
+          await useAuthStore.getState().uploadAvatar(avatarFile)
+        }
       }
       navigate('/', { replace: true })
     }
@@ -47,8 +53,15 @@ export default function Login() {
       useAuthStore.setState({ error: 'avatarTooLarge' })
       return
     }
+    setPresetEmoji(null)
     setAvatarFile(file)
     setAvatarPreview(URL.createObjectURL(file))
+  }
+
+  const onPresetPick = (emoji: string) => {
+    setPresetEmoji(emoji)
+    setAvatarFile(null)
+    setAvatarPreview(null)
   }
 
   const errorText = () => {
@@ -120,12 +133,31 @@ export default function Login() {
               <span>{t(lang, 'avatar')} · {t(lang, 'optional')}</span>
               <div className="avatar-pick-row">
                 <span className={`avatar-circle${avatarPreview ? ' has-img' : ''}`}>
-                  {avatarPreview ? <img src={avatarPreview} alt="avatar" /> : '🙂'}
+                  {avatarPreview ? (
+                    <img src={avatarPreview} alt="avatar" />
+                  ) : presetEmoji ? (
+                    <span className="avatar-emoji">{presetEmoji}</span>
+                  ) : (
+                    '🙂'
+                  )}
                 </span>
                 <label className="btn btn-ghost btn-sm">
                   {avatarFile ? t(lang, 'changeAvatar') : t(lang, 'uploadAvatar')}
                   <input type="file" accept="image/*" hidden onChange={onAvatarPick} />
                 </label>
+              </div>
+              <p className="muted small">{t(lang, 'quickAvatar')}</p>
+              <div className="quick-avatar-grid">
+                {PRESET_AVATARS.map((e) => (
+                  <button
+                    key={e}
+                    type="button"
+                    className={`quick-avatar-btn${presetEmoji === e ? ' active' : ''}`}
+                    onClick={() => onPresetPick(e)}
+                  >
+                    {e}
+                  </button>
+                ))}
               </div>
             </div>
             <p className="register-warning muted small">⚠️ {t(lang, 'registerWarning')}</p>

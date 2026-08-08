@@ -13,7 +13,7 @@ import { applyUpdateNow } from '../lib/update'
 import { useUpdateStore } from '../stores/useUpdateStore'
 import { useSoundStore } from '../stores/useSoundStore'
 import ConfirmDialog from '../components/ConfirmDialog'
-import { isDerivedEmail } from '../lib/account'
+import { isDerivedEmail, PRESET_AVATARS } from '../lib/account'
 import {
   dedupeCustomName,
   deleteCustomAudio,
@@ -61,6 +61,7 @@ export default function Settings() {
   const updateNickname = useAuthStore((s) => s.updateNickname)
   const bindEmail = useAuthStore((s) => s.bindEmail)
   const uploadAvatar = useAuthStore((s) => s.uploadAvatar)
+  const setAvatarEmoji = useAuthStore((s) => s.setAvatarEmoji)
   const sendResetEmail = useAuthStore((s) => s.sendResetEmail)
   const mergeWithCloud = useAuthStore((s) => s.mergeWithCloud)
   const navigate = useNavigate()
@@ -126,6 +127,14 @@ export default function Settings() {
     const ok = await sendResetEmail()
     useToastStore.getState().push({
       title: ok ? t(lang, 'resetSent') : t(lang, 'resetFail'),
+      kind: ok ? 'success' : 'warn'
+    })
+  }
+
+  const pickEmoji = async (emoji: string) => {
+    const ok = await setAvatarEmoji(emoji)
+    useToastStore.getState().push({
+      title: ok ? t(lang, 'avatarSaved') : t(lang, 'updateCheckFailed'),
       kind: ok ? 'success' : 'warn'
     })
   }
@@ -252,6 +261,8 @@ export default function Settings() {
               >
                 {user.avatarUrl ? (
                   <img src={user.avatarUrl} alt={user.nickname ?? 'avatar'} />
+                ) : user.avatarEmoji ? (
+                  <span className="avatar-emoji">{user.avatarEmoji}</span>
                 ) : (
                   <span>{user.nickname?.[0] ?? '?'}</span>
                 )}
@@ -270,6 +281,19 @@ export default function Settings() {
               <button className="btn btn-ghost btn-sm" onClick={() => avatarInputRef.current?.click()}>
                 {t(lang, 'changeAvatar')}
               </button>
+            </div>
+            <p className="section-sub">{t(lang, 'quickAvatar')}</p>
+            <div className="quick-avatar-grid">
+              {PRESET_AVATARS.map((e) => (
+                <button
+                  key={e}
+                  type="button"
+                  className={`quick-avatar-btn${user.avatarEmoji === e ? ' active' : ''}`}
+                  onClick={() => void pickEmoji(e)}
+                >
+                  {e}
+                </button>
+              ))}
             </div>
             <div className="settings-row">
               <span className="muted">{t(lang, 'nickname')}</span>

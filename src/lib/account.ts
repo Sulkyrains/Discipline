@@ -2,6 +2,7 @@ import { supabase, SUPABASE_URL } from './supabase'
 
 export const DERIVED_EMAIL_SUFFIX = '@discipline.app'
 export const MAX_AVATAR_BYTES = 2 * 1024 * 1024
+export const PRESET_AVATARS = ['🦊', '🐼', '🐯', '🦁', '🐨', '🐸', '🐙', '🦄', '🌈', '⭐', '🍀', '🔥'] as const
 
 export function isDerivedEmail(email: string): boolean {
   return email.endsWith(DERIVED_EMAIL_SUFFIX)

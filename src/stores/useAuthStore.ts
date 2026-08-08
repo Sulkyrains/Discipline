@@ -26,6 +26,7 @@ interface AuthState {
   updateNickname: (nickname: string) => Promise<boolean>
   bindEmail: (email: string) => Promise<boolean>
   uploadAvatar: (file: File) => Promise<boolean>
+  setAvatarEmoji: (emoji: string) => Promise<boolean>
   sendResetEmail: () => Promise<boolean>
   resetPassword: (email: string) => Promise<boolean>
   signOut: () => Promise<void>
@@ -44,12 +45,13 @@ function handleUser(user: UserInfo | null): void {
 }
 
 function userInfoFromAuth(u: { id: string; email?: string | null; user_metadata?: unknown }): UserInfo {
-  const meta = (u.user_metadata ?? {}) as { nickname?: unknown; avatar_url?: unknown }
+  const meta = (u.user_metadata ?? {}) as { nickname?: unknown; avatar_url?: unknown; avatar_emoji?: unknown }
   return {
     id: u.id,
     email: u.email ?? '',
     nickname: typeof meta.nickname === 'string' && meta.nickname ? meta.nickname : undefined,
-    avatarUrl: typeof meta.avatar_url === 'string' && meta.avatar_url ? meta.avatar_url : undefined
+    avatarUrl: typeof meta.avatar_url === 'string' && meta.avatar_url ? meta.avatar_url : undefined,
+    avatarEmoji: typeof meta.avatar_emoji === 'string' && meta.avatar_emoji ? meta.avatar_emoji : undefined
   }
 }
 
@@ -224,12 +226,32 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ error: 'auth' })
       return false
     }
-    const { error } = await supabase.auth.updateUser({ data: { avatar_url: url } })
+    const { error } = await supabase.auth.updateUser({
+      data: { avatar_url: url, avatar_emoji: null }
+    })
     if (error) {
       set({ error: 'auth' })
       return false
     }
-    handleUser({ ...user, avatarUrl: url })
+    handleUser({ ...user, avatarUrl: url, avatarEmoji: undefined })
+    return true
+  },
+
+  setAvatarEmoji: async (emoji) => {
+    const user = get().user
+    if (!user || !supabase) {
+      set({ error: 'config' })
+      return false
+    }
+    set({ loading: true, error: null })
+    const { error } = await supabase.auth.updateUser({
+      data: { avatar_emoji: emoji, avatar_url: null }
+    })
+    if (error) {
+      set({ loading: false, error: 'auth' })
+      return false
+    }
+    handleUser({ ...user, avatarEmoji: emoji, avatarUrl: undefined })
     return true
   },
 
