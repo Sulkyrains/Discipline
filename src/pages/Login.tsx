@@ -174,7 +174,11 @@ export default function Login() {
 
         {errorText() ? <p className="form-error">{errorText()}</p> : null}
 
-        <button className="btn btn-primary btn-lg" type="submit" disabled={loading}>
+        <button
+          className="btn btn-primary btn-lg"
+          type="submit"
+          disabled={loading || !identity.trim() || password.length < 6}
+        >
           {loading ? '…' : mode === 'in' ? t(lang, 'signIn') : t(lang, 'signUp')}
         </button>
 

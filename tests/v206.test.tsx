@@ -118,4 +118,18 @@ describe('v2.0.6 password policy', () => {
     const hint = screen.getByText('密码至少 6 位')
     expect(hint.className).toContain('form-error')
   })
+
+  it('disables the submit button while the password is too short', () => {
+    render(
+      <MemoryRouter>
+        <Login />
+      </MemoryRouter>
+    )
+    fireEvent.click(screen.getByText(/没有账号/))
+    fireEvent.change(screen.getByLabelText('昵称'), { target: { value: '小明' } })
+    fireEvent.change(screen.getByLabelText(/^密码/), { target: { value: '123' } })
+    expect(screen.getByRole('button', { name: '注册' })).toBeDisabled()
+    fireEvent.change(screen.getByLabelText(/^密码/), { target: { value: '123456' } })
+    expect(screen.getByRole('button', { name: '注册' })).toBeEnabled()
+  })
 })

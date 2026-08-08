@@ -113,6 +113,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   signInOrRegister: async (nicknameOrEmail, password) => {
+    if (password.length < 6) {
+      set({ error: 'passwordTooShort' })
+      return false
+    }
     const trimmed = nicknameOrEmail.trim()
     if (isEmailInput(trimmed)) {
       const ok = await get().signIn(trimmed, password)
