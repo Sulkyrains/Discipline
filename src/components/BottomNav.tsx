@@ -103,6 +103,17 @@ export default function BottomNav() {
     setOrder(dockOrder)
   }, [dockOrder])
 
+  useEffect(() => {
+    const nav = navRef.current
+    if (!nav) return
+    // Prevent the browser from hijacking the long-press on touch devices
+    // (context menu, text selection, link preview/callout) which would fire
+    // pointercancel and kill the drag before it can start.
+    const onTouchStart = (e: TouchEvent) => e.preventDefault()
+    nav.addEventListener('touchstart', onTouchStart, { passive: false })
+    return () => nav.removeEventListener('touchstart', onTouchStart)
+  }, [])
+
   useEffect(
     () => () => {
       if (longPressTimer.current) clearTimeout(longPressTimer.current)
@@ -126,11 +137,11 @@ export default function BottomNav() {
     armRef.current = 'idle'
     dragOffsetRef.current = 0
     dragIndexRef.current = -1
-    if (commit) {
-      setDragging(null)
-      setDragX(0)
-      setDockOrder(orderRef.current)
-    }
+    // Always restore the lifted icon; commit the current order only when the
+    // gesture ended with an intentional drop (pointerup / armed cancel).
+    setDragging(null)
+    setDragX(0)
+    if (commit) setDockOrder(orderRef.current)
   }
 
   const onWindowMove = (e: PointerEvent) => {
@@ -174,9 +185,10 @@ export default function BottomNav() {
   const onWindowCancel = (e: PointerEvent) => {
     const session = sessionRef.current
     if (!session || e.pointerId !== session.pointerId) return
-    // A browser cancel during the hold must not abort the long-press intent.
-    if (armRef.current === 'timer') return
-    endSession(true)
+    // The browser took over the gesture. Abort the hold if it had not armed
+    // yet; commit the current order if a drag was already in progress. Either
+    // way the icon must return to its normal state.
+    endSession(armRef.current === 'armed')
   }
 
   const armDrag = () => {
@@ -193,6 +205,11 @@ export default function BottomNav() {
     if (path === '/settings') return
     e.preventDefault()
     endSession(false)
+    try {
+      ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+    } catch {
+      /* pointer capture unsupported; window listeners still handle the drag */
+    }
     sessionRef.current = {
       pointerId: e.pointerId,
       startX: e.clientX,
@@ -203,6 +220,12 @@ export default function BottomNav() {
     window.addEventListener('pointermove', onWindowMove)
     window.addEventListener('pointerup', onWindowEnd)
     window.addEventListener('pointercancel', onWindowCancel)
+  }
+
+  const onLostPointerCapture = (e: React.PointerEvent<HTMLDivElement>) => {
+    const session = sessionRef.current
+    if (!session || e.pointerId !== session.pointerId) return
+    endSession(armRef.current === 'armed')
   }
 
   return (
@@ -225,6 +248,7 @@ export default function BottomNav() {
             className={`nav-item-wrap${isDragging ? ' dragging' : ''}`}
             style={isDragging ? { transform: `translateX(${dragX}px) scale(1.06)` } : undefined}
             onPointerDown={(e) => onPointerDown(e, item.path)}
+            onLostPointerCapture={onLostPointerCapture}
           >
             <NavLink
               to={item.path}

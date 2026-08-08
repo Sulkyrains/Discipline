@@ -88,7 +88,7 @@ describe('v1.9.3 long-press drag stability', () => {
     expect(useAppStore.getState().dockOrder).toEqual(DEFAULT_DOCK)
   })
 
-  it('keeps the long-press armed even if the browser cancels during the hold', () => {
+  it('aborts the long-press and restores the icon when the browser cancels during the hold', () => {
     const { container } = render(
       <MemoryRouter>
         <BottomNav />
@@ -101,7 +101,7 @@ describe('v1.9.3 long-press drag stability', () => {
       vi.advanceTimersByTime(650)
     })
     expect(container.querySelectorAll('.dock-remove').length).toBe(0)
-    expect(container.querySelector('.nav-item-wrap.dragging')).not.toBeNull()
+    expect(container.querySelector('.nav-item-wrap.dragging')).toBeNull()
     fireEvent.pointerUp(wraps[0], { pointerId: 1, clientX: 30 })
     expect(useAppStore.getState().dockOrder).toEqual(DEFAULT_DOCK)
   })
