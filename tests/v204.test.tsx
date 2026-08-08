@@ -192,13 +192,26 @@ describe('v2.0.4 avatar upload', () => {
     const ok = await useAuthStore.getState().uploadAvatar(file)
     expect(ok).toBe(true)
     expect(mockUpload).toHaveBeenCalledWith(
-      'u1/avatar',
+      expect.stringMatching(/^u1\/avatar-\d+$/),
       file,
       expect.objectContaining({ upsert: true })
     )
-    expect(useAuthStore.getState().user?.avatarUrl).toBe(
-      'https://x.supabase.co/storage/v1/object/public/avatars/u1/avatar'
+    expect(useAuthStore.getState().user?.avatarUrl).toMatch(
+      /^https:\/\/x\.supabase\.co\/storage\/v1\/object\/public\/avatars\/u1\/avatar-\d+$/
     )
+  })
+
+  it('produces a fresh url on every upload to bust browser caches', async () => {
+    useAuthStore.setState({ user: { id: 'u1', email: 'real@x.com', nickname: '小明' } })
+    mockUpload.mockResolvedValue({ error: null })
+    mockUpdateUser.mockResolvedValue({ error: null })
+    const file = new File(['x'], 'a.png', { type: 'image/png' })
+    await useAuthStore.getState().uploadAvatar(file)
+    const first = useAuthStore.getState().user?.avatarUrl
+    await new Promise((r) => setTimeout(r, 10))
+    await useAuthStore.getState().uploadAvatar(file)
+    const second = useAuthStore.getState().user?.avatarUrl
+    expect(first).not.toBe(second)
   })
 
   it('rejects non-image files', async () => {

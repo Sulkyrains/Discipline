@@ -84,7 +84,10 @@ describe('v2.0.5 quick avatar presets', () => {
     const ok = await useAuthStore.getState().uploadAvatar(new File(['x'], 'a.png', { type: 'image/png' }))
     expect(ok).toBe(true)
     expect(mockUpdateUser).toHaveBeenCalledWith({
-      data: { avatar_url: 'https://x.supabase.co/storage/v1/object/public/avatars/u1/avatar', avatar_emoji: null }
+      data: {
+        avatar_url: expect.stringMatching(/^https:\/\/x\.supabase\.co\/storage\/v1\/object\/public\/avatars\/u1\/avatar-\d+$/),
+        avatar_emoji: null
+      }
     })
     expect(useAuthStore.getState().user?.avatarEmoji).toBeUndefined()
   })

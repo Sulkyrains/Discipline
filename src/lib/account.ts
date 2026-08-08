@@ -64,7 +64,9 @@ export async function lookupAuthEmailByNickname(nickname: string): Promise<strin
 
 export async function uploadAvatarFile(userId: string, file: File): Promise<string | null> {
   if (!supabase) return null
-  const path = `${userId}/avatar`
+  // Version the object path so every update produces a fresh public URL;
+  // otherwise the browser/CDN cache keeps serving the previous avatar.
+  const path = `${userId}/avatar-${Date.now()}`
   const { error } = await supabase.storage
     .from('avatars')
     .upload(path, file, { upsert: true, contentType: file.type || 'image/png' })
