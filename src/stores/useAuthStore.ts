@@ -22,6 +22,7 @@ interface AuthState {
   pendingMerge: boolean
   init: () => void
   signIn: (nicknameOrEmail: string, password: string) => Promise<boolean>
+  signInOrRegister: (nicknameOrEmail: string, password: string) => Promise<'signin' | 'register' | false>
   signUp: (nickname: string, password: string, email?: string) => Promise<boolean>
   updateNickname: (nickname: string) => Promise<boolean>
   bindEmail: (email: string) => Promise<boolean>
@@ -111,6 +112,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     return true
   },
 
+  signInOrRegister: async (nicknameOrEmail, password) => {
+    const trimmed = nicknameOrEmail.trim()
+    if (isEmailInput(trimmed)) {
+      const ok = await get().signIn(trimmed, password)
+      return ok ? 'signin' : false
+    }
+    const existing = await lookupAuthEmailByNickname(trimmed)
+    if (existing) {
+      const ok = await get().signIn(trimmed, password)
+      return ok ? 'signin' : false
+    }
+    const ok = await get().signUp(trimmed, password)
+    return ok ? 'register' : false
+  },
+
   signUp: async (nickname, password, email) => {
     if (!supabase) {
       set({ error: 'config' })
@@ -119,6 +135,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const normalized = normalizeNickname(nickname)
     if (!isValidNickname(nickname)) {
       set({ loading: false, error: 'nicknameInvalid' })
+      return false
+    }
+    if (password.length < 6) {
+      set({ loading: false, error: 'passwordTooShort' })
       return false
     }
     if (email !== undefined && email.trim() !== '' && !isValidEmail(email)) {

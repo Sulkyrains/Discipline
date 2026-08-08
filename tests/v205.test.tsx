@@ -101,7 +101,7 @@ describe('v2.0.5 quick avatar presets', () => {
     expect(fox.closest('button')?.classList.contains('active')).toBe(true)
   })
 
-  it('shows the emoji avatar and quick picker in settings', () => {
+  it('shows the emoji avatar in settings without the redundant quick picker', () => {
     useAuthStore.setState({
       user: { id: 'u1', email: 'real@x.com', nickname: '小明', avatarEmoji: '🐼' }
     })
@@ -111,6 +111,6 @@ describe('v2.0.5 quick avatar presets', () => {
       </MemoryRouter>
     )
     expect(container.querySelector('.avatar-circle .avatar-emoji')?.textContent).toBe('🐼')
-    expect(container.querySelectorAll('.quick-avatar-btn').length).toBe(PRESET_AVATARS.length)
+    expect(container.querySelectorAll('.quick-avatar-btn').length).toBe(0)
   })
 })

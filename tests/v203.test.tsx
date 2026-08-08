@@ -144,7 +144,7 @@ describe('v2.0.3 register form', () => {
     )
     fireEvent.click(screen.getByText(/没有账号/))
     fireEvent.change(screen.getByLabelText('昵称'), { target: { value: '小明' } })
-    fireEvent.change(screen.getByLabelText('密码'), { target: { value: '123456' } })
+    fireEvent.change(screen.getByLabelText(/^密码/), { target: { value: '123456' } })
     fireEvent.click(screen.getByRole('button', { name: '注册' }))
     await waitFor(() => expect(mockSignUp).toHaveBeenCalled())
     expect(useAuthStore.getState().error).toBe('confirmEmail')

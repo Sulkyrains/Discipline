@@ -6,11 +6,12 @@ import { isValidNickname } from '../lib/authIdentity'
 import { PRESET_AVATARS } from '../lib/account'
 import { useAppStore } from '../stores/useAppStore'
 import { useAuthStore } from '../stores/useAuthStore'
+import { useToastStore } from '../stores/useToastStore'
 
 export default function Login() {
   const lang = useAppStore((s) => s.settings.language)
   const navigate = useNavigate()
-  const signIn = useAuthStore((s) => s.signIn)
+  const signInOrRegister = useAuthStore((s) => s.signInOrRegister)
   const signUp = useAuthStore((s) => s.signUp)
   const error = useAuthStore((s) => s.error)
   const loading = useAuthStore((s) => s.loading)
@@ -27,9 +28,12 @@ export default function Login() {
     if (loading || !identity.trim() || password.length < 6) return
     const ok =
       mode === 'in'
-        ? await signIn(identity.trim(), password)
+        ? await signInOrRegister(identity.trim(), password)
         : await signUp(identity.trim(), password, email.trim() || undefined)
     if (ok) {
+      if (mode === 'in' && ok === 'register') {
+        useToastStore.getState().push({ title: t(lang, 'autoRegistered'), kind: 'success' })
+      }
       if (mode === 'up') {
         if (presetEmoji) {
           await useAuthStore.getState().setAvatarEmoji(presetEmoji)
@@ -70,6 +74,7 @@ export default function Login() {
     if (error === 'confirmEmail') return t(lang, 'confirmEmailHint')
     if (error === 'nicknameTaken') return t(lang, 'nicknameTaken')
     if (error === 'nicknameInvalid') return t(lang, 'nicknameInvalid')
+    if (error === 'passwordTooShort') return t(lang, 'passwordTooShort')
     if (error === 'emailInvalid') return t(lang, 'emailInvalid')
     if (error === 'emailInUse') return t(lang, 'emailInUse')
     if (error === 'avatarTypeOnly') return t(lang, 'avatarTypeOnly')
@@ -125,6 +130,9 @@ export default function Login() {
             autoComplete={mode === 'in' ? 'current-password' : 'new-password'}
             onChange={(e) => setPassword(e.target.value)}
           />
+          <span className={`muted small${password && password.length < 6 ? ' form-error' : ''}`}>
+            {t(lang, 'passwordMinHint')}
+          </span>
         </label>
 
         {mode === 'up' ? (
