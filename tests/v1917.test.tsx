@@ -71,7 +71,7 @@ describe('v1.9.17 auto-update on check', () => {
       </MemoryRouter>
     )
     fireEvent.click(screen.getByText(t('zh', 'checkUpdateBtn')))
-    expect(await screen.findByText(t('zh', 'updateNow'))).toBeInTheDocument()
+    expect(await screen.findByText(t('zh', 'updateNowSettings'))).toBeInTheDocument()
     expect(useToastStore.getState().toasts.some((x) => x.title === t('zh', 'updateFound'))).toBe(true)
     expect(reloadMock).not.toHaveBeenCalled()
     expect(useUpdateStore.getState().status).toBe('outdated')
@@ -85,7 +85,7 @@ describe('v1.9.17 auto-update on check', () => {
       </MemoryRouter>
     )
     fireEvent.click(screen.getByText(t('zh', 'checkUpdateBtn')))
-    fireEvent.click(await screen.findByText(t('zh', 'updateNow')))
+    fireEvent.click(await screen.findByText(t('zh', 'updateNowSettings')))
     expect(applyMock).toHaveBeenCalled()
   })
 

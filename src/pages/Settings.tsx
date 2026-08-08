@@ -513,7 +513,7 @@ export default function Settings() {
           </button>
           {updateStatus === 'outdated' ? (
             <button className="btn btn-primary btn-sm" onClick={() => applyUpdateNow()}>
-              {t(lang, 'updateNow')}
+              {t(lang, 'updateNowSettings')}
             </button>
           ) : null}
         </div>

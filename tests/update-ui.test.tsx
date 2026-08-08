@@ -108,7 +108,7 @@ describe('v1.9.16 visible update mechanism', () => {
       </MemoryRouter>
     )
     fireEvent.click(screen.getByText(t('zh', 'checkUpdateBtn')))
-    expect(await screen.findByText(t('zh', 'updateNow'))).toBeInTheDocument()
+    expect(await screen.findByText(t('zh', 'updateNowSettings'))).toBeInTheDocument()
     expect(useToastStore.getState().toasts.some((x) => x.title === t('zh', 'updateFound'))).toBe(true)
     expect(reloadMock).not.toHaveBeenCalled()
   })

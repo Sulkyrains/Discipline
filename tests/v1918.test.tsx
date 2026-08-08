@@ -71,6 +71,6 @@ describe('v1.9.18 auto-update system', () => {
       </MemoryRouter>
     )
     expect(screen.getByText(t('zh', 'updateStatusOutdated', { version: '2.0.0' }))).toBeInTheDocument()
-    expect(screen.getByText(t('zh', 'updateNow'))).toBeInTheDocument()
+    expect(screen.getByText(t('zh', 'updateNowSettings'))).toBeInTheDocument()
   })
 })
