@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { t } from '../lib/i18n'
 import { isFocusActive, minutesToSeconds, type TimerPhase } from '../lib/timer'
 import { dateKey, minuteToHHMM, todayKey } from '../lib/format'
-import { isVariantB } from '../lib/uiVariant'
 import { MUSIC, SOUNDS, customTrackDef } from '../lib/audio'
 import { COMMON_APPS } from '../lib/appWhitelist'
 import { listInstalledApps } from '../lib/focusLock'
@@ -260,7 +259,7 @@ export default function Focus() {
   const progress = 1 - timer.remainingSeconds / total
 
   return (
-    <div className={`page page-focus${isVariantB() ? ' variant-b' : ''}`}>
+    <div className="page page-focus">
       {active ? (
         <div className="banner banner-lock">
           🔒 {t(lang, 'lockBanner')} · {t(lang, 'lockNote')}

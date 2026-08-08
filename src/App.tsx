@@ -15,7 +15,6 @@ import { playUiSound } from './lib/uiSound'
 import { applyAutoTheme, clearAutoTheme } from './lib/autoTheme'
 import { syncFocusLockActive, syncFocusLockWhitelist } from './lib/focusLock'
 import { consumeAutoUpdated } from './lib/update'
-import { currentUiVariant, switchUiVariant } from './lib/uiVariant'
 import { APP_VERSION } from './version'
 import { useAppStore } from './stores/useAppStore'
 import { useAuthStore } from './stores/useAuthStore'
@@ -232,7 +231,6 @@ export default function App() {
   }, [])
 
   const hideNav = location.pathname === '/splash' || location.pathname === '/login'
-  const uiVariant = currentUiVariant()
   const showDailySplash = entered && !hideNav && lastDailySplashDate !== todayKey()
   const showOnboarding = entered && !hideNav && !hasOnboarded && lastDailySplashDate === todayKey()
 
@@ -288,23 +286,6 @@ export default function App() {
           {showOnboarding ? (
             <Onboarding onDone={() => useAppStore.getState().setOnboarded()} />
           ) : null}
-          <div className="ui-switcher" role="group" aria-label="设计预览切换">
-            <span className="ui-switcher-label">🎨 设计</span>
-            <button
-              type="button"
-              className={`ui-switcher-btn${uiVariant === 'a' ? ' active' : ''}`}
-              onClick={() => switchUiVariant('a')}
-            >
-              A
-            </button>
-            <button
-              type="button"
-              className={`ui-switcher-btn${uiVariant === 'b' ? ' active' : ''}`}
-              onClick={() => switchUiVariant('b')}
-            >
-              B
-            </button>
-          </div>
           <IslandHost />
           <MergeDialog />
           <ConfirmDialog

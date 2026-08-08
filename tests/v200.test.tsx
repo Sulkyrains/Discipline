@@ -2,15 +2,12 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { generateRoomCode } from '../src/lib/studyRoom'
-import { currentUiVariant, isVariantB } from '../src/lib/uiVariant'
 import { defaultSettings, useAppStore } from '../src/stores/useAppStore'
 import { useAuthStore } from '../src/stores/useAuthStore'
 import { useFocusStore } from '../src/stores/useFocusStore'
 import Home from '../src/pages/Home'
 import Study from '../src/pages/Study'
 import StudyRoom from '../src/pages/StudyRoom'
-import Focus from '../src/pages/Focus'
-import Stats from '../src/pages/Stats'
 import Login from '../src/pages/Login'
 import Feedback from '../src/pages/Feedback'
 
@@ -123,60 +120,5 @@ describe('v2.0.0 feedback types', () => {
     fireEvent.click(screen.getByText('提交反馈'))
     expect(useAppStore.getState().feedback[0].type).toBe('bug')
     expect(useAppStore.getState().feedback[0].content).toBe('专注页报错')
-  })
-})
-
-describe('v2.0.0 ui design preview variants', () => {
-  beforeEach(() => {
-    resetStores()
-    window.location.hash = ''
-  })
-
-  it('resolves variant b from the hash query', () => {
-    window.location.hash = '#/focus?ui=b'
-    expect(currentUiVariant()).toBe('b')
-    expect(isVariantB()).toBe(true)
-  })
-
-  it('defaults to variant b and resolves variant a from the hash query', () => {
-    expect(currentUiVariant()).toBe('b')
-    window.location.hash = '#/focus?ui=a'
-    expect(currentUiVariant()).toBe('a')
-    expect(isVariantB()).toBe(false)
-  })
-
-  it('applies the variant-b class to the focus page by default and variant-a on demand', () => {
-    const { container } = render(
-      <MemoryRouter>
-        <Focus />
-      </MemoryRouter>
-    )
-    expect(container.querySelector('.page-focus.variant-b')).not.toBeNull()
-    window.location.hash = '#/focus?ui=a'
-    const a = render(
-      <MemoryRouter>
-        <Focus />
-      </MemoryRouter>
-    )
-    expect(a.container.querySelector('.page-focus.variant-b')).toBeNull()
-    window.location.hash = ''
-  })
-
-  it('applies the variant-b class to the stats page by default', () => {
-    const { container } = render(
-      <MemoryRouter>
-        <Stats />
-      </MemoryRouter>
-    )
-    expect(container.querySelector('.page-stats.variant-b')).not.toBeNull()
-  })
-
-  it('renders the seven-day check-in heat strip on stats', () => {
-    const { container } = render(
-      <MemoryRouter>
-        <Stats />
-      </MemoryRouter>
-    )
-    expect(container.querySelectorAll('.heat-cell')).toHaveLength(7)
   })
 })
