@@ -64,7 +64,7 @@ describe('v1.9.17 auto-update on check', () => {
   })
 
   it('only notifies when the Settings check finds an older version', async () => {
-    stubRemoteVersion('2.0.0')
+    stubRemoteVersion('2.1.0')
     render(
       <MemoryRouter>
         <Settings />
@@ -78,7 +78,7 @@ describe('v1.9.17 auto-update on check', () => {
   })
 
   it('applies the update when the refresh button is clicked', async () => {
-    stubRemoteVersion('2.0.0')
+    stubRemoteVersion('2.1.0')
     render(
       <MemoryRouter>
         <Settings />

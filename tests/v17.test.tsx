@@ -244,7 +244,7 @@ describe('v1.7 focus page sound chips', () => {
   beforeEach(resetStores)
 
   it('shows five natural sound chips on the focus page', () => {
-    render(<Focus />)
+    render(<MemoryRouter><Focus /></MemoryRouter>)
     expect(screen.getByText(/雨声/)).toBeInTheDocument()
     expect(screen.getByText(/溪流/)).toBeInTheDocument()
     expect(screen.getByText(/海浪/)).toBeInTheDocument()

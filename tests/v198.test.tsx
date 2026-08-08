@@ -213,7 +213,7 @@ describe('v1.9.8 whitelist picker and focus detach', () => {
 
   it('hides package names in the whitelist rows', () => {
     useAppStore.getState().addWhitelistApp({ id: 'com.tencent.mm', name: '微信', system: false })
-    render(<Focus />)
+    render(<MemoryRouter><Focus /></MemoryRouter>)
     fireEvent.click(screen.getByText(/展开全部/))
     expect(screen.getByText('微信')).toBeInTheDocument()
     expect(screen.queryByText('com.tencent.mm')).toBeNull()
@@ -227,7 +227,7 @@ describe('v1.9.8 whitelist picker and focus detach', () => {
       phase: 'focus',
       taskId: 'a'
     })
-    render(<Focus />)
+    render(<MemoryRouter><Focus /></MemoryRouter>)
     fireEvent.click(screen.getByText('完成'))
     expect(useAppStore.getState().todos[0].completed).toBe(true)
     expect(useFocusStore.getState().taskId).toBeNull()
@@ -236,7 +236,7 @@ describe('v1.9.8 whitelist picker and focus detach', () => {
 
   it('removes the redundant 不绑定任务 option from the bind select', () => {
     useAppStore.setState({ todos: [todo('a', '任务A')] })
-    render(<Focus />)
+    render(<MemoryRouter><Focus /></MemoryRouter>)
     expect(screen.getByText('选择任务')).toBeInTheDocument()
     expect(screen.queryByText('不绑定任务')).toBeNull()
   })

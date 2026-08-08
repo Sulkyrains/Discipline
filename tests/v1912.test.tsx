@@ -37,7 +37,7 @@ describe('v1.9.12 quick duration labels', () => {
   beforeEach(resetStores)
 
   it('shows plain numbers without the 分 suffix', () => {
-    const { container } = render(<Focus />)
+    const { container } = render(<MemoryRouter><Focus /></MemoryRouter>)
     const texts = [...container.querySelectorAll('.duration-chips .sound-chip')].map((e) =>
       e.textContent?.trim()
     )

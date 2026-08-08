@@ -44,6 +44,8 @@ create table if not exists public.feedback (
   updated_at timestamptz not null default now()
 );
 
+alter table public.feedback add column if not exists status text not null default 'pending';
+
 create table if not exists public.achievements (
   id text primary key,
   name_zh text not null,
@@ -107,3 +109,26 @@ create index if not exists idx_timetables_owner on public.timetables (owner_id);
 create index if not exists idx_todos_owner on public.todos (owner_id);
 create index if not exists idx_focus_sessions_owner on public.focus_sessions (owner_id);
 create index if not exists idx_feedback_owner on public.feedback (owner_id);
+
+-- Discipline v2: 线上自习室
+create table if not exists public.study_rooms (
+  id uuid primary key,
+  code text not null unique,
+  name text not null,
+  owner_id uuid not null references auth.users (id) on delete cascade,
+  max_members int not null default 20,
+  created_at timestamptz not null default now()
+);
+
+alter table public.study_rooms enable row level security;
+
+create policy "study_rooms readable by authenticated" on public.study_rooms
+  for select using (auth.role() = 'authenticated');
+
+create policy "study_rooms owner insert" on public.study_rooms
+  for insert with check (auth.uid() = owner_id);
+
+create policy "study_rooms owner delete" on public.study_rooms
+  for delete using (auth.uid() = owner_id);
+
+create index if not exists idx_study_rooms_code on public.study_rooms (code);

@@ -41,7 +41,7 @@ describe('v1.9.14 break skip without pause', () => {
       active: false,
       phase: 'shortBreak'
     })
-    render(<Focus />)
+    render(<MemoryRouter><Focus /></MemoryRouter>)
     fireEvent.click(screen.getByText('跳过休息'))
     const t = useFocusStore.getState().timer
     expect(t.phase).toBe('focus')

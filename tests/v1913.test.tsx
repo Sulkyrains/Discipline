@@ -57,7 +57,7 @@ describe('v1.9.13 focus break settings', () => {
       phase: 'shortBreak',
       active: false
     })
-    render(<Focus />)
+    render(<MemoryRouter><Focus /></MemoryRouter>)
     fireEvent.change(screen.getByLabelText('短休息'), { target: { value: '20' } })
     expect(useAppStore.getState().settings.shortBreakMinutes).toBe(15)
     fireEvent.change(screen.getByLabelText('长休息'), { target: { value: '90' } })

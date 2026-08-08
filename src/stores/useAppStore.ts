@@ -81,7 +81,7 @@ interface AppStoreState extends AppData {
   addSession: (
     session: { taskId: string | null; plannedMinutes: number; startedAt: string }
   ) => { session: FocusSession; unlocked: AchievementDef[] }
-  addFeedback: (content: string, contact: string) => void
+  addFeedback: (content: string, contact: string, type?: string) => void
   setMergedFor: (userId: string | null) => void
   replaceAll: (data: AppData) => void
   countLocalRecords: () => number
@@ -256,13 +256,14 @@ export const useAppStore = create<AppStoreState>()(
         return { session, unlocked }
       },
 
-      addFeedback: (content, contact) =>
+      addFeedback: (content, contact, type) =>
         set({
           feedback: [
             {
               id: uid(),
               content,
               contact,
+              type,
               createdAt: nowISO(),
               status: 'pending'
             } as FeedbackItem,

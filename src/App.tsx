@@ -15,6 +15,7 @@ import { playUiSound } from './lib/uiSound'
 import { applyAutoTheme, clearAutoTheme } from './lib/autoTheme'
 import { syncFocusLockActive, syncFocusLockWhitelist } from './lib/focusLock'
 import { consumeAutoUpdated } from './lib/update'
+import { currentUiVariant, hasUiPreview } from './lib/uiVariant'
 import { APP_VERSION } from './version'
 import { useAppStore } from './stores/useAppStore'
 import { useAuthStore } from './stores/useAuthStore'
@@ -41,6 +42,8 @@ const Achievements = lazy(() => import('./pages/Achievements'))
 const Settings = lazy(() => import('./pages/Settings'))
 const Login = lazy(() => import('./pages/Login'))
 const Feedback = lazy(() => import('./pages/Feedback'))
+const Study = lazy(() => import('./pages/Study'))
+const StudyRoom = lazy(() => import('./pages/StudyRoom'))
 
 function RouteFallback() {
   const lang = useAppStore((s) => s.settings.language)
@@ -229,6 +232,7 @@ export default function App() {
   }, [])
 
   const hideNav = location.pathname === '/splash' || location.pathname === '/login'
+  const previewUi = hasUiPreview() ? currentUiVariant() : null
   const showDailySplash = entered && !hideNav && lastDailySplashDate !== todayKey()
   const showOnboarding = entered && !hideNav && !hasOnboarded && lastDailySplashDate === todayKey()
 
@@ -265,6 +269,8 @@ export default function App() {
                 <Route path="/achievements" element={<Achievements />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/feedback" element={<Feedback />} />
+                <Route path="/study" element={<Study />} />
+                <Route path="/study/:id" element={<StudyRoom />} />
               </Route>
               <Route path="/login" element={<Login />} />
               <Route path="*" element={<Navigate to="/" replace />} />
@@ -281,6 +287,9 @@ export default function App() {
           ) : null}
           {showOnboarding ? (
             <Onboarding onDone={() => useAppStore.getState().setOnboarded()} />
+          ) : null}
+          {previewUi ? (
+            <div className="ui-preview-badge">🎨 设计预览 {previewUi === 'b' ? 'B · 大胆重设计' : 'A · 现有体系打磨'}</div>
           ) : null}
           <IslandHost />
           <MergeDialog />

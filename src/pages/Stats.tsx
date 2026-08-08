@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
 import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { t } from '../lib/i18n'
-import { formatDuration } from '../lib/format'
+import { addDays, dateKey, formatDuration } from '../lib/format'
 import { computeStats, dailySeries, taskFocusMinutes } from '../lib/stats'
+import { isVariantB } from '../lib/uiVariant'
 import { useAppStore } from '../stores/useAppStore'
 import { Link } from 'react-router-dom'
 
@@ -12,6 +13,7 @@ export default function Stats() {
   const lang = useAppStore((s) => s.settings.language)
   const sessions = useAppStore((s) => s.sessions)
   const todos = useAppStore((s) => s.todos)
+  const signIns = useAppStore((s) => s.signIns)
   const [range, setRange] = useState<7 | 30>(7)
 
   const stats = useMemo(() => computeStats(sessions, todos), [sessions, todos])
@@ -26,9 +28,33 @@ export default function Stats() {
     return rows
   }, [taskStats, stats.totalMinutes, lang])
   const maxTaskMinutes = taskStats[0]?.minutes ?? 1
+  const heatDays = useMemo(() => {
+    const minutesByDay = new Map<string, number>()
+    for (const s of sessions) {
+      const k = dateKey(new Date(s.completedAt))
+      minutesByDay.set(k, (minutesByDay.get(k) ?? 0) + s.plannedMinutes)
+    }
+    const tasksByDay = new Map<string, number>()
+    for (const td of todos) {
+      if (td.completed && td.completedAt) {
+        const k = dateKey(new Date(td.completedAt))
+        tasksByDay.set(k, (tasksByDay.get(k) ?? 0) + 1)
+      }
+    }
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = addDays(new Date(), -(6 - i))
+      const k = dateKey(d)
+      return {
+        key: k,
+        checkin: (minutesByDay.get(k) ?? 0) >= 15 || (tasksByDay.get(k) ?? 0) >= 3,
+        signed: signIns.includes(k),
+        label: `${d.getMonth() + 1}/${d.getDate()}`
+      }
+    })
+  }, [sessions, todos, signIns])
 
   return (
-    <div className="page page-stats">
+    <div className={`page page-stats${isVariantB() ? ' variant-b' : ''}`}>
       <header className="page-head">
         <div>
           <h1 className="page-title">{t(lang, 'navStats')}</h1>
@@ -40,6 +66,22 @@ export default function Stats() {
           🏆 {t(lang, 'viewAchievements')}
         </Link>
       </header>
+
+      <div className="heat-strip">
+        {heatDays.map((d) => (
+          <div
+            key={d.key}
+            className={`heat-cell${d.checkin ? ' checkin' : ''}${d.signed ? ' signed' : ''}`}
+            title={d.key}
+          >
+            <span className="heat-marks">
+              <i className="heat-mark" />
+              <i className="heat-mark signed" />
+            </span>
+            <span className="heat-label">{d.label}</span>
+          </div>
+        ))}
+      </div>
 
       <div className="stat-grid">
         <div className="card stat-tile">

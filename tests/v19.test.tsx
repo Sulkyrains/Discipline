@@ -61,7 +61,7 @@ describe('v1.9 no pause during focus', () => {
 
   it('hides pause while a focus session runs and shows a disabled placeholder', () => {
     runningFocus()
-    render(<Focus />)
+    render(<MemoryRouter><Focus /></MemoryRouter>)
     expect(screen.queryByText('暂停')).toBeNull()
     expect(screen.getByText('专注中')).toBeInTheDocument()
   })
@@ -72,7 +72,7 @@ describe('v1.9 no pause during focus', () => {
       active: false,
       phase: 'shortBreak'
     })
-    render(<Focus />)
+    render(<MemoryRouter><Focus /></MemoryRouter>)
     expect(screen.queryByText('暂停')).toBeNull()
     expect(screen.getByText('跳过休息')).toBeInTheDocument()
   })
@@ -83,7 +83,7 @@ describe('v1.9 daily abandon limit', () => {
 
   it('shows the used count in the confirm dialog and records on confirm', () => {
     runningFocus()
-    render(<Focus />)
+    render(<MemoryRouter><Focus /></MemoryRouter>)
     fireEvent.click(screen.getByText('放弃'))
     const dialog = screen.getByRole('alertdialog')
     expect(within(dialog).getByText(/今日已放弃 0\/3 次/)).toBeInTheDocument()
@@ -94,7 +94,7 @@ describe('v1.9 daily abandon limit', () => {
   it('disables abandon after 3 uses today and shows the limit hint', () => {
     useAppStore.setState({ abandonDates: [nowISO(), nowISO(), nowISO()] })
     runningFocus()
-    render(<Focus />)
+    render(<MemoryRouter><Focus /></MemoryRouter>)
     const btn = screen.getByText('放弃') as HTMLButtonElement
     expect(btn.disabled).toBe(true)
     expect(screen.getByText(/今日取消次数已达上限/)).toBeInTheDocument()
@@ -156,7 +156,7 @@ describe('v1.9 focus duration control', () => {
   beforeEach(resetStores)
 
   it('updates settings and the idle countdown via input with a 10 minute floor', () => {
-    render(<Focus />)
+    render(<MemoryRouter><Focus /></MemoryRouter>)
     const input = screen.getByLabelText('专注时长（分钟）') as HTMLInputElement
     fireEvent.change(input, { target: { value: '60' } })
     expect(useAppStore.getState().settings.pomodoroMinutes).toBe(60)
@@ -167,7 +167,7 @@ describe('v1.9 focus duration control', () => {
   })
 
   it('applies quick chips', () => {
-    render(<Focus />)
+    render(<MemoryRouter><Focus /></MemoryRouter>)
     fireEvent.click(screen.getByText('45'))
     expect(useAppStore.getState().settings.pomodoroMinutes).toBe(45)
     expect(useFocusStore.getState().timer.remainingSeconds).toBe(45 * 60)

@@ -123,6 +123,15 @@ export default function Home() {
         </div>
       </section>
 
+      <Link to="/study" className="card study-entry">
+        <span className="study-entry-icon">🎧</span>
+        <span className="study-entry-main">
+          <strong>{t(lang, 'studyRoom')}</strong>
+          <span className="muted small">{t(lang, 'studyRoomDesc')}</span>
+        </span>
+        <span className="study-entry-arrow">→</span>
+      </Link>
+
       <section className="today-plan">
         <div className="plan-head">
           <h2 className="section-title">{t(lang, 'todayCourses')}</h2>

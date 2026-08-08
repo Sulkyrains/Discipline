@@ -14,6 +14,7 @@ interface AuthState {
   init: () => void
   signIn: (email: string, password: string) => Promise<boolean>
   signUp: (email: string, password: string) => Promise<boolean>
+  resetPassword: (email: string) => Promise<boolean>
   signOut: () => Promise<void>
   setPendingMerge: (v: boolean) => void
   mergeWithCloud: () => Promise<boolean>
@@ -79,6 +80,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
     set({ loading: false, error: 'checkEmail' })
     return false
+  },
+
+  resetPassword: async (email) => {
+    if (!supabase) {
+      set({ error: 'config' })
+      return false
+    }
+    set({ loading: true, error: null })
+    const { error } = await supabase.auth.resetPasswordForEmail(email)
+    set({ loading: false, error: error ? 'reset' : null })
+    return !error
   },
 
   signOut: async () => {

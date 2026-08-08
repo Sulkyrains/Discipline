@@ -107,7 +107,7 @@ describe('v1.9.15 break settings location', () => {
   beforeEach(resetStores)
 
   it('hides break settings on the focus screen', () => {
-    render(<Focus />)
+    render(<MemoryRouter><Focus /></MemoryRouter>)
     expect(screen.queryByText('休息设置')).toBeNull()
   })
 
@@ -117,7 +117,7 @@ describe('v1.9.15 break settings location', () => {
       phase: 'shortBreak',
       active: false
     })
-    render(<Focus />)
+    render(<MemoryRouter><Focus /></MemoryRouter>)
     expect(screen.getByText('休息设置')).toBeInTheDocument()
   })
 })

@@ -93,7 +93,7 @@ describe('v1.9.7 app whitelist', () => {
   })
 
   it('lets the user add an app from the app picker when idle', async () => {
-    render(<Focus />)
+    render(<MemoryRouter><Focus /></MemoryRouter>)
     fireEvent.click(screen.getByText(/从应用列表添加/))
     fireEvent.click(await screen.findByText('微信'))
     expect(useAppStore.getState().appWhitelist.some((a) => a.id === 'com.tencent.mm')).toBe(true)
@@ -105,7 +105,7 @@ describe('v1.9.7 app whitelist', () => {
       active: true,
       phase: 'focus'
     })
-    render(<Focus />)
+    render(<MemoryRouter><Focus /></MemoryRouter>)
     expect(screen.getByText('专注中不可编辑白名单')).toBeInTheDocument()
     expect(screen.queryByText(/从应用列表添加/)).toBeNull()
     expect(screen.queryAllByText('删除')).toHaveLength(0)
@@ -123,7 +123,7 @@ describe('v1.9.7 focus task switching', () => {
       phase: 'focus',
       taskId: 'a'
     })
-    render(<Focus />)
+    render(<MemoryRouter><Focus /></MemoryRouter>)
     expect(screen.getByText('任务A')).toBeInTheDocument()
     fireEvent.change(screen.getByLabelText('切换任务'), { target: { value: 'b' } })
     expect(useFocusStore.getState().taskId).toBe('b')
@@ -137,7 +137,7 @@ describe('v1.9.7 focus task switching', () => {
       phase: 'focus',
       taskId: 'a'
     })
-    render(<Focus />)
+    render(<MemoryRouter><Focus /></MemoryRouter>)
     fireEvent.click(screen.getByText('完成'))
     expect(useAppStore.getState().todos[0].completed).toBe(true)
   })

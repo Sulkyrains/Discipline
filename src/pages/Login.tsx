@@ -4,17 +4,20 @@ import Logo from '../components/Logo'
 import { t } from '../lib/i18n'
 import { useAppStore } from '../stores/useAppStore'
 import { useAuthStore } from '../stores/useAuthStore'
+import { useToastStore } from '../stores/useToastStore'
 
 export default function Login() {
   const lang = useAppStore((s) => s.settings.language)
   const navigate = useNavigate()
   const signIn = useAuthStore((s) => s.signIn)
   const signUp = useAuthStore((s) => s.signUp)
+  const resetPassword = useAuthStore((s) => s.resetPassword)
   const error = useAuthStore((s) => s.error)
   const loading = useAuthStore((s) => s.loading)
   const [mode, setMode] = useState<'in' | 'up'>('in')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [sendingReset, setSendingReset] = useState(false)
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
@@ -27,7 +30,20 @@ export default function Login() {
     if (!error) return ''
     if (error === 'config') return t(lang, 'errorConfig')
     if (error === 'checkEmail') return t(lang, 'checkEmail')
+    if (error === 'reset') return t(lang, 'resetFail')
     return t(lang, 'errorAuth')
+  }
+
+  const onReset = async () => {
+    if (!email.trim() || sendingReset) return
+    setSendingReset(true)
+    const ok = await resetPassword(email.trim())
+    setSendingReset(false)
+    useAuthStore.setState({ error: null })
+    useToastStore.getState().push({
+      title: ok ? t(lang, 'resetSent') : t(lang, 'resetFail'),
+      kind: ok ? 'success' : 'warn'
+    })
   }
 
   return (
@@ -62,6 +78,12 @@ export default function Login() {
             onChange={(e) => setPassword(e.target.value)}
           />
         </label>
+
+        {mode === 'in' ? (
+          <button type="button" className="reset-link" disabled={sendingReset} onClick={() => void onReset()}>
+            {sendingReset ? '…' : t(lang, 'passwordReset')}
+          </button>
+        ) : null}
 
         {errorText() ? <p className="form-error">{errorText()}</p> : null}
 

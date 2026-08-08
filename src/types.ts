@@ -70,8 +70,9 @@ export interface FeedbackItem {
   id: string
   content: string
   contact: string
+  type?: string
   createdAt: string
-  status: 'pending'
+  status: 'pending' | 'done'
 }
 
 export interface Settings {

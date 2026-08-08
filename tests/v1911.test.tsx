@@ -74,7 +74,7 @@ describe('v1.9.11 task selection info', () => {
     useAppStore.setState({
       todos: [todo('a', '复习高数', { startMinute: 540, tags: ['学习'] })]
     })
-    render(<Focus />)
+    render(<MemoryRouter><Focus /></MemoryRouter>)
     expect(screen.getByText(/复习高数 · 09:00 · #学习/)).toBeInTheDocument()
   })
 })
@@ -113,7 +113,7 @@ describe('v1.9.11 no-task prompt', () => {
 
   it('prompts when starting without a task and can start directly', () => {
     useAppStore.setState({ todos: [todo('a', '任务A')] })
-    render(<Focus />)
+    render(<MemoryRouter><Focus /></MemoryRouter>)
     fireEvent.click(screen.getByText('开始'))
     expect(screen.getByText('未绑定任务')).toBeInTheDocument()
     fireEvent.click(screen.getByText('直接开始'))
@@ -122,7 +122,7 @@ describe('v1.9.11 no-task prompt', () => {
 
   it('lets the user pick a task from the prompt', () => {
     useAppStore.setState({ todos: [todo('a', '任务A')] })
-    render(<Focus />)
+    render(<MemoryRouter><Focus /></MemoryRouter>)
     fireEvent.click(screen.getByText('开始'))
     fireEvent.click(within(screen.getByRole('alertdialog')).getByText('选择任务'))
     fireEvent.click(within(screen.getByRole('dialog')).getByText('任务A'))
@@ -135,7 +135,7 @@ describe('v1.9.11 focus duration', () => {
   beforeEach(resetStores)
 
   it('clamps duration to 10-300 and shows ten quick options', () => {
-    const { container } = render(<Focus />)
+    const { container } = render(<MemoryRouter><Focus /></MemoryRouter>)
     expect(container.querySelectorAll('.duration-chips .sound-chip').length).toBe(6)
     const input = screen.getByLabelText('专注时长（分钟）') as HTMLInputElement
     fireEvent.change(input, { target: { value: '5' } })
@@ -199,7 +199,7 @@ describe('v1.9.11 whitelist collapse', () => {
   beforeEach(resetStores)
 
   it('collapses over six apps and expands on demand', () => {
-    const { container } = render(<Focus />)
+    const { container } = render(<MemoryRouter><Focus /></MemoryRouter>)
     expect(container.querySelectorAll('.whitelist-row').length).toBe(6)
     fireEvent.click(screen.getByText(/展开全部/))
     expect(container.querySelectorAll('.whitelist-row').length).toBe(defaultWhitelist().length)

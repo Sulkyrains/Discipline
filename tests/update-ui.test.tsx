@@ -70,10 +70,10 @@ describe('v1.9.16 visible update mechanism', () => {
   })
 
   it('marks the app outdated when the remote version differs', async () => {
-    stubRemoteVersion('2.0.0')
+    stubRemoteVersion('2.1.0')
     const status = await useUpdateStore.getState().checkNow()
     expect(status).toBe('outdated')
-    expect(useUpdateStore.getState().lastRemote).toBe('2.0.0')
+    expect(useUpdateStore.getState().lastRemote).toBe('2.1.0')
   })
 
   it('marks the app error when the remote check fails', async () => {
@@ -101,7 +101,7 @@ describe('v1.9.16 visible update mechanism', () => {
   })
 
   it('offers a check button and a refresh button in Settings when outdated', async () => {
-    stubRemoteVersion('2.0.0')
+    stubRemoteVersion('2.1.0')
     render(
       <MemoryRouter>
         <Settings />
