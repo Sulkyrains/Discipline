@@ -95,63 +95,33 @@ describe('v2.0.12 edit-profile email binding', () => {
     fireEvent.click(screen.getAllByText(t('zh', 'editProfile'))[0])
   }
 
-  it('offers the email field, the send-code button and no reset entry', () => {
+  it('offers the email field, the send-mail button and no reset entry', () => {
     openProfileWithDerivedEmail()
     expect(screen.getByLabelText(/^邮箱/)).toBeInTheDocument()
-    expect(screen.getAllByText(t('zh', 'sendCode')).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(t('zh', 'sendBindMail')).length).toBeGreaterThan(0)
     expect(screen.getAllByText(/未绑定邮箱/).length).toBeGreaterThan(0)
     expect(screen.queryByText(t('zh', 'resetViaEmail'))).toBeNull()
   })
 
-  it('sends the bind code when the send button is clicked', async () => {
+  it('sends the confirmation email via updateUser and shows the confirm message', async () => {
     mockUpdateUser.mockResolvedValue({ error: null })
     openProfileWithDerivedEmail()
     fireEvent.change(screen.getByLabelText(/^邮箱/), { target: { value: 'new@x.com' } })
-    fireEvent.click(screen.getAllByText(t('zh', 'sendCode'))[0])
+    fireEvent.click(screen.getAllByText(t('zh', 'sendBindMail'))[0])
     await waitFor(() => expect(mockUpdateUser).toHaveBeenCalledWith({ email: 'new@x.com' }))
-    expect(screen.getByText(t('zh', 'confirmBind'))).toBeInTheDocument()
+    expect(screen.getByText(t('zh', 'emailConfirmSent', { email: 'new@x.com' }))).toBeInTheDocument()
+    expect(screen.queryByText(t('zh', 'confirmBind'))).toBeNull()
+    expect(screen.queryByPlaceholderText(t('zh', 'codePlaceholder'))).toBeNull()
   })
 
-  it('binds the email after the verification code matches', async () => {
+  it('shows the resend entry after the confirmation email is sent', async () => {
     mockUpdateUser.mockResolvedValue({ error: null })
-    mockVerifyOtp.mockResolvedValue({
-      data: { user: { id: 'u1', email: 'new@x.com', user_metadata: { nickname: '小明' } } },
-      error: null
-    })
     openProfileWithDerivedEmail()
     fireEvent.change(screen.getByLabelText(/^邮箱/), { target: { value: 'new@x.com' } })
-    fireEvent.click(screen.getAllByText(t('zh', 'sendCode'))[0])
-    await waitFor(() => screen.getByText(t('zh', 'confirmBind')))
-    fireEvent.change(screen.getByPlaceholderText(t('zh', 'codePlaceholder')), {
-      target: { value: '123456' }
-    })
-    fireEvent.click(screen.getByText(t('zh', 'confirmBind')))
-    await waitFor(() =>
-      expect(mockVerifyOtp).toHaveBeenCalledWith({
-        email: 'new@x.com',
-        token: '123456',
-        type: 'email_change'
-      })
-    )
-    expect(useToastStore.getState().toasts.some((x) => x.title === t('zh', 'bindSuccess'))).toBe(true)
-    expect(useAuthStore.getState().user?.email).toBe('new@x.com')
-  })
-
-  it('shows an inline error when the verification code is wrong', async () => {
-    mockUpdateUser.mockResolvedValue({ error: null })
-    mockVerifyOtp.mockResolvedValue({
-      data: { user: null },
-      error: { message: 'Invalid token', code: 'otp_invalid' }
-    })
-    openProfileWithDerivedEmail()
-    fireEvent.change(screen.getByLabelText(/^邮箱/), { target: { value: 'new@x.com' } })
-    fireEvent.click(screen.getAllByText(t('zh', 'sendCode'))[0])
-    await waitFor(() => screen.getByText(t('zh', 'confirmBind')))
-    fireEvent.change(screen.getByPlaceholderText(t('zh', 'codePlaceholder')), {
-      target: { value: '000000' }
-    })
-    fireEvent.click(screen.getByText(t('zh', 'confirmBind')))
-    await waitFor(() => expect(screen.getByText(t('zh', 'codeInvalid'))).toBeInTheDocument())
+    fireEvent.click(screen.getByText(t('zh', 'sendBindMail')))
+    await waitFor(() => expect(mockUpdateUser).toHaveBeenCalledTimes(1))
+    expect(screen.getByText(t('zh', 'emailConfirmHint'))).toBeInTheDocument()
+    expect(screen.getAllByText(/重新发送/).length).toBeGreaterThan(0)
   })
 })
 

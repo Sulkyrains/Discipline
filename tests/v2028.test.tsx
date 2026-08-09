@@ -117,6 +117,16 @@ describe('v2.0.28 phone binding and recovery', () => {
 })
 
 describe('v2.0.28 settings phone flow', () => {
+  it('does not show a phone row in the account card when no phone is bound', () => {
+    useAuthStore.setState({ user: { id: 'u1', email: 'u_abc@discipline.app', nickname: '小明' } })
+    render(
+      <MemoryRouter>
+        <Settings />
+      </MemoryRouter>
+    )
+    expect(screen.queryByText(new RegExp(t('zh', 'phoneNotBound')))).toBeNull()
+  })
+
   it('marks phone as not enabled yet and disables the flow inside edit profile', async () => {
     useAuthStore.setState({ user: { id: 'u1', email: 'u_abc@discipline.app', nickname: '小明' } })
     mockUpdateUser.mockResolvedValue({ error: null })

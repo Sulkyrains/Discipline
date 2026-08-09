@@ -28,7 +28,6 @@ interface AuthState {
   signUp: (nickname: string, password: string, email?: string) => Promise<boolean>
   updateNickname: (nickname: string) => Promise<boolean>
   sendBindEmailCode: (email: string) => Promise<boolean>
-  confirmBindEmail: (email: string, code: string) => Promise<boolean>
   sendBindPhoneCode: (phone: string) => Promise<boolean>
   confirmBindPhone: (phone: string, code: string) => Promise<boolean>
   sendPhoneReset: () => Promise<boolean>
@@ -36,6 +35,9 @@ interface AuthState {
   uploadAvatar: (file: File) => Promise<boolean>
   setAvatarEmoji: (emoji: string) => Promise<boolean>
   sendResetEmail: () => Promise<boolean>
+  updatePassword: (newPassword: string) => Promise<boolean>
+  recovery: boolean
+  setRecovery: (v: boolean) => void
   resetPassword: (email: string) => Promise<boolean>
   signOut: () => Promise<void>
   setPendingMerge: (v: boolean) => void
@@ -134,6 +136,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   loading: false,
   error: null,
   pendingMerge: false,
+  recovery: false,
 
   init: () => {
     if (!supabase) return
@@ -143,6 +146,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (u) void healDisplayName(u)
     })
     supabase.auth.onAuthStateChange((_event, session) => {
+      if (_event === 'PASSWORD_RECOVERY') set({ recovery: true })
       const u = session?.user
       if (u) {
         handleUser(userInfoFromAuth(u))
@@ -153,6 +157,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
       } else {
         handleUser(null)
+        set({ recovery: false })
       }
     })
     // Keep nickname/avatar in sync across devices: poll the server session and
@@ -353,44 +358,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     return true
   },
 
-  confirmBindEmail: async (email, code) => {
-    const user = get().user
-    if (!user || !supabase) {
-      set({ error: 'config' })
-      return false
-    }
-    const trimmedEmail = email.trim()
-    const trimmedCode = code.trim()
-    if (!isValidEmail(trimmedEmail) || trimmedCode.length < 4) {
-      set({ error: 'codeInvalid' })
-      return false
-    }
-    set({ loading: true, error: null })
-    const { data, error } = await supabase.auth.verifyOtp({
-      email: trimmedEmail,
-      token: trimmedCode,
-      type: 'email_change'
-    })
-    if (error) {
-      set({
-        loading: false,
-        error:
-          /expired/i.test(error.message) || error.code === 'otp_expired'
-            ? 'codeExpired'
-            : /reauthentication|secure email change|email_change/i.test(error.message)
-              ? 'secureChangeRequired'
-              : 'codeInvalid'
-      })
-      return false
-    }
-    const fresh = data.user ? userInfoFromAuth(data.user) : null
-    if (fresh) handleUser(fresh)
-    else void get().refreshUser()
-    void upsertProfile({ userId: user.id, nickname: user.nickname ?? '', authEmail: trimmedEmail })
-    set({ loading: false, error: null })
-    return true
-  },
-
   sendBindPhoneCode: async (phone) => {
     const user = get().user
     if (!user || !supabase) {
@@ -577,10 +544,37 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   sendResetEmail: async () => {
     const user = get().user
-    if (!user || !supabase || isDerivedEmail(user.email)) return false
-    const { error } = await supabase.auth.resetPasswordForEmail(user.email)
+    if (!user || !supabase) return false
+    let target = user.email
+    if (!target || isDerivedEmail(target)) {
+      // The bound address lives in profiles.auth_email; fall back to it so a
+      // reset email still reaches the real inbox even if the session email is
+      // still the internal derived address.
+      const mapped = user.nickname ? await lookupAuthEmailByNickname(user.nickname) : null
+      if (mapped && !isDerivedEmail(mapped)) target = mapped
+      else return false
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(target)
     return !error
   },
+
+  updatePassword: async (newPassword) => {
+    if (!supabase) {
+      set({ error: 'config' })
+      return false
+    }
+    if (newPassword.length < 6) {
+      set({ error: 'passwordTooShort' })
+      return false
+    }
+    set({ loading: true, error: null })
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    set({ loading: false, error: error ? 'auth' : null })
+    if (!error) set({ recovery: false })
+    return !error
+  },
+
+  setRecovery: (v) => set({ recovery: v }),
 
   resetPassword: async (email) => {
     if (!supabase) {

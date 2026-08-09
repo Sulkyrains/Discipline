@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.0.30',
+    date: '2026-08-09',
+    zh: '邮箱绑定改为确认链接方式（不再要求 6 位验证码）：发送确认邮件到新邮箱，点击邮件内链接即完成绑定；修复绑定后无法重置密码的问题（重置邮件发送到已绑定邮箱，并新增打开重置链接后的“设置新密码”界面）；未绑定手机号时“我的”页不再显示手机号行，编辑资料中保留“暂未启用”标注。',
+    en: 'Email binding now uses the confirmation link instead of a 6-digit code (a confirmation email is sent to the new address and clicking its link completes binding). Fixed password reset after binding: the recovery email goes to the bound address, and a “set new password” screen now appears after opening the recovery link. The account card no longer shows the phone row when no phone is bound; edit profile keeps the “not enabled yet” label.'
+  },
+  {
     version: '2.0.29',
     date: '2026-08-09',
     zh: '修复“立即更新”点击后长时间显示“正在更新…”却最终未更新的问题：新版本 Service Worker 安装后会直接自动接管，不再需要等待 waiting 状态，点击后通常 1–2 秒内完成刷新（最长约 5 秒）；若新版本已在后台接管则立即刷新。手机号绑定/找回功能暂未启用（需先在 Supabase 配置短信服务），界面已标注。',

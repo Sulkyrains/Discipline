@@ -59,9 +59,11 @@ export async function upsertProfile(input: {
 
 export async function lookupAuthEmailByNickname(nickname: string): Promise<string | null> {
   if (!supabase) return null
-  const { data, error } = await supabase.rpc('get_auth_email_by_nickname', {
+  const res = await supabase.rpc('get_auth_email_by_nickname', {
     p_nickname: nickname
   })
+  if (!res) return null
+  const { data, error } = res
   if (error || typeof data !== 'string' || !data) return null
   return data
 }

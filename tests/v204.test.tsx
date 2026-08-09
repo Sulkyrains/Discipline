@@ -16,6 +16,7 @@ const mockUpdateUser = vi.fn()
 const mockUpload = vi.fn()
 const mockResetEmail = vi.fn()
 const mockVerifyOtp = vi.fn()
+const mockAuthCb: { fn: ((event: string, session: unknown) => void) | null } = { fn: null }
 
 vi.mock('../src/lib/supabase', () => ({
   isSupabaseConfigured: () => true,
@@ -24,7 +25,10 @@ vi.mock('../src/lib/supabase', () => ({
     supabaseUrl: 'https://x.supabase.co',
     auth: {
       getSession: vi.fn(async () => ({ data: { session: null } })),
-      onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })),
+      onAuthStateChange: (cb: (event: string, session: unknown) => void) => {
+        mockAuthCb.fn = cb
+        return { data: { subscription: { unsubscribe: vi.fn() } } }
+      },
       signInWithPassword: (...args: unknown[]) => mockSignIn(...args),
       signUp: (...args: unknown[]) => mockSignUp(...args),
       updateUser: (...args: unknown[]) => mockUpdateUser(...args),
@@ -55,7 +59,7 @@ function resetStores() {
     todoQuickTags: [],
     customSounds: []
   })
-  useAuthStore.setState({ user: null, loading: false, error: null, pendingMerge: false })
+  useAuthStore.setState({ user: null, loading: false, error: null, pendingMerge: false, recovery: false })
   useFocusStore.setState({
     timer: { phase: 'focus', status: 'idle', remainingSeconds: 15 * 60, roundsCompleted: 0 },
     active: false,
@@ -66,10 +70,12 @@ function resetStores() {
   mockSignUp.mockReset()
   mockSignIn.mockReset()
   mockRpc.mockReset()
+  mockRpc.mockResolvedValue({ data: null, error: null })
   mockUpdateUser.mockReset()
   mockUpload.mockReset()
   mockResetEmail.mockReset()
   mockVerifyOtp.mockReset()
+  mockAuthCb.fn = null
 }
 
 function sessionUser(email: string, nickname = '小明') {
@@ -172,29 +178,13 @@ describe('v2.0.4 signin routing and recovery actions', () => {
     expect(useAuthStore.getState().error).toBe('nicknameTaken')
   })
 
-  it('sends a bind code via updateUser without changing the email yet', async () => {
+  it('sends the confirmation email via updateUser without changing the email yet', async () => {
     useAuthStore.setState({ user: { id: 'u1', email: 'u_abc@discipline.app', nickname: '小明' } })
     mockUpdateUser.mockResolvedValue({ error: null })
     const ok = await useAuthStore.getState().sendBindEmailCode('new@x.com')
     expect(ok).toBe(true)
     expect(mockUpdateUser).toHaveBeenCalledWith({ email: 'new@x.com' })
     expect(useAuthStore.getState().user?.email).toBe('u_abc@discipline.app')
-  })
-
-  it('binds the email after the verification code matches', async () => {
-    useAuthStore.setState({ user: { id: 'u1', email: 'u_abc@discipline.app', nickname: '小明' } })
-    mockVerifyOtp.mockResolvedValue({
-      data: { user: { id: 'u1', email: 'new@x.com', user_metadata: { nickname: '小明' } } },
-      error: null
-    })
-    const ok = await useAuthStore.getState().confirmBindEmail('new@x.com', '123456')
-    expect(ok).toBe(true)
-    expect(mockVerifyOtp).toHaveBeenCalledWith({
-      email: 'new@x.com',
-      token: '123456',
-      type: 'email_change'
-    })
-    expect(useAuthStore.getState().user?.email).toBe('new@x.com')
   })
 
   it('only sends reset email when a real email is bound', async () => {
@@ -205,6 +195,37 @@ describe('v2.0.4 signin routing and recovery actions', () => {
     mockResetEmail.mockResolvedValue({ error: null })
     expect(await useAuthStore.getState().sendResetEmail()).toBe(true)
     expect(mockResetEmail).toHaveBeenCalledWith('real@x.com')
+  })
+
+  it('falls back to the profile-bound email for the reset email', async () => {
+    useAuthStore.setState({ user: { id: 'u1', email: 'u_abc@discipline.app', nickname: '小明' } })
+    mockRpc.mockResolvedValue({ data: 'real@x.com', error: null })
+    mockResetEmail.mockResolvedValue({ error: null })
+    expect(await useAuthStore.getState().sendResetEmail()).toBe(true)
+    expect(mockResetEmail).toHaveBeenCalledWith('real@x.com')
+  })
+
+  it('updates the password and clears the recovery flag', async () => {
+    useAuthStore.setState({ user: { id: 'u1', email: 'real@x.com', nickname: '小明' }, recovery: true })
+    mockUpdateUser.mockResolvedValue({ error: null })
+    expect(await useAuthStore.getState().updatePassword('newpass1')).toBe(true)
+    expect(mockUpdateUser).toHaveBeenCalledWith({ password: 'newpass1' })
+    expect(useAuthStore.getState().recovery).toBe(false)
+  })
+
+  it('rejects a password shorter than 6 characters', async () => {
+    useAuthStore.setState({ user: { id: 'u1', email: 'real@x.com', nickname: '小明' } })
+    expect(await useAuthStore.getState().updatePassword('123')).toBe(false)
+    expect(useAuthStore.getState().error).toBe('passwordTooShort')
+    expect(mockUpdateUser).not.toHaveBeenCalled()
+  })
+
+  it('marks the recovery flow when PASSWORD_RECOVERY is emitted', async () => {
+    useAuthStore.getState().init()
+    mockAuthCb.fn?.('PASSWORD_RECOVERY', {
+      user: { id: 'u1', email: 'real@x.com', user_metadata: { nickname: '小明' } }
+    })
+    expect(useAuthStore.getState().recovery).toBe(true)
   })
 })
 

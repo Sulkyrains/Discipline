@@ -30,6 +30,7 @@ import BottomNav from './components/BottomNav'
 import DailySplash from './components/DailySplash'
 import FocusGuard from './components/FocusGuard'
 import Onboarding from './components/Onboarding'
+import RecoveryPassword from './components/RecoveryPassword'
 import ErrorBoundary from './components/ErrorBoundary'
 import ScrollToTop from './components/ScrollToTop'
 import IslandHost from './components/IslandHost'
@@ -69,6 +70,7 @@ export default function App() {
   const location = useLocation()
   const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
+  const recovery = useAuthStore((s) => s.recovery)
   const focusActive = useFocusStore((s) => s.active)
   const appWhitelist = useAppStore((s) => s.appWhitelist)
   const lastDailySplashDate = useAppStore((s) => s.lastDailySplashDate)
@@ -396,6 +398,7 @@ export default function App() {
           {showOnboarding ? (
             <Onboarding onDone={() => useAppStore.getState().setOnboarded()} />
           ) : null}
+          {recovery ? <RecoveryPassword /> : null}
           <IslandHost />
           <MergeDialog />
           <ConfirmDialog

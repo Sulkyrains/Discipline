@@ -64,7 +64,6 @@ export default function Settings() {
   const signOut = useAuthStore((s) => s.signOut)
   const updateNickname = useAuthStore((s) => s.updateNickname)
   const sendBindEmailCode = useAuthStore((s) => s.sendBindEmailCode)
-  const confirmBindEmail = useAuthStore((s) => s.confirmBindEmail)
   const sendBindPhoneCode = useAuthStore((s) => s.sendBindPhoneCode)
   const confirmBindPhone = useAuthStore((s) => s.confirmBindPhone)
   const sendPhoneReset = useAuthStore((s) => s.sendPhoneReset)
@@ -83,7 +82,6 @@ export default function Settings() {
   const [emailInput, setEmailInput] = useState('')
   const [emailCodeSent, setEmailCodeSent] = useState(false)
   const [pendingEmail, setPendingEmail] = useState('')
-  const [emailCode, setEmailCode] = useState('')
   const [resendIn, setResendIn] = useState(0)
   const [emailBusy, setEmailBusy] = useState(false)
   const [phoneInput, setPhoneInput] = useState('')
@@ -158,7 +156,6 @@ export default function Settings() {
     setEmailInput('')
     setEmailCodeSent(false)
     setPendingEmail('')
-    setEmailCode('')
     setResendIn(0)
     setPhoneInput('')
     setPhoneCodeSent(false)
@@ -188,20 +185,12 @@ export default function Settings() {
     setEmailBusy(false)
     if (ok) {
       setPendingEmail(target)
-      setEmailCode('')
       setEmailCodeSent(true)
       setResendIn(60)
-      useToastStore.getState().push({ title: t(lang, 'codeSent', { email: target }), kind: 'success' })
-    }
-  }
-
-  const confirmBind = async () => {
-    setEmailBusy(true)
-    const ok = await confirmBindEmail(pendingEmail, emailCode)
-    setEmailBusy(false)
-    if (ok) {
-      useToastStore.getState().push({ title: t(lang, 'bindSuccess'), kind: 'success' })
-      setEditProfile(false)
+      useToastStore.getState().push({
+        title: t(lang, 'emailConfirmSent', { email: target }),
+        kind: 'success'
+      })
     }
   }
 
@@ -423,9 +412,11 @@ export default function Settings() {
               <div className="account-head-main">
                 <strong>{user.nickname ?? user.email}</strong>
                 <span className="muted small">{emailBound ? user.email : t(lang, 'emailNotBound')}</span>
-                <span className="muted small">
-                  {user.phone ? `${t(lang, 'phoneBound')}：${user.phone}` : t(lang, 'phoneNotBound')} · {t(lang, 'phoneDisabled')}
-                </span>
+                {user.phone ? (
+                  <span className="muted small">
+                    {t(lang, 'phoneBound')}：{user.phone}
+                  </span>
+                ) : null}
               </div>
               <button className="btn btn-primary btn-sm" onClick={openProfile}>
                 {t(lang, 'editProfile')}
@@ -868,38 +859,24 @@ export default function Settings() {
               }
               onClick={() => void sendCode()}
             >
-              {emailBusy ? t(lang, 'sendingCode') : t(lang, 'sendCode')}
+              {emailBusy ? t(lang, 'sendingCode') : t(lang, 'sendBindMail')}
             </button>
           ) : (
             <div className="field">
-              <span>{t(lang, 'code')}</span>
-              <input
-                className="input"
-                inputMode="numeric"
-                maxLength={6}
-                value={emailCode}
-                placeholder={t(lang, 'codePlaceholder')}
-                onChange={(e) => setEmailCode(e.target.value.replace(/\D/g, ''))}
-              />
-              <p className="muted small">{t(lang, 'codeSentTo', { email: pendingEmail })}</p>
-              <div className="form-actions">
-                <button
-                  type="button"
-                  className="btn btn-primary btn-sm"
-                  disabled={emailBusy || emailCode.length < 4}
-                  onClick={() => void confirmBind()}
-                >
-                  {emailBusy ? t(lang, 'binding') : t(lang, 'confirmBind')}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-sm"
-                  disabled={emailBusy || resendIn > 0}
-                  onClick={() => void sendCode(pendingEmail)}
-                >
-                  {resendIn > 0 ? t(lang, 'resendIn', { seconds: resendIn }) : t(lang, 'resend')}
-                </button>
-              </div>
+              <p className="muted small">{t(lang, 'emailConfirmSent', { email: pendingEmail })}</p>
+              <p className="muted small">{t(lang, 'emailConfirmHint')}</p>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                disabled={emailBusy || resendIn > 0}
+                onClick={() => void sendCode(pendingEmail)}
+              >
+                {emailBusy
+                  ? t(lang, 'sendingCode')
+                  : resendIn > 0
+                    ? t(lang, 'resendIn', { seconds: resendIn })
+                    : t(lang, 'resend')}
+              </button>
             </div>
           )}
           {emailBound ? (
