@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.1.3',
+    date: '2026-08-10',
+    zh: '自习室优化：房间人数上限 50 人（满员拒绝加入）；公开房间列表新增“刷新”按钮；房间内专注时长动态刷新（每 5 秒更新）；专注开始后不可再创建或加入房间并显示醒目提示（已加入的房间不受影响）。',
+    en: 'Study-room updates: 50-person room cap (join rejected when full); a refresh button on the public room list; focus durations in a room now refresh dynamically (every 5s); creating or joining a room is blocked with a clear notice while focusing (existing rooms stay usable).'
+  },
+  {
     version: '2.1.2',
     date: '2026-08-10',
     zh: '自习室优化：顶部状态条新增“回到房间”按钮；每位用户最多同时加入或创建一个房间（新增 study_memberships 表做唯一约束，跨标签页/跨设备同样生效）；修复成员数量后分隔符乱码。需执行一次性 SQL（创建 study_memberships 表与策略）。',

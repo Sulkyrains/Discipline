@@ -11,6 +11,7 @@ import {
 } from '../lib/studyRoom'
 import { useAppStore } from '../stores/useAppStore'
 import { useAuthStore } from '../stores/useAuthStore'
+import { useFocusStore } from '../stores/useFocusStore'
 import { useStudyRoomStore } from '../stores/useStudyRoomStore'
 import { useToastStore } from '../stores/useToastStore'
 import EmptyState from '../components/EmptyState'
@@ -20,11 +21,13 @@ export default function Study() {
   const user = useAuthStore((s) => s.user)
   const navigate = useNavigate()
   const joinRoom = useStudyRoomStore((s) => s.join)
+  const focusActive = useFocusStore((s) => s.active)
   const [rooms, setRooms] = useState<StudyRoom[]>([])
   const [name, setName] = useState('')
   const [code, setCode] = useState('')
   const [isPublic, setIsPublic] = useState(true)
   const [busy, setBusy] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
 
   const enabled = isSupabaseConfigured()
 
@@ -61,7 +64,7 @@ export default function Study() {
   }
 
   const onCreate = async () => {
-    if (!name.trim() || busy) return
+    if (!name.trim() || busy || focusActive) return
     const membership = await getMyMembership(user.id)
     if (membership) {
       useToastStore.getState().push({ title: t(lang, 'studyInAnotherRoom'), kind: 'warn' })
@@ -74,6 +77,10 @@ export default function Study() {
       const status = await joinRoom(room.id)
       if (status === 'other') {
         useToastStore.getState().push({ title: t(lang, 'studyInAnotherRoom'), kind: 'warn' })
+        return
+      }
+      if (status === 'full') {
+        useToastStore.getState().push({ title: t(lang, 'studyRoomFull'), kind: 'warn' })
         return
       }
       useToastStore.getState().push({ title: t(lang, 'studyCreateOk'), kind: 'success' })
@@ -94,6 +101,14 @@ export default function Study() {
         useToastStore.getState().push({ title: t(lang, 'studyInAnotherRoom'), kind: 'warn' })
         return
       }
+      if (status === 'full') {
+        useToastStore.getState().push({ title: t(lang, 'studyRoomFull'), kind: 'warn' })
+        return
+      }
+      if (status === 'focus') {
+        useToastStore.getState().push({ title: t(lang, 'studyFocusBlocked'), kind: 'warn' })
+        return
+      }
       useToastStore.getState().push({ title: t(lang, 'studyJoinOk'), kind: 'success' })
       navigate(`/study/${room.id}`)
     } else {
@@ -111,6 +126,9 @@ export default function Study() {
       </header>
 
       <div className="card study-create">
+        {focusActive ? (
+          <p className="form-error">⚠️ {t(lang, 'studyFocusBlocked')}</p>
+        ) : null}
         <div className="form-row">
           <label className="field">
             <span>{t(lang, 'studyRoomName')}</span>
@@ -121,7 +139,11 @@ export default function Study() {
               onChange={(e) => setName(e.target.value)}
             />
           </label>
-          <button className="btn btn-primary" disabled={busy || !name.trim()} onClick={() => void onCreate()}>
+          <button
+            className="btn btn-primary"
+            disabled={busy || !name.trim() || focusActive}
+            onClick={() => void onCreate()}
+          >
             + {t(lang, 'studyCreate')}
           </button>
         </div>
@@ -158,13 +180,29 @@ export default function Study() {
               onChange={(e) => setCode(e.target.value.toUpperCase())}
             />
           </label>
-          <button className="btn btn-ghost" disabled={busy || code.trim().length !== 6} onClick={() => void onJoin()}>
+          <button
+            className="btn btn-ghost"
+            disabled={busy || code.trim().length !== 6 || focusActive}
+            onClick={() => void onJoin()}
+          >
             {t(lang, 'studyJoin')}
           </button>
         </div>
       </div>
 
-      <h2 className="section-title">{t(lang, 'studyRooms')}</h2>
+      <div className="study-list-head">
+        <h2 className="section-title">{t(lang, 'studyRooms')}</h2>
+        <button
+          className="btn btn-ghost btn-sm"
+          disabled={refreshing}
+          onClick={() => {
+            setRefreshing(true)
+            void listStudyRooms().then(setRooms).finally(() => setRefreshing(false))
+          }}
+        >
+          {refreshing ? t(lang, 'loading') : t(lang, 'studyRefresh')}
+        </button>
+      </div>
       {rooms.length === 0 ? (
         <EmptyState emoji="🏫" text={t(lang, 'studyEmptyRooms')} />
       ) : (
@@ -176,7 +214,11 @@ export default function Study() {
                 <span className="chip chip-tag">{room.code}</span>
                 {room.owner_id === user.id ? <span className="chip">👑</span> : null}
               </div>
-              <button className="btn btn-primary btn-sm" onClick={() => navigate(`/study/${room.id}`)}>
+              <button
+                className="btn btn-primary btn-sm"
+                disabled={focusActive}
+                onClick={() => navigate(`/study/${room.id}`)}
+              >
                 {t(lang, 'studyJoin')}
               </button>
             </div>

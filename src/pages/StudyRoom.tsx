@@ -25,6 +25,7 @@ export default function StudyRoomPage() {
   const kick = useStudyRoomStore((s) => s.kick)
   const [notFound, setNotFound] = useState(false)
   const [inOtherRoom, setInOtherRoom] = useState(false)
+  const [joinError, setJoinError] = useState<'focus' | 'full' | null>(null)
   const [busy, setBusy] = useState(false)
 
   const enabled = isSupabaseConfigured()
@@ -36,6 +37,8 @@ export default function StudyRoomPage() {
       if (!alive) return
       if (r === 'notfound') setNotFound(true)
       else if (r === 'other') setInOtherRoom(true)
+      else if (r === 'focus') setJoinError('focus')
+      else if (r === 'full') setJoinError('full')
     })
     return () => {
       alive = false
@@ -76,6 +79,22 @@ export default function StudyRoomPage() {
             }}
           >
             {t(lang, 'studyLeave')}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (joinError) {
+    return (
+      <div className="page page-study">
+        <EmptyState
+          emoji={joinError === 'full' ? '👥' : '🧘'}
+          text={joinError === 'full' ? t(lang, 'studyRoomFull') : t(lang, 'studyFocusBlocked')}
+        />
+        <div className="study-actions">
+          <button className="btn btn-ghost" onClick={() => navigate('/study')}>
+            {t(lang, 'studyBackLobby')}
           </button>
         </div>
       </div>

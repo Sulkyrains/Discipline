@@ -55,7 +55,7 @@ export async function createStudyRoom(
     const code = generateRoomCode()
     const { data, error } = await supabase
       .from('study_rooms')
-      .insert({ id: uid(), code, name, owner_id: ownerId, is_public: isPublic, max_members: 20 })
+      .insert({ id: uid(), code, name, owner_id: ownerId, is_public: isPublic, max_members: 50 })
       .select()
       .maybeSingle()
     if (!error && data) return data as StudyRoom

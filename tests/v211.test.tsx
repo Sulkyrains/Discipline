@@ -1,7 +1,8 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import FocusGuard from '../src/components/FocusGuard'
+import { t } from '../src/lib/i18n'
 import {
   clearMembership,
   createStudyRoom,
@@ -13,6 +14,8 @@ import {
   type RoomMember
 } from '../src/lib/studyRoom'
 import { useFocusStore } from '../src/stores/useFocusStore'
+import { useAuthStore } from '../src/stores/useAuthStore'
+import Study from '../src/pages/Study'
 
 const roomRow = {
   id: 'r1',
@@ -80,6 +83,7 @@ beforeEach(() => {
     table === 'study_memberships' ? membershipChain() : studyChain()
   )
   useFocusStore.setState({ active: false })
+  useAuthStore.setState({ user: null })
 })
 
 afterEach(() => {
@@ -103,7 +107,11 @@ describe('v2.1.1 study room helpers', () => {
   it('creates a room with the chosen visibility', async () => {
     const room = await createStudyRoom('期末', 'u1', false)
     expect(room?.id).toBe('r1')
-    expect(insertCalls[0].rows[0]).toMatchObject({ is_public: false, owner_id: 'u1' })
+    expect(insertCalls[0].rows[0]).toMatchObject({
+      is_public: false,
+      owner_id: 'u1',
+      max_members: 50
+    })
   })
 
   it('lists only public rooms', async () => {
@@ -152,5 +160,47 @@ describe('v2.1.1 focus guard allows the study room', () => {
       </MemoryRouter>
     )
     expect(screen.getByText('focus-page')).toBeInTheDocument()
+  })
+})
+
+describe('v2.1.3 study lobby focus block and refresh', () => {
+  it('shows a notice and disables create/join while focusing', () => {
+    useAuthStore.setState({
+      user: { id: 'u1', email: 'x@x.com', nickname: '小明' }
+    })
+    useFocusStore.setState({ active: true })
+    render(
+      <MemoryRouter>
+        <Study />
+      </MemoryRouter>
+    )
+    expect(screen.getByText(new RegExp(t('zh', 'studyFocusBlocked')))).toBeInTheDocument()
+    const joinButtons = screen.getAllByRole('button', { name: /加入房间/ })
+    for (const b of joinButtons) expect(b).toBeDisabled()
+    expect(screen.getByRole('button', { name: /创建房间/ })).toBeDisabled()
+  })
+
+  it('enables create/join and shows the refresh button when not focusing', () => {
+    useAuthStore.setState({
+      user: { id: 'u1', email: 'x@x.com', nickname: '小明' }
+    })
+    useFocusStore.setState({ active: false })
+    render(
+      <MemoryRouter>
+        <Study />
+      </MemoryRouter>
+    )
+    expect(screen.getByText(t('zh', 'studyRefresh'))).toBeInTheDocument()
+    fireEvent.change(screen.getByPlaceholderText(t('zh', 'studyRoomNamePh')), {
+      target: { value: '期末' }
+    })
+    fireEvent.change(screen.getByPlaceholderText(t('zh', 'studyJoinPh')), {
+      target: { value: 'ABCDEF' }
+    })
+    const joinButtons = screen.getAllByRole('button', { name: /加入房间/ })
+    for (const b of joinButtons) expect(b).toBeEnabled()
+    expect(screen.getByRole('button', { name: /创建房间/ })).toBeEnabled()
+    fireEvent.click(screen.getByText(t('zh', 'studyRefresh')))
+    expect(mockFrom).toHaveBeenCalled()
   })
 })

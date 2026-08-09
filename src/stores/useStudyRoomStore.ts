@@ -24,7 +24,9 @@ interface StudyRoomState {
   members: RoomMember[]
   joinedAt: number
   kickedAt: number
-  join: (roomId: string) => Promise<'joined' | 'other' | 'notfound' | 'error'>
+  join: (
+    roomId: string
+  ) => Promise<'joined' | 'other' | 'notfound' | 'error' | 'full' | 'focus'>
   leave: () => void
   disband: () => void
   kick: (userId: string) => void
@@ -111,18 +113,24 @@ export const useStudyRoomStore = create<StudyRoomState>((set, get) => ({
     if (!supabase) return 'error'
     const user = useAuthStore.getState().user
     if (!user) return 'error'
+    if (useFocusStore.getState().active) return 'focus'
     if (channel) return 'joined' // already in a room on this client
     // A user may only be in one room at a time (enforced via memberships).
     const membership = await getMyMembership(user.id)
     if (membership && membership.room_id !== roomId) return 'other'
     const room = await getStudyRoom(roomId)
     if (!room) return 'notfound'
-    await setMembership(user.id, roomId)
     const joinedAt = Date.now()
     set({ room, members: [], joinedAt, kickedAt: 0 })
 
     channel = supabase.channel(`room:${roomId}`, { config: { presence: { key: user.id } } })
+    let resolveFirstSync: (() => void) | null = null
+    const firstSync = new Promise<void>((r) => {
+      resolveFirstSync = r
+    })
     const sync = () => {
+      resolveFirstSync?.()
+      resolveFirstSync = null
       const me = useAuthStore.getState().user
       const current = useStudyRoomStore.getState()
       if (!me || !current.room || !channel) return
@@ -183,8 +191,16 @@ export const useStudyRoomStore = create<StudyRoomState>((set, get) => ({
         if (state === 'SUBSCRIBED') resolve()
       })
     })
+    // Reject when the room is already at capacity.
+    await Promise.race([firstSync, new Promise<void>((r) => window.setTimeout(r, 3000))])
+    if (readMembers().length >= (room.max_members || 50)) {
+      cleanupChannel()
+      set({ room: null, members: [], joinedAt: 0, kickedAt: 0 })
+      return 'full'
+    }
+    await setMembership(user.id, roomId)
     trackPresence()
-    statusTimer = window.setInterval(() => trackPresence(), 15_000)
+    statusTimer = window.setInterval(() => trackPresence(), 5_000)
     focusUnsub = useFocusStore.subscribe(() => trackPresence())
     return 'joined'
   },
