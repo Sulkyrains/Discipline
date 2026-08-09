@@ -14,6 +14,24 @@ export function needsUpdate(remote: string | null, current: string): boolean {
 }
 
 export async function clearCachesAndReload(): Promise<void> {
+  // Ask the newest service worker to take control immediately, then wait for
+  // the handover so the reload is served by the new worker instead of the old
+  // cached one (this is what makes "立即更新" actually work on mobile/PWA).
+  try {
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' })
+      await new Promise<void>((resolve) => {
+        const onController = () => {
+          navigator.serviceWorker.removeEventListener('controllerchange', onController)
+          resolve()
+        }
+        navigator.serviceWorker.addEventListener('controllerchange', onController)
+        window.setTimeout(resolve, 1500)
+      })
+    }
+  } catch {
+    // service worker control handover unavailable; continue below
+  }
   try {
     if ('serviceWorker' in navigator) {
       const registrations = await navigator.serviceWorker.getRegistrations()
@@ -31,8 +49,10 @@ export async function clearCachesAndReload(): Promise<void> {
     }
   }
   // Bypass any short-lived HTTP cache for index.html so the reload always
-  // fetches the latest build from the network.
-  window.location.replace(window.location.pathname + '?v=' + Date.now() + window.location.hash)
+  // fetches the latest build from the network. Absolute href ensures a fresh
+  // top-level navigation (replace() can be swallowed by the old SW on mobile).
+  window.location.href =
+    window.location.origin + window.location.pathname + '?v=' + Date.now() + window.location.hash
 }
 
 const UPDATED_KEY = 'discipline-auto-reloaded'
