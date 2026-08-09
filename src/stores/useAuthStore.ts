@@ -26,7 +26,8 @@ interface AuthState {
   signInOrRegister: (nicknameOrEmail: string, password: string) => Promise<'signin' | 'register' | false>
   signUp: (nickname: string, password: string, email?: string) => Promise<boolean>
   updateNickname: (nickname: string) => Promise<boolean>
-  bindEmail: (email: string) => Promise<boolean>
+  sendBindEmailCode: (email: string) => Promise<boolean>
+  confirmBindEmail: (email: string, code: string) => Promise<boolean>
   uploadAvatar: (file: File) => Promise<boolean>
   setAvatarEmoji: (emoji: string) => Promise<boolean>
   sendResetEmail: () => Promise<boolean>
@@ -307,28 +308,73 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     return true
   },
 
-  bindEmail: async (email) => {
+  sendBindEmailCode: async (email) => {
     const user = get().user
     if (!user || !supabase) {
       set({ error: 'config' })
       return false
     }
-    if (!isValidEmail(email)) {
+    const trimmed = email.trim()
+    if (!isValidEmail(trimmed)) {
       set({ error: 'emailInvalid' })
       return false
     }
+    if (trimmed.toLowerCase() === user.email.toLowerCase()) {
+      set({ loading: false, error: null })
+      return false
+    }
     set({ loading: true, error: null })
-    const { error } = await supabase.auth.updateUser({ email: email.trim() })
+    const { error } = await supabase.auth.updateUser({ email: trimmed })
     if (error) {
       set({
         loading: false,
-        error: error.code === 'email_exists' ? 'emailInUse' : 'auth'
+        error:
+          error.code === 'email_exists'
+            ? 'emailInUse'
+            : /reauthentication|secure email change|email_change/i.test(error.message)
+              ? 'secureChangeRequired'
+              : 'auth'
       })
       return false
     }
-    // Email changes require clicking the confirmation link in the new mailbox.
-    // The email and nickname -> email mapping update automatically once the
-    // USER_UPDATED auth event fires after confirmation.
+    set({ loading: false, error: null })
+    return true
+  },
+
+  confirmBindEmail: async (email, code) => {
+    const user = get().user
+    if (!user || !supabase) {
+      set({ error: 'config' })
+      return false
+    }
+    const trimmedEmail = email.trim()
+    const trimmedCode = code.trim()
+    if (!isValidEmail(trimmedEmail) || trimmedCode.length < 4) {
+      set({ error: 'codeInvalid' })
+      return false
+    }
+    set({ loading: true, error: null })
+    const { data, error } = await supabase.auth.verifyOtp({
+      email: trimmedEmail,
+      token: trimmedCode,
+      type: 'email_change'
+    })
+    if (error) {
+      set({
+        loading: false,
+        error:
+          /expired/i.test(error.message) || error.code === 'otp_expired'
+            ? 'codeExpired'
+            : /reauthentication|secure email change|email_change/i.test(error.message)
+              ? 'secureChangeRequired'
+              : 'codeInvalid'
+      })
+      return false
+    }
+    const fresh = data.user ? userInfoFromAuth(data.user) : null
+    if (fresh) handleUser(fresh)
+    else void get().refreshUser()
+    void upsertProfile({ userId: user.id, nickname: user.nickname ?? '', authEmail: trimmedEmail })
     set({ loading: false, error: null })
     return true
   },

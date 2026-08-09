@@ -15,6 +15,7 @@ const mockRpc = vi.fn()
 const mockUpdateUser = vi.fn()
 const mockUpload = vi.fn()
 const mockResetEmail = vi.fn()
+const mockVerifyOtp = vi.fn()
 
 vi.mock('../src/lib/supabase', () => ({
   isSupabaseConfigured: () => true,
@@ -27,6 +28,7 @@ vi.mock('../src/lib/supabase', () => ({
       signInWithPassword: (...args: unknown[]) => mockSignIn(...args),
       signUp: (...args: unknown[]) => mockSignUp(...args),
       updateUser: (...args: unknown[]) => mockUpdateUser(...args),
+      verifyOtp: (...args: unknown[]) => mockVerifyOtp(...args),
       resetPasswordForEmail: (...args: unknown[]) => mockResetEmail(...args),
       signOut: vi.fn(async () => undefined)
     },
@@ -67,6 +69,7 @@ function resetStores() {
   mockUpdateUser.mockReset()
   mockUpload.mockReset()
   mockResetEmail.mockReset()
+  mockVerifyOtp.mockReset()
 }
 
 function sessionUser(email: string, nickname = '小明') {
@@ -169,13 +172,29 @@ describe('v2.0.4 signin routing and recovery actions', () => {
     expect(useAuthStore.getState().error).toBe('nicknameTaken')
   })
 
-  it('requests an email change and waits for confirmation before updating the profile', async () => {
+  it('sends a bind code via updateUser without changing the email yet', async () => {
     useAuthStore.setState({ user: { id: 'u1', email: 'u_abc@discipline.app', nickname: '小明' } })
     mockUpdateUser.mockResolvedValue({ error: null })
-    const ok = await useAuthStore.getState().bindEmail('new@x.com')
+    const ok = await useAuthStore.getState().sendBindEmailCode('new@x.com')
     expect(ok).toBe(true)
     expect(mockUpdateUser).toHaveBeenCalledWith({ email: 'new@x.com' })
     expect(useAuthStore.getState().user?.email).toBe('u_abc@discipline.app')
+  })
+
+  it('binds the email after the verification code matches', async () => {
+    useAuthStore.setState({ user: { id: 'u1', email: 'u_abc@discipline.app', nickname: '小明' } })
+    mockVerifyOtp.mockResolvedValue({
+      data: { user: { id: 'u1', email: 'new@x.com', user_metadata: { nickname: '小明' } } },
+      error: null
+    })
+    const ok = await useAuthStore.getState().confirmBindEmail('new@x.com', '123456')
+    expect(ok).toBe(true)
+    expect(mockVerifyOtp).toHaveBeenCalledWith({
+      email: 'new@x.com',
+      token: '123456',
+      type: 'email_change'
+    })
+    expect(useAuthStore.getState().user?.email).toBe('new@x.com')
   })
 
   it('only sends reset email when a real email is bound', async () => {

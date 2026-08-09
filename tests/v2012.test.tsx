@@ -1,15 +1,18 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { t } from '../src/lib/i18n'
 import { isAdmin } from '../src/lib/admin'
 import { defaultSettings, useAppStore } from '../src/stores/useAppStore'
 import { useAuthStore } from '../src/stores/useAuthStore'
 import { useFocusStore } from '../src/stores/useFocusStore'
+import { useToastStore } from '../src/stores/useToastStore'
 import Settings from '../src/pages/Settings'
 import Admin from '../src/pages/Admin'
 
 const mockFrom = vi.fn()
 const mockUpdateUser = vi.fn()
+const mockVerifyOtp = vi.fn()
 
 vi.mock('../src/lib/supabase', () => ({
   isSupabaseConfigured: () => true,
@@ -18,6 +21,7 @@ vi.mock('../src/lib/supabase', () => ({
       getSession: vi.fn(async () => ({ data: { session: null } })),
       onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })),
       updateUser: (...args: unknown[]) => mockUpdateUser(...args),
+      verifyOtp: (...args: unknown[]) => mockVerifyOtp(...args),
       signOut: vi.fn(async () => undefined)
     },
     rpc: vi.fn(async () => ({ data: null, error: null })),
@@ -64,6 +68,7 @@ function resetStores() {
     customSounds: []
   })
   useAuthStore.setState({ user: null, loading: false, error: null, pendingMerge: false })
+  useToastStore.setState({ toasts: [] })
   useFocusStore.setState({
     timer: { phase: 'focus', status: 'idle', remainingSeconds: 15 * 60, roundsCompleted: 0 },
     active: false,
@@ -73,38 +78,80 @@ function resetStores() {
   })
   mockFrom.mockReset()
   mockUpdateUser.mockReset()
+  mockVerifyOtp.mockReset()
 }
 
 describe('v2.0.12 edit-profile email binding', () => {
   beforeEach(resetStores)
 
-  it('offers the email field and reset entry inside edit profile', () => {
-    mockFrom.mockImplementation((t) => (t === 'admins' ? chain(null) : chain(null)))
+  function openProfileWithDerivedEmail() {
+    mockFrom.mockImplementation((table) => (table === 'admins' ? chain(null) : chain(null)))
     useAuthStore.setState({ user: { id: 'u1', email: 'u_abc@discipline.app', nickname: '小明' } })
     render(
       <MemoryRouter>
         <Settings />
       </MemoryRouter>
     )
-    fireEvent.click(screen.getAllByText('编辑资料')[0])
+    fireEvent.click(screen.getAllByText(t('zh', 'editProfile'))[0])
+  }
+
+  it('offers the email field, the send-code button and no reset entry', () => {
+    openProfileWithDerivedEmail()
     expect(screen.getByLabelText(/^邮箱/)).toBeInTheDocument()
+    expect(screen.getByText(t('zh', 'sendCode'))).toBeInTheDocument()
     expect(screen.getAllByText(/未绑定邮箱/).length).toBeGreaterThan(0)
-    expect(screen.queryByText('通过邮箱重置密码')).toBeNull()
+    expect(screen.queryByText(t('zh', 'resetViaEmail'))).toBeNull()
   })
 
-  it('calls bindEmail when the email is changed and saved', async () => {
-    mockFrom.mockImplementation((t) => (t === 'admins' ? chain(null) : chain(null)))
+  it('sends the bind code when the send button is clicked', async () => {
     mockUpdateUser.mockResolvedValue({ error: null })
-    useAuthStore.setState({ user: { id: 'u1', email: 'u_abc@discipline.app', nickname: '小明' } })
-    render(
-      <MemoryRouter>
-        <Settings />
-      </MemoryRouter>
-    )
-    fireEvent.click(screen.getAllByText('编辑资料')[0])
+    openProfileWithDerivedEmail()
     fireEvent.change(screen.getByLabelText(/^邮箱/), { target: { value: 'new@x.com' } })
-    fireEvent.click(screen.getAllByText('保存')[0])
+    fireEvent.click(screen.getByText(t('zh', 'sendCode')))
     await waitFor(() => expect(mockUpdateUser).toHaveBeenCalledWith({ email: 'new@x.com' }))
+    expect(screen.getByText(t('zh', 'confirmBind'))).toBeInTheDocument()
+  })
+
+  it('binds the email after the verification code matches', async () => {
+    mockUpdateUser.mockResolvedValue({ error: null })
+    mockVerifyOtp.mockResolvedValue({
+      data: { user: { id: 'u1', email: 'new@x.com', user_metadata: { nickname: '小明' } } },
+      error: null
+    })
+    openProfileWithDerivedEmail()
+    fireEvent.change(screen.getByLabelText(/^邮箱/), { target: { value: 'new@x.com' } })
+    fireEvent.click(screen.getByText(t('zh', 'sendCode')))
+    await waitFor(() => screen.getByText(t('zh', 'confirmBind')))
+    fireEvent.change(screen.getByPlaceholderText(t('zh', 'codePlaceholder')), {
+      target: { value: '123456' }
+    })
+    fireEvent.click(screen.getByText(t('zh', 'confirmBind')))
+    await waitFor(() =>
+      expect(mockVerifyOtp).toHaveBeenCalledWith({
+        email: 'new@x.com',
+        token: '123456',
+        type: 'email_change'
+      })
+    )
+    expect(useToastStore.getState().toasts.some((x) => x.title === t('zh', 'bindSuccess'))).toBe(true)
+    expect(useAuthStore.getState().user?.email).toBe('new@x.com')
+  })
+
+  it('shows an inline error when the verification code is wrong', async () => {
+    mockUpdateUser.mockResolvedValue({ error: null })
+    mockVerifyOtp.mockResolvedValue({
+      data: { user: null },
+      error: { message: 'Invalid token', code: 'otp_invalid' }
+    })
+    openProfileWithDerivedEmail()
+    fireEvent.change(screen.getByLabelText(/^邮箱/), { target: { value: 'new@x.com' } })
+    fireEvent.click(screen.getByText(t('zh', 'sendCode')))
+    await waitFor(() => screen.getByText(t('zh', 'confirmBind')))
+    fireEvent.change(screen.getByPlaceholderText(t('zh', 'codePlaceholder')), {
+      target: { value: '000000' }
+    })
+    fireEvent.click(screen.getByText(t('zh', 'confirmBind')))
+    await waitFor(() => expect(screen.getByText(t('zh', 'codeInvalid'))).toBeInTheDocument())
   })
 })
 
@@ -121,7 +168,7 @@ describe('v2.0.12 admin panel', () => {
   })
 
   it('shows the forbidden message for non-admins', async () => {
-    mockFrom.mockImplementation((t) => (t === 'admins' ? chain(null) : chain([])))
+    mockFrom.mockImplementation((table) => (table === 'admins' ? chain(null) : chain([])))
     useAuthStore.setState({ user: { id: 'u2', email: 'x@x.com', nickname: '小明' } })
     render(
       <MemoryRouter>
@@ -133,7 +180,7 @@ describe('v2.0.12 admin panel', () => {
 
   it('renders feedback for admins and saves a reply', async () => {
     const feedbackChain = chain([feedbackRow])
-    mockFrom.mockImplementation((t) => (t === 'admins' ? chain({ user_id: 'u1' }) : feedbackChain))
+    mockFrom.mockImplementation((table) => (table === 'admins' ? chain({ user_id: 'u1' }) : feedbackChain))
     useAuthStore.setState({ user: { id: 'u1', email: 'admin@x.com', nickname: '站长' } })
     render(
       <MemoryRouter>

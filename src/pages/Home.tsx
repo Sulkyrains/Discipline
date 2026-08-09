@@ -20,6 +20,7 @@ export default function Home() {
   const user = useAuthStore((s) => s.user)
   const updateStatus = useUpdateStore((s) => s.status)
   const updateRemote = useUpdateStore((s) => s.lastRemote)
+  const [updating, setUpdating] = useState(false)
   const [quoteIdx, setQuoteIdx] = useState(0)
   const [clockNow, setClockNow] = useState(() => new Date())
 
@@ -61,8 +62,16 @@ export default function Home() {
           <span className="update-banner-text">
             {t(lang, 'updateAvailable', { version: updateRemote ?? '' })}
           </span>
-          <button className="btn btn-primary btn-sm" onClick={() => applyUpdateNow()}>
-            {t(lang, 'updateNow')}
+          <button
+            className="btn btn-primary btn-sm"
+            disabled={updating}
+            onClick={() => {
+              if (updating) return
+              setUpdating(true)
+              void applyUpdateNow().finally(() => setUpdating(false))
+            }}
+          >
+            {updating ? t(lang, 'updating') : t(lang, 'updateNow')}
           </button>
         </div>
       ) : null}

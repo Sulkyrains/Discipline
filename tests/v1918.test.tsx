@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import Settings from '../src/pages/Settings'
 import { t } from '../src/lib/i18n'
 import { todayKey } from '../src/lib/format'
@@ -36,9 +36,15 @@ describe('v1.9.18 auto-update system', () => {
     window.sessionStorage.clear()
   })
 
-  it('reports and clears the auto-updated flag once', () => {
-    applyUpdateNow(vi.fn())
+  it('reports and clears the auto-updated flag once', async () => {
+    await applyUpdateNow(async () => true)
     expect(consumeAutoUpdated()).toBe(true)
+    expect(consumeAutoUpdated()).toBe(false)
+  })
+
+  it('clears the flag and reports failure when the reload fails', async () => {
+    const ok = await applyUpdateNow(async () => false)
+    expect(ok).toBe(false)
     expect(consumeAutoUpdated()).toBe(false)
   })
 

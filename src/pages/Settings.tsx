@@ -63,7 +63,8 @@ export default function Settings() {
   const authError = useAuthStore((s) => s.error)
   const signOut = useAuthStore((s) => s.signOut)
   const updateNickname = useAuthStore((s) => s.updateNickname)
-  const bindEmail = useAuthStore((s) => s.bindEmail)
+  const sendBindEmailCode = useAuthStore((s) => s.sendBindEmailCode)
+  const confirmBindEmail = useAuthStore((s) => s.confirmBindEmail)
   const uploadAvatar = useAuthStore((s) => s.uploadAvatar)
   const sendResetEmail = useAuthStore((s) => s.sendResetEmail)
   const mergeWithCloud = useAuthStore((s) => s.mergeWithCloud)
@@ -76,6 +77,12 @@ export default function Settings() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [nicknameInput, setNicknameInput] = useState('')
   const [emailInput, setEmailInput] = useState('')
+  const [emailCodeSent, setEmailCodeSent] = useState(false)
+  const [pendingEmail, setPendingEmail] = useState('')
+  const [emailCode, setEmailCode] = useState('')
+  const [resendIn, setResendIn] = useState(0)
+  const [emailBusy, setEmailBusy] = useState(false)
+  const [updating, setUpdating] = useState(false)
   const [editProfile, setEditProfile] = useState(false)
   const [admin, setAdmin] = useState(false)
   const [pendingCrop, setPendingCrop] = useState<File | null>(null)
@@ -97,9 +104,15 @@ export default function Settings() {
         ? t(lang, 'nicknameInvalid')
         : authError === 'emailInvalid'
           ? t(lang, 'emailInvalid')
-          : authError === 'emailInUse'
-            ? t(lang, 'emailInUse')
-            : ''
+        : authError === 'emailInUse'
+          ? t(lang, 'emailInUse')
+          : authError === 'codeInvalid'
+            ? t(lang, 'codeInvalid')
+            : authError === 'codeExpired'
+              ? t(lang, 'codeExpired')
+              : authError === 'secureChangeRequired'
+                ? t(lang, 'secureChangeHint')
+                : ''
     : ''
 
   const onEditAvatarPick = (e: ChangeEvent<HTMLInputElement>) => {
@@ -121,6 +134,10 @@ export default function Settings() {
     setEditProfile(true)
     setNicknameInput(user?.nickname ?? '')
     setEmailInput('')
+    setEmailCodeSent(false)
+    setPendingEmail('')
+    setEmailCode('')
+    setResendIn(0)
     setCroppedPreview(null)
   }
 
@@ -130,13 +147,39 @@ export default function Settings() {
       const ok = await updateNickname(nicknameInput)
       if (ok) useToastStore.getState().push({ title: t(lang, 'nicknameSaved'), kind: 'success' })
     }
-    const emailChanged = !!user && emailInput.trim() !== '' && emailInput.trim() !== user.email
-    if (emailChanged) {
-      const ok = await bindEmail(emailInput)
-      if (ok) useToastStore.getState().push({ title: t(lang, 'emailChangeSent'), kind: 'success' })
-    }
     setEditProfile(false)
   }
+
+  const sendCode = async (targetEmail?: string) => {
+    const target = (targetEmail ?? emailInput).trim()
+    if (!target || (user && target.toLowerCase() === user.email.toLowerCase())) return
+    setEmailBusy(true)
+    const ok = await sendBindEmailCode(target)
+    setEmailBusy(false)
+    if (ok) {
+      setPendingEmail(target)
+      setEmailCode('')
+      setEmailCodeSent(true)
+      setResendIn(60)
+      useToastStore.getState().push({ title: t(lang, 'codeSent', { email: target }), kind: 'success' })
+    }
+  }
+
+  const confirmBind = async () => {
+    setEmailBusy(true)
+    const ok = await confirmBindEmail(pendingEmail, emailCode)
+    setEmailBusy(false)
+    if (ok) {
+      useToastStore.getState().push({ title: t(lang, 'bindSuccess'), kind: 'success' })
+      setEditProfile(false)
+    }
+  }
+
+  useEffect(() => {
+    if (resendIn <= 0) return
+    const timer = window.setTimeout(() => setResendIn((s) => s - 1), 1000)
+    return () => window.clearTimeout(timer)
+  }, [resendIn])
 
   useEffect(() => {
     if (!user) {
@@ -641,8 +684,16 @@ export default function Settings() {
             {updateChecking ? t(lang, 'checkingUpdate') : t(lang, 'checkUpdateBtn')}
           </button>
           {updateStatus === 'outdated' ? (
-            <button className="btn btn-primary btn-sm" onClick={() => applyUpdateNow()}>
-              {t(lang, 'updateNowSettings')}
+            <button
+              className="btn btn-primary btn-sm"
+              disabled={updating}
+              onClick={() => {
+                if (updating) return
+                setUpdating(true)
+                void applyUpdateNow().finally(() => setUpdating(false))
+              }}
+            >
+              {updating ? t(lang, 'updating') : t(lang, 'updateNowSettings')}
             </button>
           ) : null}
         </div>
@@ -701,9 +752,57 @@ export default function Settings() {
               type="email"
               value={emailInput}
               placeholder={t(lang, 'emailOptional')}
-              onChange={(e) => setEmailInput(e.target.value)}
+              onChange={(e) => {
+                setEmailInput(e.target.value)
+                if (emailCodeSent && e.target.value.trim() !== pendingEmail) setEmailCodeSent(false)
+              }}
             />
           </label>
+          {!emailCodeSent ? (
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              disabled={
+                emailBusy ||
+                !emailInput.trim() ||
+                (!!user && emailInput.trim().toLowerCase() === user.email.toLowerCase())
+              }
+              onClick={() => void sendCode()}
+            >
+              {emailBusy ? t(lang, 'sendingCode') : t(lang, 'sendCode')}
+            </button>
+          ) : (
+            <div className="field">
+              <span>{t(lang, 'code')}</span>
+              <input
+                className="input"
+                inputMode="numeric"
+                maxLength={6}
+                value={emailCode}
+                placeholder={t(lang, 'codePlaceholder')}
+                onChange={(e) => setEmailCode(e.target.value.replace(/\D/g, ''))}
+              />
+              <p className="muted small">{t(lang, 'codeSentTo', { email: pendingEmail })}</p>
+              <div className="form-actions">
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  disabled={emailBusy || emailCode.length < 4}
+                  onClick={() => void confirmBind()}
+                >
+                  {emailBusy ? t(lang, 'binding') : t(lang, 'confirmBind')}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  disabled={emailBusy || resendIn > 0}
+                  onClick={() => void sendCode(pendingEmail)}
+                >
+                  {resendIn > 0 ? t(lang, 'resendIn', { seconds: resendIn }) : t(lang, 'resend')}
+                </button>
+              </div>
+            </div>
+          )}
           {emailBound ? (
             <button type="button" className="btn btn-ghost btn-sm" onClick={() => void resetByEmail()}>
               {t(lang, 'resetViaEmail')}

@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.0.26',
+    date: '2026-08-09',
+    zh: '修复点击“立即更新”后无反应的问题（等待新 Service Worker 安装完成后接管再刷新，失败时明确提示）；编辑资料绑定/更换邮箱改为两步验证码流程：发送验证码到新邮箱 → 输入 6 位码校验一致即绑定成功。',
+    en: 'Fixed "Update now" doing nothing (waits for the new service worker to install and take over before reloading, with a clear error on failure); email binding in edit profile now uses a two-step code flow: send a code to the new inbox, enter the 6-digit code to bind.'
+  },
+  {
     version: '2.0.25',
     date: '2026-08-09',
     zh: '登录/刷新时自动补齐老账号缺失的 display_name 元数据，让 Supabase 用户列表能直接显示昵称（新账号注册时已写入，无需手动回填 SQL）。',

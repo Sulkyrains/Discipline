@@ -2,7 +2,6 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, HashRouter } from 'react-router-dom'
 import App from './App'
-import { APP_VERSION } from './version'
 import { useUpdateStore } from './stores/useUpdateStore'
 import './styles/tokens.css'
 import './styles/base.css'
@@ -12,7 +11,7 @@ import './styles/pages.css'
 if (!__SINGLE_FILE__) {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker
-      .register(`${import.meta.env.BASE_URL}sw.js?v=${APP_VERSION}`, { updateViaCache: 'none' })
+      .register(`${import.meta.env.BASE_URL}sw.js`, { updateViaCache: 'none' })
       .catch(() => {})
   }
 

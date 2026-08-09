@@ -15,7 +15,7 @@ vi.mock('../src/lib/update', async (importOriginal) => {
   return {
     ...actual,
     clearCachesAndReload: vi.fn().mockResolvedValue(undefined),
-    applyUpdateNow: vi.fn()
+    applyUpdateNow: vi.fn(async () => true)
   }
 })
 
