@@ -143,8 +143,16 @@ describe('v2.0.12 admin panel', () => {
     await waitFor(() => expect(screen.getByText('专注页报错')).toBeInTheDocument())
     fireEvent.change(screen.getByPlaceholderText(/在这里填写给用户的回复/), { target: { value: '已修复' } })
     fireEvent.click(screen.getByText('保存回复'))
-    await waitFor(() =>
-      expect(feedbackChain.update).toHaveBeenCalledWith({ reply: '已修复', status: 'done' })
-    )
+    await waitFor(() => expect(feedbackChain.update).toHaveBeenCalled())
+    const payload = (
+      feedbackChain.update.mock.calls[0] as unknown as Array<{
+        reply?: string
+        status?: string
+        messages?: unknown[]
+      }>
+    )[0]
+    expect(payload?.status).toBe('done')
+    expect(payload?.reply).toBe('已修复')
+    expect(payload?.messages).toHaveLength(1)
   })
 })

@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import type { FeedbackMessage } from './feedback'
 
 export interface AdminFeedbackRow {
   id: string
@@ -9,6 +10,7 @@ export interface AdminFeedbackRow {
   type?: string
   status: string
   reply?: string
+  messages?: FeedbackMessage[]
   updatedAt: string
 }
 
@@ -37,12 +39,12 @@ export async function listAllFeedback(): Promise<AdminFeedbackRow[]> {
       .limit(100)
     return { data, error }
   }
-  let { data, error } = await selectRows('id, owner_id, data, status, reply, updated_at')
+  let { data, error } = await selectRows('id, owner_id, data, status, reply, messages, updated_at')
   let hasReply = !error
   if (error) {
     // The reply column may not exist yet in older databases; fall back to the
     // stable columns so the admin list still works.
-    const fallback = await selectRows('id, owner_id, data, status, updated_at')
+    const fallback = await selectRows('id, owner_id, data, status, reply, updated_at')
     data = fallback.data
     error = fallback.error
     hasReply = false
@@ -57,6 +59,9 @@ export async function listAllFeedback(): Promise<AdminFeedbackRow[]> {
     status: String(row.status ?? 'pending'),
     reply:
       hasReply && typeof row.reply === 'string' && row.reply ? (row.reply as string) : undefined,
+    messages: Array.isArray(row.messages)
+      ? (row.messages as unknown as FeedbackMessage[])
+      : undefined,
     updatedAt: String(row.updated_at ?? '')
   }))
   const ownerIds = [...new Set(rows.map((r) => r.ownerId).filter(Boolean))]

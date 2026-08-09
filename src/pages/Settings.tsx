@@ -17,6 +17,7 @@ import Sheet from '../components/Sheet'
 import AvatarCropper from '../components/AvatarCropper'
 import { isDerivedEmail } from '../lib/account'
 import { isAdmin } from '../lib/admin'
+import { useFeedbackStore } from '../stores/useFeedbackStore'
 import {
   dedupeCustomName,
   deleteCustomAudio,
@@ -81,6 +82,8 @@ export default function Settings() {
   const [croppedPreview, setCroppedPreview] = useState<string | null>(null)
   const [viewOriginal, setViewOriginal] = useState(false)
   const [syncing, setSyncing] = useState(false)
+  const userHasNewReply = useFeedbackStore((s) => s.userHasNewReply)
+  const pendingCount = useFeedbackStore((s) => s.pendingCount)
   const updateStatus = useUpdateStore((s) => s.status)
   const updateChecking = updateStatus === 'checking'
   const updateRemote = useUpdateStore((s) => s.lastRemote)
@@ -309,6 +312,7 @@ export default function Settings() {
               {admin ? (
                 <Link className="btn btn-ghost btn-sm" to="/admin">
                   🛠 {t(lang, 'adminPanel')}
+                  {pendingCount > 0 ? ` (${pendingCount})` : ''}
                 </Link>
               ) : null}
               <button className="btn btn-ghost btn-sm" onClick={() => void signOut()}>
@@ -600,7 +604,8 @@ export default function Settings() {
         <h3 className="section-title">{t(lang, 'about')}</h3>
         <div className="settings-row">
           <Link className="settings-link" to="/feedback">
-            {t(lang, 'feedback')} →
+            {t(lang, 'feedback')}
+            {userHasNewReply ? <span className="chip chip-ok">●</span> : null} →
           </Link>
         </div>
         <div className="settings-row">

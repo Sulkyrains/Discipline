@@ -16,12 +16,16 @@ import { applyAutoTheme, clearAutoTheme } from './lib/autoTheme'
 import { syncFocusLockActive, syncFocusLockWhitelist } from './lib/focusLock'
 import { consumeAutoUpdated } from './lib/update'
 import { latestChangelog } from './lib/changelog'
+import { isSupabaseConfigured, supabase } from './lib/supabase'
+import { lastFeedbackSeen, markFeedbackSeen } from './lib/feedback'
+import { isAdmin } from './lib/admin'
 import { APP_VERSION } from './version'
 import { useAppStore } from './stores/useAppStore'
 import { useAuthStore } from './stores/useAuthStore'
 import { useFocusStore } from './stores/useFocusStore'
 import { useSoundStore } from './stores/useSoundStore'
 import { useToastStore } from './stores/useToastStore'
+import { useFeedbackStore } from './stores/useFeedbackStore'
 import BottomNav from './components/BottomNav'
 import DailySplash from './components/DailySplash'
 import FocusGuard from './components/FocusGuard'
@@ -118,6 +122,81 @@ export default function App() {
     void import('./pages/StudyRoom')
     void import('./pages/Feedback')
     void import('./pages/Changelog')
+  }, [user])
+
+  useEffect(() => {
+    if (!user || !isSupabaseConfigured()) return
+    const check = async () => {
+      try {
+        const since = new Date(lastFeedbackSeen(user.id)).toISOString()
+        const { data, error } = await supabase!
+          .from('feedback')
+          .select('id, reply, messages, updated_at')
+          .eq('owner_id', user.id)
+          .gt('updated_at', since)
+          .limit(20)
+        if (error || !data) return
+        const hasReply = data.some(
+          (r) =>
+            (typeof r.reply === 'string' && r.reply) ||
+            (Array.isArray(r.messages) && r.messages.length > 0)
+        )
+        if (hasReply) {
+          useFeedbackStore.getState().setUserHasNewReply(true)
+          const lang2 = useAppStore.getState().settings.language
+          useToastStore.getState().push({ title: t(lang2, 'feedbackNewReply'), kind: 'info' })
+          markFeedbackSeen(user.id)
+        }
+      } catch {
+        /* ignore transient failures */
+      }
+    }
+    void check()
+    const iv = window.setInterval(() => void check(), 60 * 1000)
+    const onVis = () => {
+      if (document.visibilityState === 'visible') void check()
+    }
+    document.addEventListener('visibilitychange', onVis)
+    return () => {
+      window.clearInterval(iv)
+      document.removeEventListener('visibilitychange', onVis)
+    }
+  }, [user])
+
+  useEffect(() => {
+    if (!user || !isSupabaseConfigured()) return
+    let last = 0
+    const check = async () => {
+      try {
+        if (!(await isAdmin(user.id))) return
+        const { count, error } = await supabase!
+          .from('feedback')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', 'pending')
+        if (error || count == null) return
+        useFeedbackStore.getState().setPendingCount(count)
+        if (last > 0 && count > last) {
+          const lang2 = useAppStore.getState().settings.language
+          useToastStore.getState().push({
+            title: t(lang2, 'adminNewFeedback', { n: count - last }),
+            kind: 'info'
+          })
+        }
+        last = count
+      } catch {
+        /* ignore transient failures */
+      }
+    }
+    void check()
+    const iv = window.setInterval(() => void check(), 60 * 1000)
+    const onVis = () => {
+      if (document.visibilityState === 'visible') void check()
+    }
+    document.addEventListener('visibilitychange', onVis)
+    return () => {
+      window.clearInterval(iv)
+      document.removeEventListener('visibilitychange', onVis)
+    }
   }, [user])
 
   useEffect(() => {

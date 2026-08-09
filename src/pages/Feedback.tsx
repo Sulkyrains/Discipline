@@ -2,10 +2,43 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { t } from '../lib/i18n'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { formatClock } from '../lib/format'
+import {
+  addFeedbackMessage,
+  markFeedbackSeen,
+  threadFromRow,
+  type FeedbackMessage
+} from '../lib/feedback'
 import { useAppStore } from '../stores/useAppStore'
 import { useAuthStore } from '../stores/useAuthStore'
+import { useFeedbackStore } from '../stores/useFeedbackStore'
 import { useToastStore } from '../stores/useToastStore'
 import EmptyState from '../components/EmptyState'
+import EmojiPicker from '../components/EmojiPicker'
+
+interface CloudItem {
+  id: string
+  content: string
+  type?: string
+  createdAt: string
+  status: string
+  reply?: string
+  messages?: unknown
+}
+
+function Thread({ thread }: { thread: FeedbackMessage[] }) {
+  if (thread.length === 0) return null
+  return (
+    <div className="feedback-thread">
+      {thread.map((m, i) => (
+        <div key={i} className={`feedback-bubble ${m.role === 'dev' ? 'dev' : 'user'}`}>
+          <span className="feedback-bubble-role">{m.role === 'dev' ? '开发者' : '我'}</span>
+          <p>{m.text}</p>
+          {m.at ? <span className="muted small">{formatClock(m.at)}</span> : null}
+        </div>
+      ))}
+    </div>
+  )
+}
 
 export default function Feedback() {
   const lang = useAppStore((s) => s.settings.language)
@@ -14,32 +47,23 @@ export default function Feedback() {
   const user = useAuthStore((s) => s.user)
   const [type, setType] = useState<'problem' | 'bug' | 'idea' | 'other'>('problem')
   const [content, setContent] = useState('')
-  const [contact, setContact] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [cloudItems, setCloudItems] = useState<
-    Array<{
-      id: string
-      content: string
-      contact: string
-      type?: string
-      createdAt: string
-      status: string
-      reply?: string
-    }>
-  >([])
+  const [cloudItems, setCloudItems] = useState<CloudItem[]>([])
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({})
+  const [replying, setReplying] = useState<string | null>(null)
 
   useEffect(() => {
     if (!user || !isSupabaseConfigured()) return
     let alive = true
-    const mapRows = (rows: Array<Record<string, unknown>>) =>
+    const mapRows = (rows: Array<Record<string, unknown>>): CloudItem[] =>
       rows.map((row) => ({
         id: String(row.id),
-        content: String((row.data as { content?: unknown })?.content ?? ''),
-        contact: String((row.data as { contact?: unknown })?.contact ?? ''),
-        type: String((row.data as { type?: unknown })?.type ?? ''),
+        content: String((row.data as { content?: unknown } | null)?.content ?? ''),
+        type: String((row.data as { type?: unknown } | null)?.type ?? ''),
         createdAt: String(row.updated_at ?? ''),
         status: String(row.status ?? 'pending'),
-        reply: typeof row.reply === 'string' && row.reply ? row.reply : undefined
+        reply: typeof row.reply === 'string' && row.reply ? row.reply : undefined,
+        messages: row.messages
       }))
     const fetchRows = async (cols: string) =>
       await supabase!
@@ -48,7 +72,7 @@ export default function Feedback() {
         .order('updated_at', { ascending: false })
         .limit(20)
     void (async () => {
-      let result = (await fetchRows('id, data, status, reply, updated_at')) as unknown as {
+      let result = (await fetchRows('id, data, status, reply, messages, updated_at')) as unknown as {
         data: unknown
         error: unknown
       }
@@ -61,6 +85,8 @@ export default function Feedback() {
       if (!alive) return
       if (!result.error && Array.isArray(result.data)) {
         setCloudItems(mapRows(result.data as Array<Record<string, unknown>>))
+        useFeedbackStore.getState().setUserHasNewReply(false)
+        markFeedbackSeen(user.id)
       }
     })()
     return () => {
@@ -73,12 +99,13 @@ export default function Feedback() {
     if (!content.trim() || submitting) return
     setSubmitting(true)
     let ok = true
+    const payload = { content: content.trim(), type }
     if (user && supabase) {
       const id = crypto.randomUUID()
       const { error } = await supabase.from('feedback').insert({
         id,
         owner_id: user.id,
-        data: { content: content.trim(), contact: contact.trim(), type },
+        data: payload,
         updated_at: new Date().toISOString()
       })
       ok = !error
@@ -86,8 +113,7 @@ export default function Feedback() {
         setCloudItems((prev) => [
           {
             id,
-            content: content.trim(),
-            contact: contact.trim(),
+            content: payload.content,
             type,
             createdAt: new Date().toISOString(),
             status: 'pending'
@@ -97,15 +123,12 @@ export default function Feedback() {
       }
     } else {
       if (supabase) {
-        // Guests may also submit to the cloud (owner_id stays null); the row is
-        // visible in the admin panel. Best-effort: local storage still works if
-        // the database is not configured for anonymous inserts.
         await supabase
           .from('feedback')
           .insert({
             id: crypto.randomUUID(),
             owner_id: null,
-            data: { content: content.trim(), contact: contact.trim(), type },
+            data: payload,
             updated_at: new Date().toISOString()
           })
           .then(
@@ -113,13 +136,40 @@ export default function Feedback() {
             () => undefined
           )
       }
-      addFeedback(content.trim(), contact.trim(), type)
+      addFeedback(payload.content, '', type)
     }
     setSubmitting(false)
     if (ok) {
       useToastStore.getState().push({ title: t(lang, 'submitOk'), kind: 'success' })
       setContent('')
-      setContact('')
+    } else {
+      useToastStore.getState().push({ title: t(lang, 'submitFail'), kind: 'warn' })
+    }
+  }
+
+  const sendReply = async (item: CloudItem) => {
+    const text = replyDrafts[item.id]?.trim()
+    if (!text || replying) return
+    setReplying(item.id)
+    const ok = await addFeedbackMessage(item.id, 'user', text)
+    setReplying(null)
+    if (ok) {
+      setReplyDrafts((d) => ({ ...d, [item.id]: '' }))
+      setCloudItems((prev) =>
+        prev.map((r) =>
+          r.id === item.id
+            ? {
+                ...r,
+                status: 'pending',
+                messages: [
+                  ...threadFromRow({ messages: r.messages, reply: r.reply, status: r.status }),
+                  { role: 'user' as const, text, at: new Date().toISOString() }
+                ]
+              }
+            : r
+        )
+      )
+      useToastStore.getState().push({ title: t(lang, 'feedbackReplySent'), kind: 'success' })
     } else {
       useToastStore.getState().push({ title: t(lang, 'submitFail'), kind: 'warn' })
     }
@@ -130,7 +180,7 @@ export default function Feedback() {
       <header className="page-head">
         <div>
           <h1 className="page-title">{t(lang, 'feedback')}</h1>
-          <p className="muted">{user ? user.email : t(lang, 'guest')}</p>
+          <p className="muted">{user ? user.nickname ?? user.email : t(lang, 'guest')}</p>
         </div>
       </header>
 
@@ -159,10 +209,6 @@ export default function Feedback() {
             placeholder={t(lang, 'contentPh')}
             onChange={(e) => setContent(e.target.value)}
           />
-        </label>
-        <label className="field">
-          <span>{t(lang, 'contact')} · {t(lang, 'optional')}</span>
-          <input className="input" value={contact} placeholder={t(lang, 'contactPh')} onChange={(e) => setContact(e.target.value)} />
         </label>
         <button className="btn btn-primary" type="submit" disabled={submitting || !content.trim()}>
           {submitting ? t(lang, 'submitting') : t(lang, 'submit')}
@@ -196,28 +242,47 @@ export default function Feedback() {
         ) : cloudItems.length === 0 ? (
           <EmptyState emoji="💬" text={t(lang, 'emptyFeedback')} />
         ) : (
-          cloudItems.map((item) => (
-            <div key={item.id} className="card feedback-item">
-              <p>{item.content}</p>
-              <div className="feedback-meta">
-                {item.type ? (
-                  <span className="chip">
-                    {t(lang, `feedbackType${item.type[0].toUpperCase()}${item.type.slice(1)}` as 'feedbackTypeProblem')}
+          cloudItems.map((item) => {
+            const thread = threadFromRow({ messages: item.messages, reply: item.reply, status: item.status })
+            return (
+              <div key={item.id} className="card feedback-item">
+                <p>{item.content}</p>
+                <div className="feedback-meta">
+                  {item.type ? (
+                    <span className="chip">
+                      {t(lang, `feedbackType${item.type[0].toUpperCase()}${item.type.slice(1)}` as 'feedbackTypeProblem')}
+                    </span>
+                  ) : null}
+                  <span className={`chip${item.status === 'done' ? ' chip-ok' : ''}`}>
+                    {item.status === 'done' ? t(lang, 'statusDone') : t(lang, 'statusPending')}
                   </span>
-                ) : null}
-                <span className={`chip${item.status === 'done' ? ' chip-ok' : ''}`}>
-                  {item.status === 'done' ? t(lang, 'statusDone') : t(lang, 'statusPending')}
-                </span>
-                <span className="muted small">{formatClock(item.createdAt)}</span>
-              </div>
-              {item.reply ? (
-                <div className="feedback-reply">
-                  <strong>💬 {t(lang, 'feedbackReply')}</strong>
-                  <p>{item.reply}</p>
+                  <span className="muted small">{formatClock(item.createdAt)}</span>
                 </div>
-              ) : null}
-            </div>
-          ))
+                <Thread thread={thread} />
+                <div className="feedback-reply-row">
+                  <textarea
+                    className="textarea"
+                    rows={2}
+                    placeholder={t(lang, 'feedbackReplyPh')}
+                    value={replyDrafts[item.id] ?? ''}
+                    onChange={(e) => setReplyDrafts((d) => ({ ...d, [item.id]: e.target.value }))}
+                  />
+                  <EmojiPicker
+                    onPick={(e) =>
+                      setReplyDrafts((d) => ({ ...d, [item.id]: (d[item.id] ?? '') + e }))
+                    }
+                  />
+                  <button
+                    className="btn btn-primary btn-sm"
+                    disabled={replying !== null || !(replyDrafts[item.id] ?? '').trim()}
+                    onClick={() => void sendReply(item)}
+                  >
+                    {replying === item.id ? '…' : t(lang, 'feedbackReplySend')}
+                  </button>
+                </div>
+              </div>
+            )
+          })
         )}
       </section>
     </div>

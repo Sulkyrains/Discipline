@@ -46,6 +46,7 @@ create table if not exists public.feedback (
 
 alter table public.feedback add column if not exists status text not null default 'pending';
 alter table public.feedback add column if not exists reply text;
+alter table public.feedback add column if not exists messages jsonb not null default '[]'::jsonb;
 alter table public.feedback alter column owner_id drop not null;
 
 create policy "feedback anon insert" on public.feedback

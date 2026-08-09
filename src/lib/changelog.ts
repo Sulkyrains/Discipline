@@ -7,20 +7,26 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: '2.0.16',
+    version: '2.0.17',
     date: '2026-08-10',
+    zh: '反馈支持多轮对话与快捷表情；移除反馈表单联系方式；开发者回复与用户提交互相提醒并显示未处理角标；修正更新日志部分日期。',
+    en: 'Feedback now supports multi-round threads with quick emoji; removed the contact field; both sides get notified on replies with a pending badge; fixed changelog dates.'
+  },
+  {
+    version: '2.0.16',
+    date: '2026-08-09',
     zh: '账号信息跨端自动同步（昵称/头像）；Supabase 用户标识同步昵称便于后台管理；反馈管理已处理自动置灰沉底、仍可回看。',
     en: 'Profile syncs across devices; Supabase user identity mirrors the nickname; resolved feedback moves to the bottom and greys out while remaining viewable.'
   },
   {
     version: '2.0.15',
-    date: '2026-08-10',
+    date: '2026-08-09',
     zh: '修复管理员反馈列表查不出的问题（兼容缺少回复列的旧库）；游客反馈也可提交到云端；更新日志随版本自动校验；编辑资料保存键移到右上角。',
     en: 'Fixed admin feedback list on databases without the reply column; guests can submit feedback to the cloud; changelog validated against the app version; edit-profile save moved to top-right.'
   },
   {
     version: '2.0.14',
-    date: '2026-08-10',
+    date: '2026-08-09',
     zh: '修复页面底部黑屏条；手机端点“立即更新”改为先让新 Service Worker 接管再刷新。',
     en: 'Fixed the dark strip at the bottom of pages; "update now" now hands control to the new service worker before reloading.'
   },
@@ -56,25 +62,25 @@ export const CHANGELOG: ChangelogEntry[] = [
   },
   {
     version: '2.0.8',
-    date: '2026-08-09',
+    date: '2026-08-08',
     zh: '头像上限提升到 10MB 并自动压缩；登录/注册失败提示更醒目。',
     en: '10MB avatars with auto-compression; prominent auth error banner.'
   },
   {
     version: '2.0.7',
-    date: '2026-08-09',
+    date: '2026-08-08',
     zh: '修复密码小于 6 位也能注册的问题，短密码直接禁用提交。',
     en: 'Blocked short-password signup and disabled submit.'
   },
   {
     version: '2.0.6',
-    date: '2026-08-09',
+    date: '2026-08-08',
     zh: '登录时若昵称不存在自动注册并登录；设置页移除快捷头像；密码最少 6 位提示。',
     en: 'Sign-in auto-registers new nicknames; quick avatars only at register; password minimum hint.'
   },
   {
     version: '2.0.5',
-    date: '2026-08-09',
+    date: '2026-08-08',
     zh: '新增快捷头像；注册后自动登录并支持昵称+密码注册登录。',
     en: 'Quick preset avatars; auto-login after register; nickname+password auth.'
   },

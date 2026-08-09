@@ -2,10 +2,13 @@ import { useEffect, useState } from 'react'
 import { t } from '../lib/i18n'
 import { formatClock } from '../lib/format'
 import { isAdmin, listAllFeedback, updateFeedbackReply, type AdminFeedbackRow } from '../lib/admin'
+import { addFeedbackMessage, threadFromRow } from '../lib/feedback'
 import { useAppStore } from '../stores/useAppStore'
 import { useAuthStore } from '../stores/useAuthStore'
+import { useFeedbackStore } from '../stores/useFeedbackStore'
 import { useToastStore } from '../stores/useToastStore'
 import EmptyState from '../components/EmptyState'
+import EmojiPicker from '../components/EmojiPicker'
 
 export default function Admin() {
   const lang = useAppStore((s) => s.settings.language)
@@ -13,6 +16,7 @@ export default function Admin() {
   const [authorized, setAuthorized] = useState<boolean | null>(null)
   const [rows, setRows] = useState<AdminFeedbackRow[]>([])
   const [drafts, setDrafts] = useState<Record<string, string>>({})
+  const pendingCount = useFeedbackStore((s) => s.pendingCount)
 
   useEffect(() => {
     if (!user) {
@@ -60,13 +64,25 @@ export default function Admin() {
   }
 
   const saveReply = async (row: AdminFeedbackRow) => {
-    const ok = await updateFeedbackReply(row.id, drafts[row.id] ?? '', 'done')
+    const text = drafts[row.id] ?? ''
+    const ok = await addFeedbackMessage(row.id, 'dev', text)
     if (ok) {
       setRows((prev) =>
         prev.map((r) =>
-          r.id === row.id ? { ...r, status: 'done', reply: drafts[r.id]?.trim() || undefined } : r
+          r.id === row.id
+            ? {
+                ...r,
+                status: 'done',
+                reply: text.trim() || undefined,
+                messages: [
+                  ...threadFromRow({ messages: r.messages, reply: r.reply, status: r.status }),
+                  { role: 'dev' as const, text: text.trim(), at: new Date().toISOString() }
+                ]
+              }
+            : r
         )
       )
+      useFeedbackStore.getState().setPendingCount(Math.max(0, pendingCount - 1))
       useToastStore.getState().push({ title: t(lang, 'adminReplySaved'), kind: 'success' })
     } else {
       useToastStore.getState().push({ title: t(lang, 'submitFail'), kind: 'warn' })
@@ -86,7 +102,14 @@ export default function Admin() {
       <header className="page-head">
         <div>
           <h1 className="page-title">🛠 {t(lang, 'adminPanel')}</h1>
-          <p className="muted">{t(lang, 'adminDesc')}</p>
+          <p className="muted">
+            {t(lang, 'adminDesc')}
+            {pendingCount > 0 ? (
+              <span className="chip chip-ok admin-pending-chip">
+                {t(lang, 'adminPending', { n: pendingCount })}
+              </span>
+            ) : null}
+          </p>
         </div>
       </header>
 
@@ -111,6 +134,18 @@ export default function Admin() {
               </div>
               <p className="admin-feedback-content">{row.content}</p>
               <p className="muted small">{row.contact ? `📮 ${row.contact}` : t(lang, 'adminNoContact')}</p>
+              {threadFromRow({ messages: row.messages, reply: row.reply, status: row.status }).length > 0 ? (
+                <div className="feedback-thread">
+                  {threadFromRow({ messages: row.messages, reply: row.reply, status: row.status }).map((m, i) => (
+                    <div key={i} className={`feedback-bubble ${m.role === 'dev' ? 'dev' : 'user'}`}>
+                      <span className="feedback-bubble-role">{m.role === 'dev' ? '开发者' : '用户'}</span>
+                      <p>{m.text}</p>
+                      {m.at ? <span className="muted small">{formatClock(m.at)}</span> : null}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+              <div className="feedback-reply-row">
               <textarea
                 className="textarea"
                 rows={2}
@@ -118,6 +153,10 @@ export default function Admin() {
                 value={drafts[row.id] ?? row.reply ?? ''}
                 onChange={(e) => setDrafts((d) => ({ ...d, [row.id]: e.target.value }))}
               />
+                <EmojiPicker
+                  onPick={(e) => setDrafts((d) => ({ ...d, [row.id]: (d[row.id] ?? '') + e }))}
+                />
+              </div>
               <div className="settings-actions">
                 <button className="btn btn-primary btn-sm" onClick={() => void saveReply(row)}>
                   {t(lang, 'adminSaveReply')}
