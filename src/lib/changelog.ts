@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.0.31',
+    date: '2026-08-09',
+    zh: '修复“立即更新/刷新后仍停留在旧版本”的根本问题：生成的 Service Worker 现在会在安装后立即激活并接管页面（skipWaiting + clientsClaim），新版本装好后马上生效，不再被旧 Service Worker 拦截旧页面；同时自动清理早期版本遗留的 sw.js?v=版本号 注册，避免旧注册一直返回旧页面。',
+    en: 'Fixed updates never applying even after tapping “Update now” or refreshing: the generated service worker now activates and claims the page immediately after install (skipWaiting + clientsClaim), so the new version takes effect right away instead of being shadowed by the old worker; legacy sw.js?v=x.y.z registrations that could never update are cleaned up automatically.'
+  },
+  {
     version: '2.0.30',
     date: '2026-08-09',
     zh: '邮箱绑定改为确认链接方式（不再要求 6 位验证码）：发送确认邮件到新邮箱，点击邮件内链接即完成绑定；修复绑定后无法重置密码的问题（重置邮件发送到已绑定邮箱，并新增打开重置链接后的“设置新密码”界面）；未绑定手机号时“我的”页不再显示手机号行，编辑资料中保留“暂未启用”标注。',

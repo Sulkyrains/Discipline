@@ -19,6 +19,39 @@ describe('v2.0.14 dark strip fix', () => {
   })
 })
 
+describe('v2.0.31 service worker takeover', () => {
+  it('configures the generated worker to skip waiting and claim clients', () => {
+    const cfg = readFileSync(join(process.cwd(), 'vite.config.ts'), 'utf8')
+    expect(cfg).toContain('skipWaiting: true')
+    expect(cfg).toContain('clientsClaim: true')
+  })
+
+  it('unregisters stale versioned workers and updates only current registrations', async () => {
+    vi.useFakeTimers()
+    const stale = {
+      update: vi.fn(),
+      waiting: null,
+      installing: null,
+      unregister: vi.fn(async () => undefined),
+      active: { scriptURL: 'https://x.pages.dev/sw.js?v=2.0.25' }
+    }
+    const fresh: FakeReg = { update: vi.fn(async () => undefined), waiting: null, installing: null }
+    stubServiceWorker([stale as FakeReg, fresh])
+    const fakeLocation = stubLocation()
+
+    const p = clearCachesAndReload()
+    await vi.advanceTimersByTimeAsync(5_200)
+    const ok = await p
+
+    expect(stale.unregister).toHaveBeenCalled()
+    expect(stale.update).not.toHaveBeenCalled()
+    expect(fresh.update).toHaveBeenCalled()
+    expect(ok).toBe(false)
+    expect(fakeLocation.href).toBe('')
+    vi.useRealTimers()
+  })
+})
+
 interface FakeReg {
   update: ReturnType<typeof vi.fn>
   waiting: { postMessage: ReturnType<typeof vi.fn> } | null

@@ -13,6 +13,15 @@ if (!__SINGLE_FILE__) {
     navigator.serviceWorker
       .register(`${import.meta.env.BASE_URL}sw.js`, { updateViaCache: 'none' })
       .catch(() => {})
+    // Remove legacy versioned registrations (sw.js?v=x.y.z) that can never
+    // update and would otherwise keep serving stale builds.
+    void navigator.serviceWorker.getRegistrations().then((regs) => {
+      for (const reg of regs) {
+        const script =
+          reg.active?.scriptURL ?? reg.waiting?.scriptURL ?? reg.installing?.scriptURL ?? ''
+        if (script.includes('?v=')) void reg.unregister().catch(() => undefined)
+      }
+    })
   }
 
   const check = async () => {

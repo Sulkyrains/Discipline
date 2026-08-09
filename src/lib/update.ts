@@ -54,6 +54,36 @@ function navigateCleanUrl(): void {
   window.location.href = window.location.origin + window.location.pathname + window.location.hash
 }
 
+function scriptUrlOf(reg: ServiceWorkerRegistration): string {
+  return (
+    reg.active?.scriptURL ?? reg.waiting?.scriptURL ?? reg.installing?.scriptURL ?? ''
+  )
+}
+
+/**
+ * Removes legacy registrations that used a versioned script URL
+ * (`sw.js?v=x.y.z`). Those URLs no longer exist, so those workers can never
+ * update and would keep serving stale content forever, even after the current
+ * worker is replaced.
+ */
+async function cleanupStaleRegistrations(
+  regs: readonly ServiceWorkerRegistration[]
+): Promise<ServiceWorkerRegistration[]> {
+  const keep: ServiceWorkerRegistration[] = []
+  for (const reg of regs) {
+    if (scriptUrlOf(reg).includes('?v=')) {
+      try {
+        await reg.unregister()
+      } catch {
+        // ignore
+      }
+      continue
+    }
+    keep.push(reg)
+  }
+  return keep
+}
+
 /**
  * Waits until `worker` reaches one of `states`, or until `ms` elapses.
  */
@@ -134,6 +164,7 @@ export async function clearCachesAndReload(): Promise<boolean> {
   } catch {
     return false
   }
+  regs = await cleanupStaleRegistrations(regs)
   // No registration means nothing intercepts the reload, so the cache-buster
   // reaches the network directly.
   if (regs.length === 0) {
