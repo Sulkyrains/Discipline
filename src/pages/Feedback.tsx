@@ -263,7 +263,7 @@ export default function Feedback() {
           cloudSorted.map((item) => {
             const thread = threadFromRow({ messages: item.messages, reply: item.reply, status: item.status })
             return (
-              <div key={item.id} className={`card feedback-item${item.status === 'done' ? ' done' : ''}${isRead(item) ? ' read' : ''}`}>
+              <div key={item.id} className={`card feedback-item${item.status === 'done' ? ' done' : ''}`}>
                 <p>{item.content}</p>
                 <div className="feedback-meta">
                   {item.type ? (

@@ -143,6 +143,5 @@ describe('v2.0.18 read feedback sinks and greys', () => {
     expect(items[1]?.textContent).toContain('新回复未读')
     expect(items[2]?.textContent).toContain('已读已处理')
     expect(items[2]?.classList.contains('done')).toBe(true)
-    expect(items[2]?.classList.contains('read')).toBe(true)
   })
 })
