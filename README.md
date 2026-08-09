@@ -37,8 +37,8 @@ npm run build      # 产物输出到 dist/
 
 ## 线上地址与域名说明
 
-- 当前站点：https://discipline-8cb.pages.dev（Cloudflare Pages 自动生成的子域名）。
-- `discipline.pages.dev` 等裸域名已被 Cloudflare 保留/占用，免费改名不可行；如需更干净的域名，需提供自有域名并接入 Pages 自定义域名。
+- 当前站点：https://your-discipline.pages.dev（正式域名）。
+- 旧域名 https://discipline-8cb.pages.dev 已停更，仅保留访问（供旧用户迁移）。
 
 ## v2.1 待办（延后）
 

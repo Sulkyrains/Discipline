@@ -325,7 +325,7 @@ async function main() {
   // The first install after a deploy downloads ~8 MB from a cold CDN edge and
   // can take well over a minute; give the handover room to complete before the
   // harness reloads on its own.
-  await Promise.race([reloaded, sleep(150000)])
+  await Promise.race([reloaded, sleep(240000)])
   await enterApp()
   await sleep(1000)
   await go('settings')

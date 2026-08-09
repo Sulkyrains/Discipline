@@ -7,9 +7,9 @@ const SW_POLL_MS = 120
 const SW_STATE_WAIT_MS = 1_500
 const SW_HANDOVER_MS = 5_000
 // The first install after a deploy downloads the ~8 MB precache from a cold
-// CDN edge; on slower connections this can take well over 30 seconds. Give it
+// CDN edge; on slower connections this can take well over a minute. Give it
 // enough room so the handover completes in place instead of falling back.
-const SW_ACTIVATE_TIMEOUT_MS = 90_000
+const SW_ACTIVATE_TIMEOUT_MS = 180_000
 
 /**
  * True once this page's service worker has been replaced. The generated
@@ -73,7 +73,11 @@ function cacheBustUrl(): string {
 }
 
 function navigateCleanUrl(): void {
-  window.location.href = window.location.origin + window.location.pathname + window.location.hash
+  // Assigning location.href to the same URL is a same-document navigation on
+  // hash-routed pages (URLs like https://…/#/), so the page never reloads.
+  // Force a real reload: by this point the new worker has claimed the page and
+  // will serve the new build.
+  window.location.reload()
 }
 
 function scriptUrlOf(reg: ServiceWorkerRegistration): string {

@@ -64,11 +64,18 @@ interface FakeReg {
 }
 
 function stubLocation() {
-  const fakeLocation: { origin: string; pathname: string; hash: string; href: string } = {
+  const fakeLocation: {
+    origin: string
+    pathname: string
+    hash: string
+    href: string
+    reload: ReturnType<typeof vi.fn>
+  } = {
     origin: 'https://x.pages.dev',
     pathname: '/',
     hash: '#/settings',
-    href: ''
+    href: '',
+    reload: vi.fn()
   }
   Object.defineProperty(window, 'location', { value: fakeLocation, configurable: true })
   return fakeLocation
@@ -121,7 +128,7 @@ describe('v2.0.26 update now hands over to the service worker', () => {
     expect(ok).toBe(true)
     expect(reg.update).toHaveBeenCalled()
     expect(waitingPostMessage).toHaveBeenCalledWith({ type: 'SKIP_WAITING' })
-    expect(fakeLocation.href).toBe('https://x.pages.dev/#/settings')
+    expect(fakeLocation.reload).toHaveBeenCalled()
   })
 
   it('waits for an installing worker to reach waiting before handing over', async () => {
@@ -159,7 +166,7 @@ describe('v2.0.26 update now hands over to the service worker', () => {
     await p
 
     expect(waitingPostMessage).toHaveBeenCalledWith({ type: 'SKIP_WAITING' })
-    expect(fakeLocation.href).toBe('https://x.pages.dev/#/settings')
+    expect(fakeLocation.reload).toHaveBeenCalled()
   })
 
   it('reloads immediately when the new worker already claimed the page', async () => {
@@ -172,7 +179,7 @@ describe('v2.0.26 update now hands over to the service worker', () => {
 
     expect(ok).toBe(true)
     expect(reg.update).not.toHaveBeenCalled()
-    expect(fakeLocation.href).toBe('https://x.pages.dev/#/settings')
+    expect(fakeLocation.reload).toHaveBeenCalled()
   })
 
   it('waits for an autoUpdate worker to activate, then reloads after handover', async () => {
@@ -204,7 +211,7 @@ describe('v2.0.26 update now hands over to the service worker', () => {
     const ok = await p
 
     expect(ok).toBe(true)
-    expect(fakeLocation.href).toBe('https://x.pages.dev/#/settings')
+    expect(fakeLocation.reload).toHaveBeenCalled()
   })
 
   it('returns false and does not navigate when no new worker appears', async () => {

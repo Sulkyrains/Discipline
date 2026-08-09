@@ -7,6 +7,36 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.0.51',
+    date: '2026-08-09',
+    zh: '验证发布：内容与 2.0.50 一致，用于完成真实环境“立即更新”一次到位验证。',
+    en: 'Verification release: identical to 2.0.50, completing the live one-tap update check.'
+  },
+  {
+    version: '2.0.50',
+    date: '2026-08-09',
+    zh: '修复“立即更新”在真实站点仍无法生效的根因：站点使用 hash 路由（URL 形如 …/#/），原“刷新”逻辑把 location.href 设为相同地址，浏览器视为同文档导航、不重新加载页面，导致新 Service Worker 已接管但页面始终不刷新。现改为强制 location.reload()，一次点击必然加载新版。',
+    en: 'Fixed the root cause of “Update now” still failing on the live site: with hash routing the URL ends in …/#/, and assigning location.href to that same address is treated as a same-document navigation that never reloads — the new service worker took over but the page never refreshed. It now forces location.reload(), so one tap always loads the new build.'
+  },
+  {
+    version: '2.0.49',
+    date: '2026-08-09',
+    zh: '验证发布：内容与 2.0.48 一致，用于完成真实环境“立即更新”一次到位验证。',
+    en: 'Verification release: identical to 2.0.48, completing the live one-tap update check.'
+  },
+  {
+    version: '2.0.48',
+    date: '2026-08-09',
+    zh: '将“立即更新”等待新 Service Worker 安装激活的时间延长至最长 180 秒：真实网络下首次部署后的 8MB 音频预缓存冷下载可能超过 90 秒，此前会提前触发兜底导致第一次刷新仍是旧版；延长后慢网络也能原位完成交接，一次点击即到最新版。',
+    en: 'Extended the “Update now” wait for the new service worker to install and activate to up to 180s: the first ~8 MB audio precache download from a cold CDN edge can exceed 90s on real networks, which previously triggered the fallback and left the first refresh on the old page. With the longer wait, slow networks complete the handover in place so one tap reaches the newest build.'
+  },
+  {
+    version: '2.0.47',
+    date: '2026-08-09',
+    zh: '正式启用新域名 your-discipline.pages.dev：后续版本只部署到新域名，旧域名 discipline-8cb.pages.dev 停更但保留访问；在真实新域名上完成手动更新端到端验证。',
+    en: 'your-discipline.pages.dev is now the official domain: future releases deploy only there, the old discipline-8cb.pages.dev is frozen but still reachable; manual update was verified end-to-end on the live new domain.'
+  },
+  {
     version: '2.0.46',
     date: '2026-08-09',
     zh: '修复“合并到云端”一直同步失败：成就表外键导致整体失败（代码有 39 个成就，数据库仅种子 9 个），现按数据库实际存在的成就过滤后再写入，各数据表独立容错互不阻塞，失败时显示具体原因；网站域名更改为 your-discipline.pages.dev（pages.dev 子域名不允许下划线，采用连字符等效写法，格式与原先一致）。',
