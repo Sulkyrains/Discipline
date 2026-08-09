@@ -156,8 +156,56 @@ create policy "feedback admins read all" on public.feedback
 create policy "feedback admins update all" on public.feedback
   for update using (exists (select 1 from public.admins a where a.user_id = auth.uid()));
 
+create policy "feedback admins delete all" on public.feedback
+  for delete using (exists (select 1 from public.admins a where a.user_id = auth.uid()));
+
 create policy "profiles admins read" on public.profiles
   for select using (exists (select 1 from public.admins a where a.user_id = auth.uid()));
+
+-- 管理员便捷查询：反馈+提交人昵称/邮箱（仅管理员可调用）
+create or replace function public.admin_feedback()
+returns table (
+  id uuid,
+  owner_id uuid,
+  data jsonb,
+  status text,
+  reply text,
+  messages jsonb,
+  updated_at timestamptz,
+  nickname text,
+  email text
+)
+language sql security definer set search_path = public
+as $$
+  select f.id, f.owner_id, f.data, f.status, f.reply, f.messages, f.updated_at,
+         p.nickname,
+         (select u.email from auth.users u where u.id = f.owner_id) as email
+  from public.feedback f
+  left join public.profiles p on p.id = f.owner_id
+  where exists (select 1 from public.admins a where a.user_id = auth.uid())
+  order by f.updated_at desc
+  limit 100;
+$$;
+
+grant execute on function public.admin_feedback() to authenticated;
+
+-- 管理员便捷查询：全部用户昵称/邮箱（仅管理员可调用）
+create or replace function public.admin_users()
+returns table (id uuid, email text, nickname text, display_name text, avatar_url text, created_at timestamptz)
+language sql security definer set search_path = public
+as $$
+  select u.id,
+         u.email,
+         u.raw_user_meta_data->>'nickname' as nickname,
+         u.raw_user_meta_data->>'display_name' as display_name,
+         u.raw_user_meta_data->>'avatar_url' as avatar_url,
+         u.created_at
+  from auth.users u
+  where exists (select 1 from public.admins a where a.user_id = auth.uid())
+  order by u.created_at desc;
+$$;
+
+grant execute on function public.admin_users() to authenticated;
 
 -- Discipline v2.0.4: 昵称映射与头像
 alter table public.profiles add column if not exists auth_email text;

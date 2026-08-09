@@ -78,6 +78,7 @@ interface AppStoreState extends AppData {
   updateTodo: (id: string, patch: Partial<Todo>) => void
   toggleTodo: (id: string) => AchievementDef[]
   removeTodo: (id: string) => void
+  removeFeedback: (id: string) => void
   addSession: (
     session: { taskId: string | null; plannedMinutes: number; startedAt: string }
   ) => { session: FocusSession; unlocked: AchievementDef[] }
@@ -235,6 +236,9 @@ export const useAppStore = create<AppStoreState>()(
       },
 
       removeTodo: (id) => set({ todos: get().todos.filter((t) => t.id !== id) }),
+
+      removeFeedback: (id) =>
+        set({ feedback: get().feedback.filter((f) => f.id !== id) }),
 
       addSession: ({ taskId, plannedMinutes, startedAt }) => {
         const session: FocusSession = {

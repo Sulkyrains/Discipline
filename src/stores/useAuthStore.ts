@@ -215,7 +215,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { data, error } = await supabase.auth.signUp({
       email: authEmail,
       password,
-      options: { data: { nickname: normalized, display_name: normalized } }
+      options: { data: { nickname: normalized, display_name: normalized, full_name: normalized } }
     })
     if (error) {
       set({
@@ -252,7 +252,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
     set({ loading: true, error: null })
     const { error } = await supabase.auth.updateUser({
-      data: { nickname: normalized, display_name: normalized }
+      data: { nickname: normalized, display_name: normalized, full_name: normalized }
     })
     if (error) {
       set({ loading: false, error: 'auth' })

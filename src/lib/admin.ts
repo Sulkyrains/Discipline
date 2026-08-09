@@ -31,6 +31,30 @@ export async function isAdmin(userId: string): Promise<boolean> {
 export async function listAllFeedback(): Promise<AdminFeedbackRow[]> {
   if (!supabase) return []
   const db = supabase
+  // Preferred path: security-definer RPC that returns the submitter nickname
+  // and email directly (works even if the profiles read policy is missing).
+  try {
+    const { data, error } = await db.rpc('admin_feedback')
+    if (!error && Array.isArray(data)) {
+      return (data as Array<Record<string, unknown>>).map((row) => ({
+        id: String(row.id),
+        ownerId: String(row.owner_id ?? ''),
+        nickname:
+          typeof row.nickname === 'string' && row.nickname ? (row.nickname as string) : undefined,
+        content: String((row.data as { content?: unknown } | null)?.content ?? ''),
+        contact: String((row.data as { contact?: unknown } | null)?.contact ?? ''),
+        type: String((row.data as { type?: unknown } | null)?.type ?? ''),
+        status: String(row.status ?? 'pending'),
+        reply: typeof row.reply === 'string' && row.reply ? (row.reply as string) : undefined,
+        messages: Array.isArray(row.messages)
+          ? (row.messages as unknown as FeedbackMessage[])
+          : undefined,
+        updatedAt: String(row.updated_at ?? '')
+      }))
+    }
+  } catch {
+    /* fall through to the table query */
+  }
   const selectRows = async (cols: string): Promise<{ data: unknown; error: unknown }> => {
     const { data, error } = await db
       .from('feedback')
@@ -95,5 +119,11 @@ export async function updateFeedbackReply(
     .from('feedback')
     .update({ reply: reply.trim() || null, status })
     .eq('id', id)
+  return !error
+}
+
+export async function deleteFeedback(id: string): Promise<boolean> {
+  if (!supabase) return false
+  const { error } = await supabase.from('feedback').delete().eq('id', id)
   return !error
 }

@@ -85,7 +85,7 @@ describe('v2.0.16 cross-device profile sync', () => {
     mockUpdateUser.mockResolvedValue({ error: null })
     await useAuthStore.getState().updateNickname('新名字')
     expect(mockUpdateUser).toHaveBeenCalledWith({
-      data: { nickname: '新名字', display_name: '新名字' }
+      data: { nickname: '新名字', display_name: '新名字', full_name: '新名字' }
     })
   })
 })

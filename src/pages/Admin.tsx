@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react'
 import { t } from '../lib/i18n'
 import { formatClock } from '../lib/format'
-import { isAdmin, listAllFeedback, updateFeedbackReply, type AdminFeedbackRow } from '../lib/admin'
+import {
+  deleteFeedback,
+  isAdmin,
+  listAllFeedback,
+  updateFeedbackReply,
+  type AdminFeedbackRow
+} from '../lib/admin'
 import { addFeedbackMessage, threadFromRow } from '../lib/feedback'
 import { useAppStore } from '../stores/useAppStore'
 import { useAuthStore } from '../stores/useAuthStore'
@@ -9,6 +15,7 @@ import { useFeedbackStore } from '../stores/useFeedbackStore'
 import { useToastStore } from '../stores/useToastStore'
 import EmptyState from '../components/EmptyState'
 import EmojiPicker from '../components/EmojiPicker'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 export default function Admin() {
   const lang = useAppStore((s) => s.settings.language)
@@ -16,6 +23,7 @@ export default function Admin() {
   const [authorized, setAuthorized] = useState<boolean | null>(null)
   const [rows, setRows] = useState<AdminFeedbackRow[]>([])
   const [drafts, setDrafts] = useState<Record<string, string>>({})
+  const [pendingDelete, setPendingDelete] = useState<AdminFeedbackRow | null>(null)
   const pendingCount = useFeedbackStore((s) => s.pendingCount)
 
   useEffect(() => {
@@ -97,6 +105,21 @@ export default function Admin() {
     }
   }
 
+  const confirmDelete = async () => {
+    if (!pendingDelete) return
+    const ok = await deleteFeedback(pendingDelete.id)
+    if (ok) {
+      setRows((prev) => prev.filter((r) => r.id !== pendingDelete.id))
+      if (pendingDelete.status !== 'done') {
+        useFeedbackStore.getState().setPendingCount(Math.max(0, pendingCount - 1))
+      }
+      useToastStore.getState().push({ title: t(lang, 'feedbackDeleted'), kind: 'info' })
+    } else {
+      useToastStore.getState().push({ title: t(lang, 'submitFail'), kind: 'warn' })
+    }
+    setPendingDelete(null)
+  }
+
   return (
     <div className="page page-admin">
       <header className="page-head">
@@ -164,11 +187,25 @@ export default function Admin() {
                 <button className="btn btn-ghost btn-sm" onClick={() => void markPending(row)}>
                   {t(lang, 'adminMarkPending')}
                 </button>
+                <button className="btn btn-danger btn-sm" onClick={() => setPendingDelete(row)}>
+                  {t(lang, 'delete')}
+                </button>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title={t(lang, 'delete')}
+        body={t(lang, 'deleteFeedback')}
+        danger
+        confirmText={t(lang, 'delete')}
+        cancelText={t(lang, 'cancel')}
+        onConfirm={() => void confirmDelete()}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   )
 }

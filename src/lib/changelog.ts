@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.0.22',
+    date: '2026-08-10',
+    zh: '提供 Supabase 管理员查询昵称的函数；管理员与用户都可删除反馈；管理员反馈列表显示提交人昵称（安全函数直连）。',
+    en: 'Admin query functions to see user nicknames in Supabase; feedback can be deleted by admins and users; admin list shows submitter nicknames.'
+  },
+  {
     version: '2.0.21',
     date: '2026-08-10',
     zh: '首页更新横幅统一为“立即更新”；重写立即更新流程（先拉取新 Service Worker、等待接管、再刷新），修复手机端更新失效与延迟。',

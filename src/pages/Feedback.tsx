@@ -15,6 +15,7 @@ import { useFeedbackStore } from '../stores/useFeedbackStore'
 import { useToastStore } from '../stores/useToastStore'
 import EmptyState from '../components/EmptyState'
 import EmojiPicker from '../components/EmojiPicker'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 interface CloudItem {
   id: string
@@ -45,6 +46,7 @@ export default function Feedback() {
   const lang = useAppStore((s) => s.settings.language)
   const feedback = useAppStore((s) => s.feedback)
   const addFeedback = useAppStore((s) => s.addFeedback)
+  const removeFeedback = useAppStore((s) => s.removeFeedback)
   const user = useAuthStore((s) => s.user)
   const [type, setType] = useState<'problem' | 'bug' | 'idea' | 'other'>('problem')
   const [content, setContent] = useState('')
@@ -53,6 +55,7 @@ export default function Feedback() {
   const [cloudItems, setCloudItems] = useState<CloudItem[]>([])
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({})
   const [replying, setReplying] = useState<string | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; local: boolean } | null>(null)
   const lastSeen = user ? lastFeedbackSeen(user.id) : 0
   const cloudSorted = [...cloudItems].sort((a, b) => {
     const doneA = a.status === 'done' ? 1 : 0
@@ -189,6 +192,21 @@ export default function Feedback() {
     }
   }
 
+  const confirmDelete = async () => {
+    if (!pendingDelete) return
+    if (pendingDelete.local) {
+      removeFeedback(pendingDelete.id)
+    } else if (supabase) {
+      await supabase
+        .from('feedback')
+        .delete()
+        .eq('id', pendingDelete.id)
+        .eq('owner_id', user?.id ?? '')
+      setCloudItems((prev) => prev.filter((r) => r.id !== pendingDelete.id))
+    }
+    setPendingDelete(null)
+  }
+
   return (
     <div className="page page-feedback">
       <header className="page-head">
@@ -253,6 +271,14 @@ export default function Feedback() {
                   ) : null}
                   <span className="chip">{t(lang, 'statusPending')}</span>
                   <span className="muted small">{formatClock(item.createdAt)}</span>
+                  <button
+                    type="button"
+                    className="btn btn-danger btn-icon"
+                    aria-label={t(lang, 'delete')}
+                    onClick={() => setPendingDelete({ id: item.id, local: true })}
+                  >
+                    ✕
+                  </button>
                 </div>
               </div>
             ))
@@ -278,6 +304,14 @@ export default function Feedback() {
                     <span className="chip">● {t(lang, 'feedbackNewReply')}</span>
                   ) : null}
                   <span className="muted small">{formatClock(item.createdAt)}</span>
+                  <button
+                    type="button"
+                    className="btn btn-danger btn-icon"
+                    aria-label={t(lang, 'delete')}
+                    onClick={() => setPendingDelete({ id: item.id, local: false })}
+                  >
+                    ✕
+                  </button>
                 </div>
                 <Thread thread={thread} />
                 <div className="feedback-reply-row">
@@ -306,6 +340,17 @@ export default function Feedback() {
           })
         )}
       </section>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title={t(lang, 'delete')}
+        body={t(lang, 'deleteFeedback')}
+        danger
+        confirmText={t(lang, 'delete')}
+        cancelText={t(lang, 'cancel')}
+        onConfirm={() => void confirmDelete()}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   )
 }
