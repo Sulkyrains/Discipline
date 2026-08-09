@@ -57,23 +57,26 @@ export default function Home() {
   return (
     <div className="page page-home">
       {updateStatus === 'outdated' ? (
-        <div className="update-banner" role="status">
-          <span className="update-banner-dot" />
-          <span className="update-banner-text">
-            {t(lang, 'updateAvailable', { version: updateRemote ?? '' })}
-          </span>
-          <button
-            className="btn btn-primary btn-sm"
-            disabled={updating}
-            onClick={() => {
-              if (updating) return
-              setUpdating(true)
-              void applyUpdateNow().finally(() => setUpdating(false))
-            }}
-          >
-            {updating ? t(lang, 'updating') : t(lang, 'updateNow')}
-          </button>
-        </div>
+        <>
+          <div className="update-banner" role="status">
+            <span className="update-banner-dot" />
+            <span className="update-banner-text">
+              {t(lang, 'updateAvailable', { version: updateRemote ?? '' })}
+            </span>
+            <button
+              className="btn btn-primary btn-sm"
+              disabled={updating}
+              onClick={() => {
+                if (updating) return
+                setUpdating(true)
+                void applyUpdateNow().finally(() => setUpdating(false))
+              }}
+            >
+              {updating ? t(lang, 'updating') : t(lang, 'updateNow')}
+            </button>
+          </div>
+          <p className="muted small">{t(lang, 'updateRefreshHint')}</p>
+        </>
       ) : null}
       <header className="home-header">
         <div>

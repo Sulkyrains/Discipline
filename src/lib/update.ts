@@ -6,10 +6,9 @@ const SW_UPDATE_TIMEOUT_MS = 20_000
 const SW_POLL_MS = 120
 const SW_STATE_WAIT_MS = 1_500
 const SW_HANDOVER_MS = 5_000
-// The first install after a deploy downloads the ~8 MB precache from a cold
-// CDN edge; on slower connections this can take well over a minute. Give it
-// enough room so the handover completes in place instead of falling back.
-const SW_ACTIVATE_TIMEOUT_MS = 180_000
+// The precache is now just the app shell (~1 MB, audio excluded), so installs
+// normally finish in seconds. Keep a generous margin for slow networks.
+const SW_ACTIVATE_TIMEOUT_MS = 30_000
 
 /**
  * True once this page's service worker has been replaced. The generated

@@ -7,6 +7,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.0.53',
+    date: '2026-08-09',
+    zh: '手动更新提速至秒级：音频文件移出 Service Worker 预缓存，安装只需下载约 1MB 应用壳，更新通常数秒内完成（音频改为播放时联网加载）；并在更新入口标注“若遇无法更新，请多刷新几次网站”。',
+    en: 'Manual updates now apply within seconds: audio files are excluded from the service-worker precache, so installing only downloads the ~1 MB app shell (audio is fetched when played). A hint was added at the update entries: if the update does not apply, refresh the page a few times.'
+  },
+  {
+    version: '2.0.52',
+    date: '2026-08-09',
+    zh: '试验版：专门用于检测手动更新功能是否一次到位（无其他功能变化）。',
+    en: 'Test release: built specifically to verify the manual update flow lands on the new version in one tap (no other changes).'
+  },
+  {
     version: '2.0.51',
     date: '2026-08-09',
     zh: '验证发布：内容与 2.0.50 一致，用于完成真实环境“立即更新”一次到位验证。',

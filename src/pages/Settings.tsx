@@ -787,6 +787,9 @@ export default function Settings() {
             </button>
           ) : null}
         </div>
+        {updateStatus === 'outdated' ? (
+          <p className="muted small">{t(lang, 'updateRefreshHint')}</p>
+        ) : null}
       </section>
 
       <section className="card settings-section settings-footer">

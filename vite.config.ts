@@ -38,7 +38,10 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2,mp3}'],
+        // Audio stays out of the precache so a new deploy only installs the
+        // ~1 MB app shell and updates apply within seconds; audio is fetched
+        // at play time.
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
         skipWaiting: true,
         clientsClaim: true,
         navigateFallbackDenylist: [/^\/login/]
