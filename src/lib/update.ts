@@ -18,10 +18,14 @@ export async function clearCachesAndReload(): Promise<void> {
   // 1. Fetch the newest service worker script and install it.
   // 2. If a new worker is waiting, tell it to take over and wait (briefly) for
   //    the handover so the reload is served by the new worker.
-  // 3. Clear all caches, then do a top-level navigation with a cache-buster.
-  // We intentionally do NOT unregister the active worker: on phones, an
-  // unregistered-but-still-active worker keeps serving the old page.
-  let postedTakeover = false
+  // 3. Navigate to the same URL (no cache-buster query) so the newly-activated
+  //    worker serves the new build from its own intact precache.
+  //
+  // IMPORTANT: we intentionally do NOT delete caches before reloading. The
+  // active worker serves navigation from its precache; wiping it makes the
+  // reload fail ("网页无法打开"). Outdated precache caches are removed
+  // automatically by workbox's cleanupOutdatedCaches() in the new worker.
+  let handedOver = false
   try {
     if ('serviceWorker' in navigator) {
       const regs = await navigator.serviceWorker.getRegistrations()
@@ -35,11 +39,11 @@ export async function clearCachesAndReload(): Promise<void> {
       const waiting = regs.find((r) => r.waiting)?.waiting
       if (waiting) {
         waiting.postMessage({ type: 'SKIP_WAITING' })
-        postedTakeover = true
+        handedOver = true
       } else if (navigator.serviceWorker.controller) {
         navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' })
       }
-      if (postedTakeover) {
+      if (handedOver) {
         await new Promise<void>((resolve) => {
           const onController = () => {
             navigator.serviceWorker.removeEventListener('controllerchange', onController)
@@ -53,19 +57,10 @@ export async function clearCachesAndReload(): Promise<void> {
   } catch {
     // service worker handover unavailable; continue below
   }
-  if ('caches' in window) {
-    try {
-      const keys = await window.caches.keys()
-      await Promise.all(keys.map((k) => window.caches.delete(k)))
-    } catch {
-      // caches unavailable; reload anyway
-    }
-  }
-  // Bypass any short-lived HTTP cache for index.html so the reload always
-  // fetches the latest build from the network. Absolute href ensures a fresh
-  // top-level navigation (replace() can be swallowed by the old SW on mobile).
+  // Absolute href ensures a fresh top-level navigation (replace() can be
+  // swallowed by the old SW on mobile). Keep the hash so deep links survive.
   window.location.href =
-    window.location.origin + window.location.pathname + '?v=' + Date.now() + window.location.hash
+    window.location.origin + window.location.pathname + window.location.hash
 }
 
 const UPDATED_KEY = 'discipline-auto-reloaded'

@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.0.24',
+    date: '2026-08-09',
+    zh: '修复点击“立即更新”后网页无法打开的问题：更新时不再清空 Service Worker 预缓存，改用干净地址由新 Service Worker 直接接管并提供新页面。',
+    en: 'Fixed the page failing to open after clicking "Update now": updates no longer wipe the service-worker precache and reload with a clean URL served by the new worker.'
+  },
+  {
     version: '2.0.23',
     date: '2026-08-09',
     zh: '修复更新日志时间显示错误：2.0.17–2.0.22 误标为 08-10，已修正为 08-09；版本号递增以触发“立即更新”提示，让老客户端收到本次修复。',

@@ -11,10 +11,12 @@ describe('v2.0.14 dark strip fix', () => {
   })
 })
 
-describe('v2.0.14 update now skips the service worker', () => {
-  it('updates the SW, hands over control and reloads with a cache-buster', async () => {
+describe('v2.0.14 update now hands over to the service worker', () => {
+  it('updates the SW, hands over control and reloads without wiping the precache', async () => {
     const waitingPostMessage = vi.fn()
     const update = vi.fn(async () => undefined)
+    const cacheKeys = vi.fn(async () => ['cache-a'])
+    const cacheDelete = vi.fn(async () => true)
     const addEventListener = vi.fn((type: string, cb: () => void) => {
       if (type === 'controllerchange') cb()
     })
@@ -29,8 +31,8 @@ describe('v2.0.14 update now skips the service worker', () => {
       configurable: true
     })
     vi.stubGlobal('caches', {
-      keys: vi.fn(async () => ['cache-a']),
-      delete: vi.fn(async () => true)
+      keys: cacheKeys,
+      delete: cacheDelete
     })
     const fakeLocation = {
       origin: 'https://x.pages.dev',
@@ -44,6 +46,8 @@ describe('v2.0.14 update now skips the service worker', () => {
 
     expect(update).toHaveBeenCalled()
     expect(waitingPostMessage).toHaveBeenCalledWith({ type: 'SKIP_WAITING' })
-    expect(fakeLocation.href).toMatch(/^https:\/\/x\.pages\.dev\/\?v=\d+#\/settings$/)
+    expect(fakeLocation.href).toBe('https://x.pages.dev/#/settings')
+    expect(cacheKeys).not.toHaveBeenCalled()
+    expect(cacheDelete).not.toHaveBeenCalled()
   })
 })
