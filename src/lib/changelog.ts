@@ -8,37 +8,37 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     version: '2.0.22',
-    date: '2026-08-10',
+    date: '2026-08-09',
     zh: '提供 Supabase 管理员查询昵称的函数；管理员与用户都可删除反馈；管理员反馈列表显示提交人昵称（安全函数直连）。',
     en: 'Admin query functions to see user nicknames in Supabase; feedback can be deleted by admins and users; admin list shows submitter nicknames.'
   },
   {
     version: '2.0.21',
-    date: '2026-08-10',
+    date: '2026-08-09',
     zh: '首页更新横幅统一为“立即更新”；重写立即更新流程（先拉取新 Service Worker、等待接管、再刷新），修复手机端更新失效与延迟。',
     en: 'Home banner now says “立即更新”; reworked update-now to fetch and hand over to the new service worker before reloading, fixing mobile update failures and delays.'
   },
   {
     version: '2.0.20',
-    date: '2026-08-10',
+    date: '2026-08-09',
     zh: '用户端已处理反馈不再置灰（仍沉底）；联系方式占位改为“微信 / QQ / 邮箱”。',
     en: 'Resolved feedback no longer greys out for users (still sinks); contact placeholder is now WeChat / QQ / Email.'
   },
   {
     version: '2.0.19',
-    date: '2026-08-10',
+    date: '2026-08-09',
     zh: '反馈管理未处理数量改为红色角标更醒目；进入更新日志/问题反馈等页面默认回到顶部。',
     en: 'Pending feedback count now shows as a red badge; changelog/feedback pages start at the top.'
   },
   {
     version: '2.0.18',
-    date: '2026-08-10',
+    date: '2026-08-09',
     zh: '恢复反馈表单联系方式输入；移除问题反馈标题下与编辑资料里的无意义内部邮箱；用户端已处理且已读的反馈自动沉底置灰。',
     en: 'Restored the contact field; removed meaningless internal emails under the feedback title and in edit profile; read & resolved feedback sinks and greys out for users too.'
   },
   {
     version: '2.0.17',
-    date: '2026-08-10',
+    date: '2026-08-09',
     zh: '反馈支持多轮对话与快捷表情；移除反馈表单联系方式；开发者回复与用户提交互相提醒并显示未处理角标；修正更新日志部分日期。',
     en: 'Feedback now supports multi-round threads with quick emoji; removed the contact field; both sides get notified on replies with a pending badge; fixed changelog dates.'
   },
