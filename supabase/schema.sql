@@ -262,13 +262,42 @@ alter table public.profiles add column if not exists auth_email text;
 
 create unique index if not exists idx_profiles_nickname_lower on public.profiles (lower(nickname));
 
+-- Discipline v2.1.8: 昵称→邮箱查询限流，防匿名批量枚举绑定邮箱
+create table if not exists public.nickname_lookup_attempts (
+  nickname text not null,
+  attempted_at timestamptz not null default now()
+);
+
+create index if not exists idx_nickname_lookup_nickname
+  on public.nickname_lookup_attempts (lower(nickname), attempted_at);
+
 create or replace function public.get_auth_email_by_nickname(p_nickname text)
 returns text
 language sql
 security definer
 set search_path = public
 as $$
-  select auth_email from public.profiles where lower(nickname) = lower(p_nickname) limit 1;
+  with recent as (
+    select count(*) as c
+    from public.nickname_lookup_attempts
+    where lower(nickname) = lower(p_nickname)
+      and attempted_at > now() - interval '10 minutes'
+  ),
+  prune as (
+    delete from public.nickname_lookup_attempts
+    where attempted_at < now() - interval '1 day'
+  ),
+  insert_attempt as (
+    insert into public.nickname_lookup_attempts (nickname)
+    select p_nickname
+    where (select c from recent) < 10
+    returning 1
+  )
+  select auth_email
+  from public.profiles
+  where lower(nickname) = lower(p_nickname)
+    and exists (select 1 from insert_attempt)
+  limit 1;
 $$;
 
 grant execute on function public.get_auth_email_by_nickname(text) to anon, authenticated;
@@ -281,10 +310,20 @@ create policy "avatars public read" on storage.objects
   for select using (bucket_id = 'avatars');
 
 create policy "avatars own upload" on storage.objects
-  for insert with check (bucket_id = 'avatars' and auth.uid()::text = (storage.foldername(name))[1]);
+  for insert with check (
+    bucket_id = 'avatars'
+    and auth.uid()::text = (storage.foldername(name))[1]
+    and coalesce(metadata->>'mimetype', metadata->>'contentType') like 'image/%'
+    and (metadata->>'size')::bigint <= 10485760
+  );
 
 create policy "avatars own update" on storage.objects
-  for update using (bucket_id = 'avatars' and auth.uid()::text = (storage.foldername(name))[1]);
+  for update using (
+    bucket_id = 'avatars'
+    and auth.uid()::text = (storage.foldername(name))[1]
+    and coalesce(metadata->>'mimetype', metadata->>'contentType') like 'image/%'
+    and (metadata->>'size')::bigint <= 10485760
+  );
 
 create policy "avatars own delete" on storage.objects
   for delete using (bucket_id = 'avatars' and auth.uid()::text = (storage.foldername(name))[1]);

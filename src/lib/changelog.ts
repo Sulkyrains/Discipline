@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.1.8',
+    date: '2026-08-10',
+    zh: '安全综合加固：修复依赖中危漏洞（react-router 升级至 7.18.2，含 open redirect 修复）；全站增加严格内容安全策略（CSP）与安全响应头（nosniff/frame/referrer/permissions/HSTS）；昵称→邮箱查询增加每昵称 10 分钟限流，头像上传在服务端校验图片类型与 10MB 上限；完成 RLS/管理员接口审计（全表 RLS + owner 策略、管理员函数校验 admins 成员，无需额外改动）。需在 Supabase SQL Editor 执行一次新版 schema.sql（限流表 + 存储策略）。',
+    en: 'Security hardening: upgraded react-router to 7.18.2 (fixes moderate CVEs including open redirect); added a strict Content-Security-Policy and security headers (nosniff/frame/referrer/permissions/HSTS) across the site; nickname-to-email lookups are now rate-limited per nickname (10 per 10 minutes) and avatar uploads are server-side restricted to image/* under 10MB; completed an RLS/admin-interface audit (all tables RLS with owner policies, admin functions verify admins membership, no further changes needed). Run the updated schema.sql once in the Supabase SQL Editor (rate-limit table + storage policies).'
+  },
+  {
     version: '2.1.7',
     date: '2026-08-10',
     zh: '专注界面计时模式一次性恢复为默认“倒计时”（之后仍可自由切换，且该偏好仅保存在本机，不会被他设备/云端覆盖）；修复“本地数据合并到云端”自动弹框反复失败：同步改为排队串行（手动合并不再被后台同步打断），失败时在弹框内直接显示具体原因，便于定位。',
