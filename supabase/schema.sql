@@ -134,6 +134,23 @@ create policy "study_rooms owner delete" on public.study_rooms
 
 create index if not exists idx_study_rooms_code on public.study_rooms (code);
 
+-- Discipline v2.0.12: 反馈管理后台
+create table if not exists public.admins (
+  user_id uuid primary key references auth.users (id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
+alter table public.admins enable row level security;
+
+create policy "admins readable by authenticated" on public.admins
+  for select using (auth.role() = 'authenticated');
+
+create policy "feedback admins read all" on public.feedback
+  for select using (exists (select 1 from public.admins a where a.user_id = auth.uid()));
+
+create policy "feedback admins update all" on public.feedback
+  for update using (exists (select 1 from public.admins a where a.user_id = auth.uid()));
+
 -- Discipline v2.0.4: 昵称映射与头像
 alter table public.profiles add column if not exists auth_email text;
 

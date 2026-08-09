@@ -253,7 +253,7 @@ describe('v2.0.4 account UI', () => {
     expect(img?.getAttribute('src')).toBe('https://x/a.png')
     expect(screen.getByText('编辑资料')).toBeInTheDocument()
     expect(screen.queryByText('修改昵称')).toBeNull()
-    expect(screen.getByText('绑定邮箱')).toBeInTheDocument()
+    expect(screen.queryByText('绑定邮箱')).toBeNull()
     expect(screen.queryByText('通过邮箱重置密码')).toBeNull()
   })
 })

@@ -1971,6 +1971,56 @@ input[type='range'] {
   right: max(16px, env(safe-area-inset-right));
 }
 
+.edit-profile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.profile-preview {
+  width: 120px;
+  height: 120px;
+  font-size: 40px;
+}
+
+.profile-preview .avatar-emoji {
+  font-size: 52px;
+}
+
+.edit-profile .field,
+.edit-profile .form-actions {
+  width: 100%;
+}
+
+/* Admin feedback panel */
+.admin-feedback-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-feedback-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+}
+
+.admin-feedback-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-feedback-head .muted {
+  margin-left: auto;
+}
+
+.admin-feedback-content {
+  line-height: 1.55;
+}
+
 .mode-switch {
   display: block;
   margin: 14px auto 0;

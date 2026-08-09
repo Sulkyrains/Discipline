@@ -43,6 +43,7 @@ const Login = lazy(() => import('./pages/Login'))
 const Feedback = lazy(() => import('./pages/Feedback'))
 const Study = lazy(() => import('./pages/Study'))
 const StudyRoom = lazy(() => import('./pages/StudyRoom'))
+const Admin = lazy(() => import('./pages/Admin'))
 
 function RouteFallback() {
   const lang = useAppStore((s) => s.settings.language)
@@ -279,6 +280,7 @@ export default function App() {
                 <Route path="/feedback" element={<Feedback />} />
                 <Route path="/study" element={<Study />} />
                 <Route path="/study/:id" element={<StudyRoom />} />
+                <Route path="/admin" element={<Admin />} />
               </Route>
               <Route path="/login" element={<Login />} />
               <Route path="*" element={<Navigate to="/" replace />} />

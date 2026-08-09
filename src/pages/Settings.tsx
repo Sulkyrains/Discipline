@@ -1,4 +1,4 @@
-import { useRef, useState, type ChangeEvent } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { t, type I18nKey } from '../lib/i18n'
 import type { Settings as SettingsType, ThemeId, UiSoundId } from '../types'
@@ -16,6 +16,7 @@ import ConfirmDialog from '../components/ConfirmDialog'
 import Sheet from '../components/Sheet'
 import AvatarCropper from '../components/AvatarCropper'
 import { isDerivedEmail } from '../lib/account'
+import { isAdmin } from '../lib/admin'
 import {
   dedupeCustomName,
   deleteCustomAudio,
@@ -73,9 +74,9 @@ export default function Settings() {
   const [previewId, setPreviewId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [nicknameInput, setNicknameInput] = useState('')
-  const [editEmail, setEditEmail] = useState(false)
   const [emailInput, setEmailInput] = useState('')
   const [editProfile, setEditProfile] = useState(false)
+  const [admin, setAdmin] = useState(false)
   const [pendingCrop, setPendingCrop] = useState<File | null>(null)
   const [croppedFile, setCroppedFile] = useState<File | null>(null)
   const [croppedPreview, setCroppedPreview] = useState<string | null>(null)
@@ -117,6 +118,7 @@ export default function Settings() {
   const openProfile = () => {
     setEditProfile(true)
     setNicknameInput(user?.nickname ?? '')
+    setEmailInput(user?.email ?? '')
     setCroppedFile(null)
     setCroppedPreview(null)
   }
@@ -126,6 +128,11 @@ export default function Settings() {
     if (nicknameChanged) {
       const ok = await updateNickname(nicknameInput)
       if (ok) useToastStore.getState().push({ title: t(lang, 'nicknameSaved'), kind: 'success' })
+    }
+    const emailChanged = !!user && emailInput.trim() !== '' && emailInput.trim() !== user.email
+    if (emailChanged) {
+      const ok = await bindEmail(emailInput)
+      if (ok) useToastStore.getState().push({ title: t(lang, 'emailChangeSent'), kind: 'success' })
     }
     if (croppedFile) {
       const ok = await uploadAvatar(croppedFile)
@@ -137,14 +144,19 @@ export default function Settings() {
     setEditProfile(false)
   }
 
-  const saveEmail = async () => {
-    const ok = await bindEmail(emailInput)
-    if (ok) {
-      setEditEmail(false)
-      setEmailInput('')
-      useToastStore.getState().push({ title: t(lang, 'emailChangeSent'), kind: 'success' })
+  useEffect(() => {
+    if (!user) {
+      setAdmin(false)
+      return
     }
-  }
+    let alive = true
+    void isAdmin(user.id).then((ok) => {
+      if (alive) setAdmin(ok)
+    })
+    return () => {
+      alive = false
+    }
+  }, [user])
 
   const resetByEmail = async () => {
     const ok = await sendResetEmail()
@@ -295,45 +307,6 @@ export default function Settings() {
               </button>
             </div>
             <div className="settings-row">
-              <span className="muted">{t(lang, 'email')}</span>
-              <strong>{emailBound ? user.email : t(lang, 'emailNotBound')}</strong>
-              <button
-                className="btn btn-ghost btn-sm"
-                onClick={() => {
-                  setEditEmail(true)
-                  setEmailInput(emailBound ? user.email : '')
-                }}
-              >
-                {emailBound ? t(lang, 'changeEmail') : t(lang, 'bindEmail')}
-              </button>
-            </div>
-            {editEmail ? (
-              <div className="settings-row">
-                <input
-                  className="input"
-                  type="email"
-                  value={emailInput}
-                  onChange={(e) => setEmailInput(e.target.value)}
-                />
-                <button className="btn btn-primary btn-sm" onClick={() => void saveEmail()}>
-                  {t(lang, 'save')}
-                </button>
-                <button className="btn btn-ghost btn-sm" onClick={() => setEditEmail(false)}>
-                  {t(lang, 'cancel')}
-                </button>
-              </div>
-            ) : null}
-            {authErrorText ? <p className="form-error">{authErrorText}</p> : null}
-            {emailBound ? (
-              <div className="settings-actions">
-                <button className="btn btn-ghost btn-sm" onClick={() => void resetByEmail()}>
-                  {t(lang, 'resetViaEmail')}
-                </button>
-              </div>
-            ) : (
-              <p className="muted small">⚠️ {t(lang, 'emailNotBound')} · {t(lang, 'bindEmailHint')}</p>
-            )}
-            <div className="settings-row">
               <span className="muted">{t(lang, 'currentMode')}</span>
               <span className="chip chip-ok">{t(lang, 'loginMode')}</span>
             </div>
@@ -342,6 +315,11 @@ export default function Settings() {
               <button className="btn btn-primary btn-sm" disabled={syncing} onClick={() => void syncNow()}>
                 {syncing ? t(lang, 'syncing') : t(lang, 'syncNow')}
               </button>
+              {admin ? (
+                <Link className="btn btn-ghost btn-sm" to="/admin">
+                  🛠 {t(lang, 'adminPanel')}
+                </Link>
+              ) : null}
               <button className="btn btn-ghost btn-sm" onClick={() => void signOut()}>
                 {t(lang, 'logout')} · {t(lang, 'backGuest')}
               </button>
@@ -694,6 +672,23 @@ export default function Settings() {
               onChange={(e) => setNicknameInput(e.target.value)}
             />
           </label>
+          <label className="field">
+            <span>{t(lang, 'email')}</span>
+            <input
+              className="input"
+              type="email"
+              value={emailInput}
+              onChange={(e) => setEmailInput(e.target.value)}
+            />
+          </label>
+          {emailBound ? (
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => void resetByEmail()}>
+              {t(lang, 'resetViaEmail')}
+            </button>
+          ) : (
+            <p className="muted small">⚠️ {t(lang, 'emailNotBound')} · {t(lang, 'bindEmailHint')}</p>
+          )}
+          {authErrorText ? <p className="form-error">{authErrorText}</p> : null}
           <div className="form-actions">
             <button className="btn btn-ghost" onClick={() => setEditProfile(false)}>
               {t(lang, 'cancel')}

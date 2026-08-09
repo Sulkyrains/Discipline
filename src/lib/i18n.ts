@@ -412,7 +412,16 @@ const zh = {
   feedbackTypeBug: 'Bug',
   feedbackTypeIdea: '建议',
   feedbackTypeOther: '其他',
-  statusDone: '已处理'
+  statusDone: '已处理',
+  adminPanel: '反馈管理',
+  adminDesc: '查看用户反馈并回复',
+  adminForbidden: '无权访问反馈管理',
+  adminNoContact: '未留联系方式',
+  adminReplyPh: '在这里填写给用户的回复…',
+  adminSaveReply: '保存回复',
+  adminMarkPending: '标记待处理',
+  adminReplySaved: '回复已保存并标记为已处理',
+  adminMarkedPending: '已标记为待处理'
 }
 
 const en: Record<keyof typeof zh, string> = {
@@ -828,7 +837,16 @@ const en: Record<keyof typeof zh, string> = {
   feedbackTypeBug: 'Bug',
   feedbackTypeIdea: 'Idea',
   feedbackTypeOther: 'Other',
-  statusDone: 'Resolved'
+  statusDone: 'Resolved',
+  adminPanel: 'Feedback admin',
+  adminDesc: 'Review user feedback and reply',
+  adminForbidden: 'You do not have access to the feedback admin',
+  adminNoContact: 'No contact left',
+  adminReplyPh: 'Write your reply to the user here…',
+  adminSaveReply: 'Save reply',
+  adminMarkPending: 'Mark pending',
+  adminReplySaved: 'Reply saved and marked as resolved',
+  adminMarkedPending: 'Marked as pending'
 }
 
 export type I18nKey = keyof typeof zh
