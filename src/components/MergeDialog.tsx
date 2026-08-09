@@ -8,6 +8,7 @@ export default function MergeDialog() {
   const pendingMerge = useAuthStore((s) => s.pendingMerge)
   const mergeWithCloud = useAuthStore((s) => s.mergeWithCloud)
   const setPendingMerge = useAuthStore((s) => s.setPendingMerge)
+  const mergeError = useAuthStore((s) => s.mergeError)
   const lang = useAppStore((s) => s.settings.language)
   const count = useAppStore((s) => s.countLocalRecords())
   const [merging, setMerging] = useState(false)
@@ -25,12 +26,19 @@ export default function MergeDialog() {
     <ConfirmDialog
       open
       title={t(lang, 'mergeTitle')}
-      body={t(lang, 'mergeBody', { n: count })}
+      body={
+        mergeError
+          ? `${t(lang, 'mergeBody', { n: count })}\n\n⚠️ ${mergeError}`
+          : t(lang, 'mergeBody', { n: count })
+      }
       confirmText={merging ? t(lang, 'merging') : t(lang, 'mergeAction')}
       cancelText={t(lang, 'mergeLater')}
       disabled={merging}
       onConfirm={() => void confirm()}
-      onCancel={() => setPendingMerge(false)}
+      onCancel={() => {
+        useAuthStore.setState({ mergeError: null })
+        setPendingMerge(false)
+      }}
     />
   )
 }

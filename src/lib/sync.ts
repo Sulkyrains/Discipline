@@ -22,7 +22,13 @@ export function mergeById<T extends { id: string; updatedAt?: string }>(
 
 export function mergeCollections(local: AppData, cloud: Partial<AppData>): AppData {
   return {
-    settings: cloud.settings ?? local.settings,
+    // The focus timer display mode is a per-device preference: always keep the
+    // local choice (defaults to countdown) so a value stored on another device
+    // cannot override this device's default.
+    settings: {
+      ...(cloud.settings ?? local.settings),
+      timerMode: local.settings.timerMode
+    },
     courses: mergeById(local.courses, cloud.courses ?? []),
     todos: mergeById(local.todos, cloud.todos ?? []),
     sessions: mergeById(local.sessions, cloud.sessions ?? []),
@@ -40,6 +46,8 @@ export async function pushLocal(userId: string, data: AppData): Promise<PushResu
   if (!supabase) return { ok: false, message: 'not-configured' }
   const db = supabase
   const errors: string[] = []
+  const settingsToPush: Settings = { ...data.settings }
+  delete (settingsToPush as Partial<Settings>).timerMode
   const run = async (label: string, p: PromiseLike<{ error: unknown }>) => {
     try {
       const { error } = await Promise.resolve(p)
@@ -75,7 +83,7 @@ export async function pushLocal(userId: string, data: AppData): Promise<PushResu
     'settings',
     db
       .from('settings')
-      .upsert({ owner_id: userId, data: data.settings, updated_at: new Date().toISOString() }, {
+      .upsert({ owner_id: userId, data: settingsToPush, updated_at: new Date().toISOString() }, {
         onConflict: 'owner_id'
       })
   )

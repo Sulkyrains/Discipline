@@ -14,9 +14,13 @@ import type {
 import { dateKey, nowISO, todayKey, uid } from '../lib/format'
 import { computeSignIns, computeStats } from '../lib/stats'
 import { evaluateAchievements, type AchievementDef } from '../lib/achievements'
-import { DEFAULT_DOCK, normalizeDockOrder } from '../lib/migration'
+import { DEFAULT_DOCK, migrateTimerModeDefault, normalizeDockOrder } from '../lib/migration'
 import { defaultWhitelist } from '../lib/appWhitelist'
 import { clearAllCustomAudio } from '../lib/customAudio'
+
+// v2.1.7: apply the one-time countdown default before the persisted store is
+// rehydrated, so existing installs start with the requested timer mode.
+migrateTimerModeDefault()
 
 const DEFAULT_QUICK_TAGS = ['学习', '工作', '生活', '运动', '阅读']
 

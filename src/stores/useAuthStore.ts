@@ -24,6 +24,7 @@ interface AuthState {
   loading: boolean
   error: string | null
   pendingMerge: boolean
+  mergeError: string | null
   init: () => void
   signIn: (nicknameOrEmail: string, password: string) => Promise<boolean>
   signInOrRegister: (nicknameOrEmail: string, password: string) => Promise<'signin' | 'register' | false>
@@ -54,7 +55,7 @@ function handleUser(user: UserInfo | null): void {
   if (user) {
     const app = useAppStore.getState()
     const pending = app.countLocalRecords() > 0 && app.mergedFor !== user.id
-    useAuthStore.setState({ user, loading: false, pendingMerge: pending, error: null })
+    useAuthStore.setState({ user, loading: false, pendingMerge: pending, error: null, mergeError: null })
     // A fresh device (or cleared local data) has nothing to merge, so it would
     // never be prompted to sync and would stay empty. Pull the cloud data
     // automatically so the same account sees its data on every device.
@@ -62,7 +63,13 @@ function handleUser(user: UserInfo | null): void {
       void useAuthStore.getState().autoSync()
     }
   } else {
-    useAuthStore.setState({ user: null, loading: false, pendingMerge: false, admin: false })
+    useAuthStore.setState({
+      user: null,
+      loading: false,
+      pendingMerge: false,
+      admin: false,
+      mergeError: null
+    })
   }
 }
 
@@ -75,52 +82,59 @@ function refreshAdmin(userId: string): void {
   })
 }
 
-let syncRunning = false
+let syncChain: Promise<unknown> = Promise.resolve()
 
 /**
  * Pull cloud -> merge with local -> push the merged result. Sequencing the
  * pull before the push avoids the previous race where a concurrent pull could
  * read stale data, and merging before pushing prevents an older device from
- * clobbering newer edits made on another device.
+ * clobbering newer edits made on another device. Syncs are serialized so a
+ * manual merge never spuriously fails because a background sync is running.
  */
-async function runSync(showFeedback: boolean): Promise<boolean> {
-  if (syncRunning) return false
-  const user = useAuthStore.getState().user
-  if (!user || !supabase) return false
-  syncRunning = true
-  try {
-    const local = useAppStore.getState()
-    const cloud = await pullRemote(user.id)
-    const merged = cloud ? mergeCollections(local, cloud) : local
-    const push = await pushLocal(user.id, merged)
-    if (cloud) useAppStore.getState().replaceAll(merged)
-    if (push.ok) {
-      useAppStore.getState().setMergedFor(user.id)
-      useAuthStore.setState({ pendingMerge: false })
+function runSync(showFeedback: boolean): Promise<boolean> {
+  const job = syncChain.then(async () => {
+    const user = useAuthStore.getState().user
+    if (!user || !supabase) return false
+    try {
+      const local = useAppStore.getState()
+      const cloud = await pullRemote(user.id)
+      const merged = cloud ? mergeCollections(local, cloud) : local
+      const push = await pushLocal(user.id, merged)
+      if (cloud) useAppStore.getState().replaceAll(merged)
+      if (push.ok) {
+        useAppStore.getState().setMergedFor(user.id)
+        useAuthStore.setState({ pendingMerge: false, mergeError: null })
+        if (showFeedback) {
+          const lang = useAppStore.getState().settings.language
+          useToastStore.getState().push({ title: t(lang, 'dataSynced'), kind: 'success' })
+        }
+        return true
+      }
+      const reason = push.message ?? t(useAppStore.getState().settings.language, 'mergeFailed')
+      useAuthStore.setState({ mergeError: reason })
+      console.error('[discipline] sync failed:', reason)
       if (showFeedback) {
         const lang = useAppStore.getState().settings.language
-        useToastStore.getState().push({ title: t(lang, 'dataSynced'), kind: 'success' })
+        useToastStore.getState().push({
+          title: t(lang, 'mergeFailed'),
+          body: push.message,
+          kind: 'warn'
+        })
       }
-      return true
+      return false
+    } catch (e) {
+      const reason = e instanceof Error ? e.message : String(e)
+      useAuthStore.setState({ mergeError: reason })
+      console.error('[discipline] sync threw:', reason)
+      if (showFeedback) {
+        const lang = useAppStore.getState().settings.language
+        useToastStore.getState().push({ title: t(lang, 'mergeFailed'), kind: 'warn' })
+      }
+      return false
     }
-    if (showFeedback) {
-      const lang = useAppStore.getState().settings.language
-      useToastStore.getState().push({
-        title: t(lang, 'mergeFailed'),
-        body: push.message,
-        kind: 'warn'
-      })
-    }
-    return false
-  } catch {
-    if (showFeedback) {
-      const lang = useAppStore.getState().settings.language
-      useToastStore.getState().push({ title: t(lang, 'mergeFailed'), kind: 'warn' })
-    }
-    return false
-  } finally {
-    syncRunning = false
-  }
+  })
+  syncChain = job.catch(() => undefined)
+  return job
 }
 
 function sameUser(a: UserInfo, b: UserInfo): boolean {
@@ -205,6 +219,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   loading: false,
   error: null,
   pendingMerge: false,
+  mergeError: null,
   recovery: false,
 
   init: () => {

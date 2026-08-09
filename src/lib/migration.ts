@@ -31,3 +31,28 @@ export function findDropIndex(centers: number[], x: number): number {
   }
   return Math.max(0, centers.length - 1)
 }
+
+/**
+ * v2.1.7: reset the focus timer display mode to the requested default
+ * (countdown) once for existing installs. The timer display mode is a
+ * per-device preference and is excluded from cloud sync, so this cannot be
+ * overwritten by an older value stored on another device.
+ */
+export function migrateTimerModeDefault(): void {
+  try {
+    if (typeof localStorage === 'undefined') return
+    if (localStorage.getItem('discipline-timer-mode-v217')) return
+    const raw = localStorage.getItem('discipline-data-v1')
+    if (raw) {
+      const parsed = JSON.parse(raw) as { state?: { settings?: Record<string, unknown> } }
+      const s = parsed.state?.settings
+      if (s && typeof s.timerMode === 'string' && s.timerMode !== 'countdown') {
+        s.timerMode = 'countdown'
+        localStorage.setItem('discipline-data-v1', JSON.stringify(parsed))
+      }
+    }
+    localStorage.setItem('discipline-timer-mode-v217', '1')
+  } catch {
+    // storage unavailable; defaultSettings() already yields countdown
+  }
+}

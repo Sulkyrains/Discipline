@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.1.7',
+    date: '2026-08-10',
+    zh: '专注界面计时模式一次性恢复为默认“倒计时”（之后仍可自由切换，且该偏好仅保存在本机，不会被他设备/云端覆盖）；修复“本地数据合并到云端”自动弹框反复失败：同步改为排队串行（手动合并不再被后台同步打断），失败时在弹框内直接显示具体原因，便于定位。',
+    en: 'Focus timer display mode is reset once to the default countdown (still freely switchable afterwards, now kept per-device so cloud sync cannot override it); fixed the auto merge-to-cloud dialog failing repeatedly: syncs are now serialized (manual merge is never cut off by a background sync) and the exact failure reason is shown inside the dialog.'
+  },
+  {
     version: '2.1.6',
     date: '2026-08-10',
     zh: '修复同一账号手机端与 PC 端数据不同步：新设备登录后自动拉取云端数据（无需手动合并），并增加定时/切回前台时静默同步；同步改为“先拉取→合并→再推送”，避免旧设备覆盖另一设备的新修改；修复创建房间失败（旧数据库无标签列时自动降级重试，建房不再失败）。',

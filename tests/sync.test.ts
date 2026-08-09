@@ -96,4 +96,16 @@ describe('sync merging', () => {
     expect(merged.unlocked.sort()).toEqual(['first_focus', 'streak_3'])
     expect(merged.courses).toHaveLength(1)
   })
+
+  it('keeps the local timer display mode when cloud settings arrive', () => {
+    const local: AppData = {
+      ...base,
+      settings: { ...base.settings, timerMode: 'countdown' }
+    }
+    const cloud: Partial<AppData> = {
+      settings: { ...base.settings, timerMode: 'countup' }
+    }
+    const merged = mergeCollections(local, cloud)
+    expect(merged.settings.timerMode).toBe('countdown')
+  })
 })
