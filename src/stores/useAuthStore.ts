@@ -25,6 +25,7 @@ interface AuthState {
   error: string | null
   pendingMerge: boolean
   mergeError: string | null
+  avatarError: string | null
   init: () => void
   signIn: (nicknameOrEmail: string, password: string) => Promise<boolean>
   signInOrRegister: (nicknameOrEmail: string, password: string) => Promise<'signin' | 'register' | false>
@@ -68,7 +69,8 @@ function handleUser(user: UserInfo | null): void {
       loading: false,
       pendingMerge: false,
       admin: false,
-      mergeError: null
+      mergeError: null,
+      avatarError: null
     })
   }
 }
@@ -220,6 +222,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   error: null,
   pendingMerge: false,
   mergeError: null,
+  avatarError: null,
   recovery: false,
 
   init: () => {
@@ -603,11 +606,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return false
     }
     const optimized = await compressAvatarFile(file)
-    const urls = await uploadAvatarPair(user.id, optimized, file)
-    if (!urls) {
-      set({ error: 'auth' })
+    const result = await uploadAvatarPair(user.id, optimized, file)
+    if (result === null) {
+      set({ error: 'config', avatarError: null })
       return false
     }
+    if ('error' in result) {
+      set({ error: 'avatarStorage', avatarError: result.error })
+      console.error('[discipline] avatar upload failed:', result.error)
+      return false
+    }
+    const urls = result
     const { error } = await supabase.auth.updateUser({
       data: {
         avatar_url: urls.avatarUrl,
@@ -616,7 +625,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
     })
     if (error) {
-      set({ error: 'auth' })
+      set({ error: 'auth', avatarError: null })
       return false
     }
     handleUser({
@@ -625,6 +634,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       avatarOriginalUrl: urls.avatarOriginalUrl,
       avatarEmoji: undefined
     })
+    useAuthStore.setState({ avatarError: null })
     return true
   },
 

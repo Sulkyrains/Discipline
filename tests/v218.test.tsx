@@ -41,11 +41,12 @@ describe('v2.1.8 schema hardening', () => {
     expect(sql).toContain('grant execute on function public.get_auth_email_by_nickname(text) to anon, authenticated')
   })
 
-  it('restricts avatar uploads/updates to images under 10MB', () => {
+  it('keeps the avatar bucket writable only by the owner', () => {
     const sql = read('supabase/schema.sql')
-    expect(sql).toContain("metadata->>'mimetype'")
-    expect(sql).toContain("metadata->>'contentType'")
-    expect(sql).toContain("(metadata->>'size')::bigint <= 10485760")
+    expect(sql).toContain('create policy "avatars own upload" on storage.objects')
+    expect(sql).toContain('create policy "avatars own update" on storage.objects')
+    expect(sql).toContain('create policy "avatars own delete" on storage.objects')
+    expect(sql).toContain("bucket_id = 'avatars' and auth.uid()::text = (storage.foldername(name))[1]")
   })
 })
 

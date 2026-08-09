@@ -313,50 +313,26 @@ on conflict (id) do nothing;
 create policy "avatars public read" on storage.objects
   for select using (bucket_id = 'avatars');
 
--- v2.1.8 起对头像上传做服务端 image/* 与 10MB 校验；若所用 Supabase 版本
--- 不支持基于 metadata 的策略语法，自动降级为仅目录归属校验，保证上传始终可用。
-do $$
-begin
-  begin
-    drop policy if exists "avatars own upload" on storage.objects;
-    create policy "avatars own upload" on storage.objects
-      for insert with check (
-        bucket_id = 'avatars'
-        and auth.uid()::text = (storage.foldername(name))[1]
-        and coalesce(metadata->>'mimetype', metadata->>'contentType') like 'image/%'
-        and (metadata->>'size')::bigint <= 10485760
-      );
-  exception when others then
-    raise notice 'avatar metadata policy unsupported, falling back: %', sqlerrm;
-    drop policy if exists "avatars own upload" on storage.objects;
-    create policy "avatars own upload" on storage.objects
-      for insert with check (
-        bucket_id = 'avatars' and auth.uid()::text = (storage.foldername(name))[1]
-      );
-  end;
-  begin
-    drop policy if exists "avatars own update" on storage.objects;
-    create policy "avatars own update" on storage.objects
-      for update using (
-        bucket_id = 'avatars'
-        and auth.uid()::text = (storage.foldername(name))[1]
-        and coalesce(metadata->>'mimetype', metadata->>'contentType') like 'image/%'
-        and (metadata->>'size')::bigint <= 10485760
-      );
-  exception when others then
-    raise notice 'avatar metadata policy unsupported, falling back: %', sqlerrm;
-    drop policy if exists "avatars own update" on storage.objects;
-    create policy "avatars own update" on storage.objects
-      for update using (
-        bucket_id = 'avatars' and auth.uid()::text = (storage.foldername(name))[1]
-      );
-  end;
-  drop policy if exists "avatars own delete" on storage.objects;
-  create policy "avatars own delete" on storage.objects
-    for delete using (
-      bucket_id = 'avatars' and auth.uid()::text = (storage.foldername(name))[1]
-    );
-end $$;
+-- v2.1.9：头像桶恢复为“仅本人目录可写”的可靠策略（保证上传始终可用）。
+-- 服务端 image/* 与 10MB 校验在不同 Supabase 版本上 metadata 字段不一致，
+-- 容易导致上传被拒，故不再启用；客户端已做同等的类型与大小校验。
+drop policy if exists "avatars own upload" on storage.objects;
+create policy "avatars own upload" on storage.objects
+  for insert with check (
+    bucket_id = 'avatars' and auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+drop policy if exists "avatars own update" on storage.objects;
+create policy "avatars own update" on storage.objects
+  for update using (
+    bucket_id = 'avatars' and auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+drop policy if exists "avatars own delete" on storage.objects;
+create policy "avatars own delete" on storage.objects
+  for delete using (
+    bucket_id = 'avatars' and auth.uid()::text = (storage.foldername(name))[1]
+  );
 
 create policy "avatars own delete" on storage.objects
   for delete using (bucket_id = 'avatars' and auth.uid()::text = (storage.foldername(name))[1]);

@@ -84,7 +84,7 @@ export async function uploadAvatarPair(
   userId: string,
   displayFile: File,
   originalFile: File
-): Promise<{ avatarUrl: string; avatarOriginalUrl: string } | null> {
+): Promise<{ avatarUrl: string; avatarOriginalUrl: string } | { error: string } | null> {
   if (!supabase) return null
   const stamp = Date.now()
   const displayPath = `${userId}/avatar-${stamp}`
@@ -100,9 +100,26 @@ export async function uploadAvatarPair(
       contentType: originalFile.type || 'image/jpeg'
     })
   ])
-  if (d.error || o.error) return null
+  if (d.error) {
+    return { error: `display: ${storageErrorMessage(d.error)}` }
+  }
+  if (o.error) {
+    return { error: `original: ${storageErrorMessage(o.error)}` }
+  }
   return {
     avatarUrl: `${SUPABASE_URL}/storage/v1/object/public/avatars/${displayPath}`,
     avatarOriginalUrl: `${SUPABASE_URL}/storage/v1/object/public/avatars/${originalPath}`
   }
+}
+
+function storageErrorMessage(e: unknown): string {
+  if (typeof e === 'string' && e) return e
+  if (e && typeof e === 'object') {
+    const err = e as { message?: unknown; cause?: unknown; statusCode?: unknown }
+    const parts: string[] = []
+    if (typeof err.message === 'string' && err.message) parts.push(err.message)
+    if (typeof err.cause === 'string' && err.cause) parts.push(err.cause)
+    if (parts.length > 0) return parts.join(' | ')
+  }
+  return 'upload-failed'
 }
