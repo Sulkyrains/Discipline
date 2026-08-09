@@ -616,6 +616,21 @@
   margin-bottom: 16px;
 }
 
+.sheet-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.sheet-title-row .sheet-title {
+  margin-bottom: 0;
+}
+
+.sheet-title-row + .sheet-body {
+  margin-top: 16px;
+}
+
 /* Dialog */
 .dialog-backdrop {
   align-items: center;

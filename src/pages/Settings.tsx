@@ -643,6 +643,11 @@ export default function Settings() {
         open={editProfile}
         title={t(lang, 'editProfile')}
         onClose={() => setEditProfile(false)}
+        headerAction={
+          <button className="btn btn-primary btn-sm" onClick={() => void saveProfile()}>
+            {t(lang, 'save')}
+          </button>
+        }
       >
         <div className="edit-profile">
           <button
@@ -697,9 +702,6 @@ export default function Settings() {
           <div className="form-actions">
             <button className="btn btn-ghost" onClick={() => setEditProfile(false)}>
               {t(lang, 'cancel')}
-            </button>
-            <button className="btn btn-primary" onClick={() => void saveProfile()}>
-              {t(lang, 'save')}
             </button>
           </div>
         </div>

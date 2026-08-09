@@ -5,9 +5,10 @@ interface SheetProps {
   title: string
   onClose: () => void
   children: ReactNode
+  headerAction?: ReactNode
 }
 
-export default function Sheet({ open, title, onClose, children }: SheetProps) {
+export default function Sheet({ open, title, onClose, children, headerAction }: SheetProps) {
   useEffect(() => {
     if (open) {
       document.body.style.overflow = 'hidden'
@@ -37,7 +38,10 @@ export default function Sheet({ open, title, onClose, children }: SheetProps) {
         aria-label={title}
       >
         <div className="sheet-handle" />
-        <h3 className="sheet-title">{title}</h3>
+        <div className="sheet-title-row">
+          <h3 className="sheet-title">{title}</h3>
+          {headerAction ?? null}
+        </div>
         <div className="sheet-body">{children}</div>
       </div>
     </div>

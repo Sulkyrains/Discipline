@@ -31,25 +31,38 @@ export default function Feedback() {
   useEffect(() => {
     if (!user || !isSupabaseConfigured()) return
     let alive = true
-    void supabase!
-      .from('feedback')
-      .select('id, data, status, reply, updated_at')
-      .order('updated_at', { ascending: false })
-      .limit(20)
-      .then(({ data }) => {
-        if (!alive || !data) return
-        setCloudItems(
-          data.map((row) => ({
-            id: String(row.id),
-            content: String((row.data as { content?: unknown })?.content ?? ''),
-            contact: String((row.data as { contact?: unknown })?.contact ?? ''),
-            type: String((row.data as { type?: unknown })?.type ?? ''),
-            createdAt: String(row.updated_at ?? ''),
-            status: String(row.status ?? 'pending'),
-            reply: typeof row.reply === 'string' && row.reply ? row.reply : undefined
-          }))
-        )
-      })
+    const mapRows = (rows: Array<Record<string, unknown>>) =>
+      rows.map((row) => ({
+        id: String(row.id),
+        content: String((row.data as { content?: unknown })?.content ?? ''),
+        contact: String((row.data as { contact?: unknown })?.contact ?? ''),
+        type: String((row.data as { type?: unknown })?.type ?? ''),
+        createdAt: String(row.updated_at ?? ''),
+        status: String(row.status ?? 'pending'),
+        reply: typeof row.reply === 'string' && row.reply ? row.reply : undefined
+      }))
+    const fetchRows = async (cols: string) =>
+      await supabase!
+        .from('feedback')
+        .select(cols)
+        .order('updated_at', { ascending: false })
+        .limit(20)
+    void (async () => {
+      let result = (await fetchRows('id, data, status, reply, updated_at')) as unknown as {
+        data: unknown
+        error: unknown
+      }
+      if (result.error) {
+        result = (await fetchRows('id, data, status, updated_at')) as unknown as {
+          data: unknown
+          error: unknown
+        }
+      }
+      if (!alive) return
+      if (!result.error && Array.isArray(result.data)) {
+        setCloudItems(mapRows(result.data as Array<Record<string, unknown>>))
+      }
+    })()
     return () => {
       alive = false
     }
@@ -83,6 +96,23 @@ export default function Feedback() {
         ])
       }
     } else {
+      if (supabase) {
+        // Guests may also submit to the cloud (owner_id stays null); the row is
+        // visible in the admin panel. Best-effort: local storage still works if
+        // the database is not configured for anonymous inserts.
+        await supabase
+          .from('feedback')
+          .insert({
+            id: crypto.randomUUID(),
+            owner_id: null,
+            data: { content: content.trim(), contact: contact.trim(), type },
+            updated_at: new Date().toISOString()
+          })
+          .then(
+            () => undefined,
+            () => undefined
+          )
+      }
       addFeedback(content.trim(), contact.trim(), type)
     }
     setSubmitting(false)

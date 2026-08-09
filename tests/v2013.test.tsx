@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { CHANGELOG } from '../src/lib/changelog'
+import { APP_VERSION } from '../src/version'
 import { defaultSettings, useAppStore } from '../src/stores/useAppStore'
 import { useAuthStore } from '../src/stores/useAuthStore'
 import { useFocusStore } from '../src/stores/useFocusStore'
@@ -59,7 +60,7 @@ describe('v2.0.13 changelog', () => {
   beforeEach(resetStores)
 
   it('starts with the current version', () => {
-    expect(CHANGELOG[0].version).toBe('2.0.13')
+    expect(CHANGELOG[0].version).toBe(APP_VERSION)
     expect(CHANGELOG.length).toBeGreaterThan(5)
   })
 

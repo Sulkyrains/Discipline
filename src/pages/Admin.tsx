@@ -34,6 +34,9 @@ export default function Admin() {
     return (
       <div className="page page-admin">
         <EmptyState emoji="🔒" text={t(lang, 'adminForbidden')} />
+        <p className="muted small" style={{ textAlign: 'center', marginTop: 8 }}>
+          {t(lang, 'adminHint')}
+        </p>
       </div>
     )
   }
@@ -92,6 +95,7 @@ export default function Admin() {
                     {t(lang, `feedbackType${row.type[0].toUpperCase()}${row.type.slice(1)}` as 'feedbackTypeProblem')}
                   </span>
                 ) : null}
+                {!row.ownerId ? <span className="chip">{t(lang, 'guest')}</span> : null}
                 <span className="muted small">{formatClock(row.updatedAt)}</span>
               </div>
               <p className="admin-feedback-content">{row.content}</p>

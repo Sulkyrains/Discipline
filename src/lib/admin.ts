@@ -27,20 +27,35 @@ export async function isAdmin(userId: string): Promise<boolean> {
 
 export async function listAllFeedback(): Promise<AdminFeedbackRow[]> {
   if (!supabase) return []
-  const { data, error } = await supabase
-    .from('feedback')
-    .select('id, owner_id, data, status, reply, updated_at')
-    .order('updated_at', { ascending: false })
-    .limit(100)
+  const db = supabase
+  const selectRows = async (cols: string): Promise<{ data: unknown; error: unknown }> => {
+    const { data, error } = await db
+      .from('feedback')
+      .select(cols)
+      .order('updated_at', { ascending: false })
+      .limit(100)
+    return { data, error }
+  }
+  let { data, error } = await selectRows('id, owner_id, data, status, reply, updated_at')
+  let hasReply = !error
+  if (error) {
+    // The reply column may not exist yet in older databases; fall back to the
+    // stable columns so the admin list still works.
+    const fallback = await selectRows('id, owner_id, data, status, updated_at')
+    data = fallback.data
+    error = fallback.error
+    hasReply = false
+  }
   if (error || !data) return []
-  return data.map((row) => ({
+  return (data as Array<Record<string, unknown>>).map((row) => ({
     id: String(row.id),
     ownerId: String(row.owner_id ?? ''),
-    content: String((row.data as { content?: unknown })?.content ?? ''),
-    contact: String((row.data as { contact?: unknown })?.contact ?? ''),
-    type: String((row.data as { type?: unknown })?.type ?? ''),
+    content: String((row.data as { content?: unknown } | null)?.content ?? ''),
+    contact: String((row.data as { contact?: unknown } | null)?.contact ?? ''),
+    type: String((row.data as { type?: unknown } | null)?.type ?? ''),
     status: String(row.status ?? 'pending'),
-    reply: typeof row.reply === 'string' && row.reply ? row.reply : undefined,
+    reply:
+      hasReply && typeof row.reply === 'string' && row.reply ? (row.reply as string) : undefined,
     updatedAt: String(row.updated_at ?? '')
   }))
 }
