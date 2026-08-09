@@ -17,7 +17,7 @@
 
 ## 安全加固（v2.1.8）
 - 站点安全头（CSP / nosniff / frame / referrer / permissions / HSTS）由 `public/_headers` 下发，随构建部署自动生效；CSP 允许列表仅含当前 Supabase 项目域（`mdopqwkcaqioxgasqowd.supabase.co`），迁移项目时需同步更新。
-- Supabase 侧需在 SQL Editor 执行一次新版 `supabase/schema.sql`（幂等）：新增 `nickname_lookup_attempts` 限流表、重写 `get_auth_email_by_nickname`（每昵称 10 分钟 ≤10 次）、收紧 `avatars` 桶上传/更新策略（image/* 且 ≤10MB）。若存储策略在你所用 Supabase 版本上执行报错（metadata 字段差异），回退为仅保留目录归属校验并反馈。
+- Supabase 侧需在 SQL Editor 执行一次新版 `supabase/schema.sql`（幂等）：新增 `nickname_lookup_attempts` 限流表（并启用 RLS，仅 security definer 函数可访问，防止匿名绕过限流）、重写 `get_auth_email_by_nickname`（每昵称 10 分钟 ≤10 次）、收紧 `avatars` 桶上传/更新策略（image/* 且 ≤10MB）。若存储策略在你所用 Supabase 版本上执行报错（metadata 字段差异），回退为仅保留目录归属校验并反馈。
 - 手动核对：Supabase → Authentication → Rate limiting 保持开启（默认）；可选：Cloudflare 控制台为该站点启用 Bot Fight Mode / WAF 托管规则（视套餐而定）。
 - RLS/管理员接口审计结论：全表 RLS + owner 策略；`admin_feedback`/`admin_users` 为 security definer 且函数体内校验 `admins` 成员；`search_path` 固定为 `public`；无需额外改动。
 

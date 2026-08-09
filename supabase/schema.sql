@@ -271,6 +271,10 @@ create table if not exists public.nickname_lookup_attempts (
 create index if not exists idx_nickname_lookup_nickname
   on public.nickname_lookup_attempts (lower(nickname), attempted_at);
 
+-- 仅允许 security definer 函数（属主绕过 RLS）读写；不开放任何策略，
+-- 防止匿名用户读取/删除尝试记录从而绕过限流。
+alter table public.nickname_lookup_attempts enable row level security;
+
 create or replace function public.get_auth_email_by_nickname(p_nickname text)
 returns text
 language sql

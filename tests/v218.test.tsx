@@ -36,6 +36,7 @@ describe('v2.1.8 schema hardening', () => {
     expect(sql).toContain('create table if not exists public.nickname_lookup_attempts')
     expect(sql).toContain("attempted_at > now() - interval '10 minutes'")
     expect(sql).toContain('insert_attempt')
+    expect(sql).toContain('alter table public.nickname_lookup_attempts enable row level security')
     expect(sql).toContain('grant execute on function public.get_auth_email_by_nickname(text) to anon, authenticated')
   })
 
