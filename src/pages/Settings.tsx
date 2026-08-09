@@ -13,6 +13,8 @@ import { applyUpdateNow } from '../lib/update'
 import { useUpdateStore } from '../stores/useUpdateStore'
 import { useSoundStore } from '../stores/useSoundStore'
 import ConfirmDialog from '../components/ConfirmDialog'
+import Sheet from '../components/Sheet'
+import AvatarCropper from '../components/AvatarCropper'
 import { isDerivedEmail } from '../lib/account'
 import {
   dedupeCustomName,
@@ -70,11 +72,14 @@ export default function Settings() {
   const [importKind, setImportKind] = useState<'noise' | 'music'>('music')
   const [previewId, setPreviewId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const avatarInputRef = useRef<HTMLInputElement>(null)
-  const [editNickname, setEditNickname] = useState(false)
   const [nicknameInput, setNicknameInput] = useState('')
   const [editEmail, setEditEmail] = useState(false)
   const [emailInput, setEmailInput] = useState('')
+  const [editProfile, setEditProfile] = useState(false)
+  const [pendingCrop, setPendingCrop] = useState<File | null>(null)
+  const [croppedFile, setCroppedFile] = useState<File | null>(null)
+  const [croppedPreview, setCroppedPreview] = useState<string | null>(null)
+  const [viewOriginal, setViewOriginal] = useState(false)
   const updateStatus = useUpdateStore((s) => s.status)
   const updateChecking = updateStatus === 'checking'
   const updateRemote = useUpdateStore((s) => s.lastRemote)
@@ -93,24 +98,42 @@ export default function Settings() {
             : ''
     : ''
 
-  const onAvatarChange = async (e: ChangeEvent<HTMLInputElement>) => {
+  const onEditAvatarPick = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
-    const ok = await uploadAvatar(file)
-    useToastStore.getState().push({
-      title: ok ? t(lang, 'avatarSaved') : t(lang, 'updateCheckFailed'),
-      kind: ok ? 'success' : 'warn'
-    })
+    if (!file.type.startsWith('image/')) {
+      useAuthStore.setState({ error: 'avatarTypeOnly' })
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      useAuthStore.setState({ error: 'avatarTooLarge' })
+      return
+    }
+    setPendingCrop(file)
   }
 
-  const saveNickname = async () => {
-    const ok = await updateNickname(nicknameInput)
-    if (ok) {
-      setEditNickname(false)
-      setNicknameInput('')
-      useToastStore.getState().push({ title: t(lang, 'nicknameSaved'), kind: 'success' })
+  const openProfile = () => {
+    setEditProfile(true)
+    setNicknameInput(user?.nickname ?? '')
+    setCroppedFile(null)
+    setCroppedPreview(null)
+  }
+
+  const saveProfile = async () => {
+    const nicknameChanged = !!user && nicknameInput.trim() !== user.nickname
+    if (nicknameChanged) {
+      const ok = await updateNickname(nicknameInput)
+      if (ok) useToastStore.getState().push({ title: t(lang, 'nicknameSaved'), kind: 'success' })
     }
+    if (croppedFile) {
+      const ok = await uploadAvatar(croppedFile)
+      useToastStore.getState().push({
+        title: ok ? t(lang, 'avatarSaved') : t(lang, 'updateCheckFailed'),
+        kind: ok ? 'success' : 'warn'
+      })
+    }
+    setEditProfile(false)
   }
 
   const saveEmail = async () => {
@@ -246,9 +269,9 @@ export default function Settings() {
             <div className="account-head">
               <button
                 type="button"
-                className={`avatar-circle${user.avatarUrl ? ' has-img' : ''}`}
-                onClick={() => avatarInputRef.current?.click()}
-                title={t(lang, 'changeAvatar')}
+                className={`avatar-circle${user.avatarUrl || user.avatarEmoji ? ' has-img' : ''}`}
+                onClick={() => (user.avatarUrl || user.avatarOriginalUrl ? setViewOriginal(true) : openProfile())}
+                title={user.avatarUrl ? t(lang, 'viewOriginalAvatar') : t(lang, 'editProfile')}
               >
                 {user.avatarUrl ? (
                   <img src={user.avatarUrl} alt={user.nickname ?? 'avatar'} />
@@ -258,49 +281,14 @@ export default function Settings() {
                   <span>{user.nickname?.[0] ?? '?'}</span>
                 )}
               </button>
-              <input
-                ref={avatarInputRef}
-                type="file"
-                accept="image/*"
-                hidden
-                onChange={(e) => void onAvatarChange(e)}
-              />
               <div className="account-head-main">
                 <strong>{user.nickname ?? user.email}</strong>
                 <span className="muted small">{emailBound ? user.email : t(lang, 'emailNotBound')}</span>
               </div>
-              <button className="btn btn-ghost btn-sm" onClick={() => avatarInputRef.current?.click()}>
-                {t(lang, 'changeAvatar')}
+              <button className="btn btn-primary btn-sm" onClick={openProfile}>
+                {t(lang, 'editProfile')}
               </button>
             </div>
-            <div className="settings-row">
-              <span className="muted">{t(lang, 'nickname')}</span>
-              <strong>{user.nickname ?? '—'}</strong>
-              <button
-                className="btn btn-ghost btn-sm"
-                onClick={() => {
-                  setEditNickname(true)
-                  setNicknameInput(user.nickname ?? '')
-                }}
-              >
-                {t(lang, 'changeNickname')}
-              </button>
-            </div>
-            {editNickname ? (
-              <div className="settings-row">
-                <input
-                  className="input"
-                  value={nicknameInput}
-                  onChange={(e) => setNicknameInput(e.target.value)}
-                />
-                <button className="btn btn-primary btn-sm" onClick={() => void saveNickname()}>
-                  {t(lang, 'save')}
-                </button>
-                <button className="btn btn-ghost btn-sm" onClick={() => setEditNickname(false)}>
-                  {t(lang, 'cancel')}
-                </button>
-              </div>
-            ) : null}
             <div className="settings-row">
               <span className="muted">{t(lang, 'email')}</span>
               <strong>{emailBound ? user.email : t(lang, 'emailNotBound')}</strong>
@@ -671,6 +659,75 @@ export default function Settings() {
           ) : null}
         </div>
       </section>
+
+      <Sheet
+        open={editProfile}
+        title={t(lang, 'editProfile')}
+        onClose={() => setEditProfile(false)}
+      >
+        <div className="edit-profile">
+          <span className={`avatar-circle profile-preview${croppedPreview || user?.avatarUrl ? ' has-img' : ''}`}>
+            {croppedPreview ? (
+              <img src={croppedPreview} alt="avatar" />
+            ) : user?.avatarUrl ? (
+              <img src={user.avatarUrl} alt={user.nickname ?? 'avatar'} />
+            ) : user?.avatarEmoji ? (
+              <span className="avatar-emoji">{user.avatarEmoji}</span>
+            ) : (
+              <span>{user?.nickname?.[0] ?? '?'}</span>
+            )}
+          </span>
+          <label className="btn btn-ghost btn-sm">
+            {t(lang, 'selectImage')}
+            <input type="file" accept="image/*" hidden onChange={onEditAvatarPick} />
+          </label>
+          <label className="field">
+            <span>{t(lang, 'nickname')}</span>
+            <input
+              className="input"
+              value={nicknameInput}
+              onChange={(e) => setNicknameInput(e.target.value)}
+            />
+          </label>
+          <div className="form-actions">
+            <button className="btn btn-ghost" onClick={() => setEditProfile(false)}>
+              {t(lang, 'cancel')}
+            </button>
+            <button className="btn btn-primary" onClick={() => void saveProfile()}>
+              {t(lang, 'save')}
+            </button>
+          </div>
+        </div>
+      </Sheet>
+
+      {pendingCrop ? (
+        <AvatarCropper
+          file={pendingCrop}
+          onCancel={() => setPendingCrop(null)}
+          onConfirm={(cropped) => {
+            setCroppedFile(cropped)
+            setCroppedPreview(URL.createObjectURL(cropped))
+            setPendingCrop(null)
+          }}
+        />
+      ) : null}
+
+      {viewOriginal && user ? (
+        <div className="avatar-lightbox" onClick={() => setViewOriginal(false)}>
+          <img
+            src={user.avatarOriginalUrl ?? user.avatarUrl}
+            alt={user.nickname ?? 'avatar'}
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            type="button"
+            className="btn btn-ghost avatar-lightbox-close"
+            onClick={() => setViewOriginal(false)}
+          >
+            ✕
+          </button>
+        </div>
+      ) : null}
 
       <ConfirmDialog
         open={confirmClear}

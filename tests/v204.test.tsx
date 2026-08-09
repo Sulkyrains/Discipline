@@ -127,12 +127,15 @@ describe('v2.0.4 signup with optional email', () => {
 describe('v2.0.4 signin routing and recovery actions', () => {
   beforeEach(resetStores)
 
-  it('resolves nickname login through the profile mapping', async () => {
+  it('falls back to the profile mapping when the derived email fails', async () => {
     mockRpc.mockResolvedValue({ data: 'bound@x.com', error: null })
-    mockSignIn.mockResolvedValue(userResult('bound@x.com', '小明'))
+    mockSignIn
+      .mockResolvedValueOnce({ data: { user: null }, error: { message: 'invalid credentials' } })
+      .mockResolvedValueOnce(userResult('bound@x.com', '小明'))
     const ok = await useAuthStore.getState().signIn('小明', '123456')
     expect(ok).toBe(true)
-    expect(mockSignIn).toHaveBeenCalledWith({ email: 'bound@x.com', password: '123456' })
+    expect(mockSignIn).toHaveBeenNthCalledWith(1, { email: await nicknameToEmail('小明'), password: '123456' })
+    expect(mockSignIn).toHaveBeenNthCalledWith(2, { email: 'bound@x.com', password: '123456' })
   })
 
   it('falls back to the derived email for legacy accounts without a profile', async () => {
@@ -248,7 +251,8 @@ describe('v2.0.4 account UI', () => {
     )
     const img = document.querySelector('.avatar-circle img') as HTMLImageElement | null
     expect(img?.getAttribute('src')).toBe('https://x/a.png')
-    expect(screen.getByText('修改昵称')).toBeInTheDocument()
+    expect(screen.getByText('编辑资料')).toBeInTheDocument()
+    expect(screen.queryByText('修改昵称')).toBeNull()
     expect(screen.getByText('绑定邮箱')).toBeInTheDocument()
     expect(screen.queryByText('通过邮箱重置密码')).toBeNull()
   })

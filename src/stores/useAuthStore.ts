@@ -10,7 +10,7 @@ import {
   lookupAuthEmailByNickname,
   MAX_AVATAR_BYTES,
   compressAvatarFile,
-  uploadAvatarFile,
+  uploadAvatarPair,
   upsertProfile
 } from '../lib/account'
 import { useAppStore } from './useAppStore'
@@ -47,12 +47,21 @@ function handleUser(user: UserInfo | null): void {
 }
 
 function userInfoFromAuth(u: { id: string; email?: string | null; user_metadata?: unknown }): UserInfo {
-  const meta = (u.user_metadata ?? {}) as { nickname?: unknown; avatar_url?: unknown; avatar_emoji?: unknown }
+  const meta = (u.user_metadata ?? {}) as {
+    nickname?: unknown
+    avatar_url?: unknown
+    avatar_original_url?: unknown
+    avatar_emoji?: unknown
+  }
   return {
     id: u.id,
     email: u.email ?? '',
     nickname: typeof meta.nickname === 'string' && meta.nickname ? meta.nickname : undefined,
     avatarUrl: typeof meta.avatar_url === 'string' && meta.avatar_url ? meta.avatar_url : undefined,
+    avatarOriginalUrl:
+      typeof meta.avatar_original_url === 'string' && meta.avatar_original_url
+        ? meta.avatar_original_url
+        : undefined,
     avatarEmoji: typeof meta.avatar_emoji === 'string' && meta.avatar_emoji ? meta.avatar_emoji : undefined
   }
 }
@@ -95,10 +104,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (isEmailInput(trimmed)) {
       email = trimmed
     } else {
-      email = (await lookupAuthEmailByNickname(trimmed)) ?? (await nicknameToEmail(trimmed))
       resolvedNickname = trimmed
+      email = await nicknameToEmail(trimmed)
     }
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    if ((error || !data.user) && resolvedNickname) {
+      // The nickname may be mapped to a real bound email (account registered with email).
+      const mapped = await lookupAuthEmailByNickname(resolvedNickname)
+      if (mapped && mapped !== email) {
+        const retry = await supabase.auth.signInWithPassword({ email: mapped, password })
+        if (retry.data?.user && !retry.error) {
+          const info = userInfoFromAuth(retry.data.user)
+          handleUser(info)
+          void upsertProfile({ userId: retry.data.user.id, nickname: resolvedNickname, authEmail: mapped })
+          return true
+        }
+      }
+    }
     if (error || !data.user) {
       set({ loading: false, error: 'auth' })
       return false
@@ -150,13 +172,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ loading: false, error: 'emailInvalid' })
       return false
     }
-    const existing = await lookupAuthEmailByNickname(normalized)
-    if (existing) {
-      set({ loading: false, error: 'nicknameTaken' })
-      return false
+    const hasEmail = email !== undefined && email.trim() !== ''
+    if (hasEmail) {
+      const existing = await lookupAuthEmailByNickname(normalized)
+      if (existing) {
+        set({ loading: false, error: 'nicknameTaken' })
+        return false
+      }
     }
     set({ loading: true, error: null })
-    const authEmail = email !== undefined && email.trim() !== '' ? email.trim() : await nicknameToEmail(normalized)
+    const authEmail = hasEmail ? email.trim() : await nicknameToEmail(normalized)
     const { data, error } = await supabase.auth.signUp({
       email: authEmail,
       password,
@@ -247,19 +272,28 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return false
     }
     const optimized = await compressAvatarFile(file)
-    const url = await uploadAvatarFile(user.id, optimized)
-    if (!url) {
+    const urls = await uploadAvatarPair(user.id, optimized, file)
+    if (!urls) {
       set({ error: 'auth' })
       return false
     }
     const { error } = await supabase.auth.updateUser({
-      data: { avatar_url: url, avatar_emoji: null }
+      data: {
+        avatar_url: urls.avatarUrl,
+        avatar_original_url: urls.avatarOriginalUrl,
+        avatar_emoji: null
+      }
     })
     if (error) {
       set({ error: 'auth' })
       return false
     }
-    handleUser({ ...user, avatarUrl: url, avatarEmoji: undefined })
+    handleUser({
+      ...user,
+      avatarUrl: urls.avatarUrl,
+      avatarOriginalUrl: urls.avatarOriginalUrl,
+      avatarEmoji: undefined
+    })
     return true
   },
 

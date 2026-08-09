@@ -73,3 +73,30 @@ export async function uploadAvatarFile(userId: string, file: File): Promise<stri
   if (error) return null
   return `${SUPABASE_URL}/storage/v1/object/public/avatars/${path}`
 }
+
+export async function uploadAvatarPair(
+  userId: string,
+  displayFile: File,
+  originalFile: File
+): Promise<{ avatarUrl: string; avatarOriginalUrl: string } | null> {
+  if (!supabase) return null
+  const stamp = Date.now()
+  const displayPath = `${userId}/avatar-${stamp}`
+  const originalPath = `${userId}/original-${stamp}`
+  const bucket = supabase.storage.from('avatars')
+  const [d, o] = await Promise.all([
+    bucket.upload(displayPath, displayFile, {
+      upsert: true,
+      contentType: displayFile.type || 'image/jpeg'
+    }),
+    bucket.upload(originalPath, originalFile, {
+      upsert: true,
+      contentType: originalFile.type || 'image/jpeg'
+    })
+  ])
+  if (d.error || o.error) return null
+  return {
+    avatarUrl: `${SUPABASE_URL}/storage/v1/object/public/avatars/${displayPath}`,
+    avatarOriginalUrl: `${SUPABASE_URL}/storage/v1/object/public/avatars/${originalPath}`
+  }
+}

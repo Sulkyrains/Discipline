@@ -86,6 +86,7 @@ describe('v2.0.5 quick avatar presets', () => {
     expect(mockUpdateUser).toHaveBeenCalledWith({
       data: {
         avatar_url: expect.stringMatching(/^https:\/\/x\.supabase\.co\/storage\/v1\/object\/public\/avatars\/u1\/avatar-\d+$/),
+        avatar_original_url: expect.stringMatching(/^https:\/\/x\.supabase\.co\/storage\/v1\/object\/public\/avatars\/u1\/original-\d+$/),
         avatar_emoji: null
       }
     })

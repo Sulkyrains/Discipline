@@ -4,6 +4,7 @@ import Logo from '../components/Logo'
 import { t } from '../lib/i18n'
 import { isValidNickname } from '../lib/authIdentity'
 import { PRESET_AVATARS } from '../lib/account'
+import AvatarCropper from '../components/AvatarCropper'
 import { useAppStore } from '../stores/useAppStore'
 import { useAuthStore } from '../stores/useAuthStore'
 import { useToastStore } from '../stores/useToastStore'
@@ -22,6 +23,7 @@ export default function Login() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [presetEmoji, setPresetEmoji] = useState<string | null>(null)
+  const [pendingCrop, setPendingCrop] = useState<File | null>(null)
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
@@ -34,12 +36,17 @@ export default function Login() {
       if (mode === 'in' && ok === 'register') {
         useToastStore.getState().push({ title: t(lang, 'autoRegistered'), kind: 'success' })
       }
-      if (mode === 'up') {
-        if (presetEmoji) {
-          await useAuthStore.getState().setAvatarEmoji(presetEmoji)
-        } else if (avatarFile) {
-          await useAuthStore.getState().uploadAvatar(avatarFile)
-        }
+      if (mode === 'up' && (presetEmoji || avatarFile)) {
+        void (async () => {
+          const st = useAuthStore.getState()
+          const applied = presetEmoji ? await st.setAvatarEmoji(presetEmoji) : await st.uploadAvatar(avatarFile as File)
+          if (!applied) {
+            useToastStore.getState().push({
+              title: t(lang, 'updateCheckFailed'),
+              kind: 'warn'
+            })
+          }
+        })()
       }
       navigate('/', { replace: true })
     }
@@ -53,13 +60,12 @@ export default function Login() {
       useAuthStore.setState({ error: 'avatarTypeOnly' })
       return
     }
-    if (file.size > 2 * 1024 * 1024) {
+    if (file.size > 10 * 1024 * 1024) {
       useAuthStore.setState({ error: 'avatarTooLarge' })
       return
     }
     setPresetEmoji(null)
-    setAvatarFile(file)
-    setAvatarPreview(URL.createObjectURL(file))
+    setPendingCrop(file)
   }
 
   const onPresetPick = (emoji: string) => {
@@ -201,6 +207,18 @@ export default function Login() {
       <button className="btn btn-ghost guest-btn" onClick={() => navigate('/', { replace: true })}>
         {t(lang, 'guestContinue')}
       </button>
+
+      {pendingCrop ? (
+        <AvatarCropper
+          file={pendingCrop}
+          onCancel={() => setPendingCrop(null)}
+          onConfirm={(cropped) => {
+            setAvatarFile(cropped)
+            setAvatarPreview(URL.createObjectURL(cropped))
+            setPendingCrop(null)
+          }}
+        />
+      ) : null}
     </div>
   )
 }
