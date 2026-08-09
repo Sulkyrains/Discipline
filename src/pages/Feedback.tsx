@@ -196,13 +196,20 @@ export default function Feedback() {
     if (!pendingDelete) return
     if (pendingDelete.local) {
       removeFeedback(pendingDelete.id)
+      useToastStore.getState().push({ title: t(lang, 'feedbackDeleted'), kind: 'info' })
     } else if (supabase) {
-      await supabase
+      const { error } = await supabase
         .from('feedback')
         .delete()
         .eq('id', pendingDelete.id)
         .eq('owner_id', user?.id ?? '')
+      if (error) {
+        useToastStore.getState().push({ title: t(lang, 'submitFail'), kind: 'warn' })
+        setPendingDelete(null)
+        return
+      }
       setCloudItems((prev) => prev.filter((r) => r.id !== pendingDelete.id))
+      useToastStore.getState().push({ title: t(lang, 'feedbackDeleted'), kind: 'info' })
     }
     setPendingDelete(null)
   }

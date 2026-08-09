@@ -39,6 +39,10 @@ export function isValidEmail(value: string): boolean {
   return /^\S+@\S+\.\S+$/.test(value.trim())
 }
 
+export function isValidPhone(value: string): boolean {
+  return /^\+?[0-9]{6,15}$/.test(value.replace(/[\s-]/g, ''))
+}
+
 export async function upsertProfile(input: {
   userId: string
   nickname: string

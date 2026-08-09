@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.0.28',
+    date: '2026-08-09',
+    zh: '新增手机号绑定与找回（与邮箱一致：验证码绑定 + 通过手机号重置密码）；反馈删除成功后两端均提示；发送回复后自动清空输入框。',
+    en: 'Added phone binding and recovery mirroring email (code-based binding plus reset password via phone); both feedback panels now confirm successful deletion; reply inputs clear automatically after sending.'
+  },
+  {
     version: '2.0.27',
     date: '2026-08-09',
     zh: '管理员反馈界面已处理条目不再变灰（仅置底，与用户端一致）；我的界面底部新增“版权所属：怏”与“联系作者（暂不填）”两行。',

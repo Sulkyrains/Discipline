@@ -98,7 +98,7 @@ describe('v2.0.12 edit-profile email binding', () => {
   it('offers the email field, the send-code button and no reset entry', () => {
     openProfileWithDerivedEmail()
     expect(screen.getByLabelText(/^邮箱/)).toBeInTheDocument()
-    expect(screen.getByText(t('zh', 'sendCode'))).toBeInTheDocument()
+    expect(screen.getAllByText(t('zh', 'sendCode')).length).toBeGreaterThan(0)
     expect(screen.getAllByText(/未绑定邮箱/).length).toBeGreaterThan(0)
     expect(screen.queryByText(t('zh', 'resetViaEmail'))).toBeNull()
   })
@@ -107,7 +107,7 @@ describe('v2.0.12 edit-profile email binding', () => {
     mockUpdateUser.mockResolvedValue({ error: null })
     openProfileWithDerivedEmail()
     fireEvent.change(screen.getByLabelText(/^邮箱/), { target: { value: 'new@x.com' } })
-    fireEvent.click(screen.getByText(t('zh', 'sendCode')))
+    fireEvent.click(screen.getAllByText(t('zh', 'sendCode'))[0])
     await waitFor(() => expect(mockUpdateUser).toHaveBeenCalledWith({ email: 'new@x.com' }))
     expect(screen.getByText(t('zh', 'confirmBind'))).toBeInTheDocument()
   })
@@ -120,7 +120,7 @@ describe('v2.0.12 edit-profile email binding', () => {
     })
     openProfileWithDerivedEmail()
     fireEvent.change(screen.getByLabelText(/^邮箱/), { target: { value: 'new@x.com' } })
-    fireEvent.click(screen.getByText(t('zh', 'sendCode')))
+    fireEvent.click(screen.getAllByText(t('zh', 'sendCode'))[0])
     await waitFor(() => screen.getByText(t('zh', 'confirmBind')))
     fireEvent.change(screen.getByPlaceholderText(t('zh', 'codePlaceholder')), {
       target: { value: '123456' }
@@ -145,7 +145,7 @@ describe('v2.0.12 edit-profile email binding', () => {
     })
     openProfileWithDerivedEmail()
     fireEvent.change(screen.getByLabelText(/^邮箱/), { target: { value: 'new@x.com' } })
-    fireEvent.click(screen.getByText(t('zh', 'sendCode')))
+    fireEvent.click(screen.getAllByText(t('zh', 'sendCode'))[0])
     await waitFor(() => screen.getByText(t('zh', 'confirmBind')))
     fireEvent.change(screen.getByPlaceholderText(t('zh', 'codePlaceholder')), {
       target: { value: '000000' }
@@ -201,5 +201,7 @@ describe('v2.0.12 admin panel', () => {
     expect(payload?.status).toBe('done')
     expect(payload?.reply).toBe('已修复')
     expect(payload?.messages).toHaveLength(1)
+    const replyBox = screen.getByPlaceholderText(/在这里填写给用户的回复/) as HTMLTextAreaElement
+    expect(replyBox.value).toBe('')
   })
 })

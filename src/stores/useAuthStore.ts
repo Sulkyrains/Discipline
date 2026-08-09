@@ -6,6 +6,7 @@ import { t } from '../lib/i18n'
 import { isEmailInput, isValidNickname, nicknameToEmail, normalizeNickname } from '../lib/authIdentity'
 import {
   isDerivedEmail,
+  isValidPhone,
   isValidEmail,
   lookupAuthEmailByNickname,
   MAX_AVATAR_BYTES,
@@ -28,6 +29,10 @@ interface AuthState {
   updateNickname: (nickname: string) => Promise<boolean>
   sendBindEmailCode: (email: string) => Promise<boolean>
   confirmBindEmail: (email: string, code: string) => Promise<boolean>
+  sendBindPhoneCode: (phone: string) => Promise<boolean>
+  confirmBindPhone: (phone: string, code: string) => Promise<boolean>
+  sendPhoneReset: () => Promise<boolean>
+  confirmPhoneReset: (code: string, newPassword: string) => Promise<boolean>
   uploadAvatar: (file: File) => Promise<boolean>
   setAvatarEmoji: (emoji: string) => Promise<boolean>
   sendResetEmail: () => Promise<boolean>
@@ -52,13 +57,19 @@ function sameUser(a: UserInfo, b: UserInfo): boolean {
   return (
     a.id === b.id &&
     a.email === b.email &&
+    a.phone === b.phone &&
     a.nickname === b.nickname &&
     a.avatarUrl === b.avatarUrl &&
     a.avatarEmoji === b.avatarEmoji
   )
 }
 
-function userInfoFromAuth(u: { id: string; email?: string | null; user_metadata?: unknown }): UserInfo {
+function userInfoFromAuth(u: {
+  id: string
+  email?: string | null
+  phone?: string | null
+  user_metadata?: unknown
+}): UserInfo {
   const meta = (u.user_metadata ?? {}) as {
     nickname?: unknown
     avatar_url?: unknown
@@ -68,6 +79,7 @@ function userInfoFromAuth(u: { id: string; email?: string | null; user_metadata?
   return {
     id: u.id,
     email: u.email ?? '',
+    phone: typeof u.phone === 'string' && u.phone ? u.phone : undefined,
     nickname: typeof meta.nickname === 'string' && meta.nickname ? meta.nickname : undefined,
     avatarUrl: typeof meta.avatar_url === 'string' && meta.avatar_url ? meta.avatar_url : undefined,
     avatarOriginalUrl:
@@ -375,6 +387,132 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (fresh) handleUser(fresh)
     else void get().refreshUser()
     void upsertProfile({ userId: user.id, nickname: user.nickname ?? '', authEmail: trimmedEmail })
+    set({ loading: false, error: null })
+    return true
+  },
+
+  sendBindPhoneCode: async (phone) => {
+    const user = get().user
+    if (!user || !supabase) {
+      set({ error: 'config' })
+      return false
+    }
+    const trimmed = phone.trim()
+    if (!isValidPhone(trimmed)) {
+      set({ error: 'phoneInvalid' })
+      return false
+    }
+    if (user.phone && trimmed === user.phone) {
+      set({ loading: false, error: null })
+      return false
+    }
+    set({ loading: true, error: null })
+    const { error } = await supabase.auth.updateUser({ phone: trimmed })
+    if (error) {
+      set({
+        loading: false,
+        error:
+          error.code === 'phone_exists' || /phone.*exists/i.test(error.message)
+            ? 'phoneInUse'
+            : /sms provider|phone provider|twilio|not configured|sms.*setup/i.test(error.message)
+              ? 'phoneConfig'
+              : 'auth'
+      })
+      return false
+    }
+    set({ loading: false, error: null })
+    return true
+  },
+
+  confirmBindPhone: async (phone, code) => {
+    const user = get().user
+    if (!user || !supabase) {
+      set({ error: 'config' })
+      return false
+    }
+    const trimmedPhone = phone.trim()
+    const trimmedCode = code.trim()
+    if (!isValidPhone(trimmedPhone) || trimmedCode.length < 4) {
+      set({ error: 'codeInvalid' })
+      return false
+    }
+    set({ loading: true, error: null })
+    const { data, error } = await supabase.auth.verifyOtp({
+      phone: trimmedPhone,
+      token: trimmedCode,
+      type: 'phone_change'
+    })
+    if (error) {
+      set({
+        loading: false,
+        error:
+          /expired/i.test(error.message) || error.code === 'otp_expired'
+            ? 'codeExpired'
+            : /sms provider|phone provider|not configured|sms.*setup/i.test(error.message)
+              ? 'phoneConfig'
+              : 'codeInvalid'
+      })
+      return false
+    }
+    const fresh = data.user ? userInfoFromAuth(data.user) : null
+    if (fresh) handleUser(fresh)
+    else void get().refreshUser()
+    set({ loading: false, error: null })
+    return true
+  },
+
+  sendPhoneReset: async () => {
+    const user = get().user
+    if (!user || !supabase || !user.phone) {
+      set({ error: 'auth' })
+      return false
+    }
+    set({ loading: true, error: null })
+    const { error } = await supabase.auth.signInWithOtp({ phone: user.phone })
+    if (error) {
+      set({
+        loading: false,
+        error: /sms provider|phone provider|not configured|sms.*setup/i.test(error.message)
+          ? 'phoneConfig'
+          : 'auth'
+      })
+      return false
+    }
+    set({ loading: false, error: null })
+    return true
+  },
+
+  confirmPhoneReset: async (code, newPassword) => {
+    const user = get().user
+    if (!user || !supabase || !user.phone) {
+      set({ error: 'auth' })
+      return false
+    }
+    if (newPassword.length < 6) {
+      set({ error: 'passwordTooShort' })
+      return false
+    }
+    set({ loading: true, error: null })
+    const { error: otpError } = await supabase.auth.verifyOtp({
+      phone: user.phone,
+      token: code.trim(),
+      type: 'sms'
+    })
+    if (otpError) {
+      set({
+        loading: false,
+        error:
+          /expired/i.test(otpError.message) || otpError.code === 'otp_expired'
+            ? 'codeExpired'
+            : 'codeInvalid'
+      })
+      return false
+    }
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    if (error) {
+      set({ loading: false, error: 'auth' })
+      return false
+    }
     set({ loading: false, error: null })
     return true
   },

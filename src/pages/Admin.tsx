@@ -75,6 +75,7 @@ export default function Admin() {
     const text = drafts[row.id] ?? ''
     const ok = await addFeedbackMessage(row.id, 'dev', text)
     if (ok) {
+      setDrafts((d) => ({ ...d, [row.id]: '' }))
       setRows((prev) =>
         prev.map((r) =>
           r.id === row.id

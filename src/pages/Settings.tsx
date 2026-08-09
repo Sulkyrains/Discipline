@@ -65,6 +65,10 @@ export default function Settings() {
   const updateNickname = useAuthStore((s) => s.updateNickname)
   const sendBindEmailCode = useAuthStore((s) => s.sendBindEmailCode)
   const confirmBindEmail = useAuthStore((s) => s.confirmBindEmail)
+  const sendBindPhoneCode = useAuthStore((s) => s.sendBindPhoneCode)
+  const confirmBindPhone = useAuthStore((s) => s.confirmBindPhone)
+  const sendPhoneReset = useAuthStore((s) => s.sendPhoneReset)
+  const confirmPhoneReset = useAuthStore((s) => s.confirmPhoneReset)
   const uploadAvatar = useAuthStore((s) => s.uploadAvatar)
   const sendResetEmail = useAuthStore((s) => s.sendResetEmail)
   const mergeWithCloud = useAuthStore((s) => s.mergeWithCloud)
@@ -82,6 +86,16 @@ export default function Settings() {
   const [emailCode, setEmailCode] = useState('')
   const [resendIn, setResendIn] = useState(0)
   const [emailBusy, setEmailBusy] = useState(false)
+  const [phoneInput, setPhoneInput] = useState('')
+  const [phoneCodeSent, setPhoneCodeSent] = useState(false)
+  const [pendingPhone, setPendingPhone] = useState('')
+  const [phoneCode, setPhoneCode] = useState('')
+  const [phoneResendIn, setPhoneResendIn] = useState(0)
+  const [phoneBusy, setPhoneBusy] = useState(false)
+  const [phoneResetStep, setPhoneResetStep] = useState<'idle' | 'sent'>('idle')
+  const [phoneResetCode, setPhoneResetCode] = useState('')
+  const [phoneResetPassword, setPhoneResetPassword] = useState('')
+  const [phoneResetBusy, setPhoneResetBusy] = useState(false)
   const [updating, setUpdating] = useState(false)
   const [editProfile, setEditProfile] = useState(false)
   const [admin, setAdmin] = useState(false)
@@ -110,9 +124,17 @@ export default function Settings() {
             ? t(lang, 'codeInvalid')
             : authError === 'codeExpired'
               ? t(lang, 'codeExpired')
-              : authError === 'secureChangeRequired'
-                ? t(lang, 'secureChangeHint')
-                : ''
+          : authError === 'secureChangeRequired'
+            ? t(lang, 'secureChangeHint')
+            : authError === 'phoneInvalid'
+              ? t(lang, 'phoneInvalid')
+              : authError === 'phoneInUse'
+                ? t(lang, 'phoneInUse')
+                : authError === 'phoneConfig'
+                  ? t(lang, 'phoneConfig')
+                  : authError === 'passwordTooShort'
+                    ? t(lang, 'passwordTooShort')
+                    : ''
     : ''
 
   const onEditAvatarPick = (e: ChangeEvent<HTMLInputElement>) => {
@@ -138,6 +160,14 @@ export default function Settings() {
     setPendingEmail('')
     setEmailCode('')
     setResendIn(0)
+    setPhoneInput('')
+    setPhoneCodeSent(false)
+    setPendingPhone('')
+    setPhoneCode('')
+    setPhoneResendIn(0)
+    setPhoneResetStep('idle')
+    setPhoneResetCode('')
+    setPhoneResetPassword('')
     setCroppedPreview(null)
   }
 
@@ -175,11 +205,66 @@ export default function Settings() {
     }
   }
 
+  const sendPhoneCode = async (targetPhone?: string) => {
+    const target = (targetPhone ?? phoneInput).trim()
+    if (!target || (user?.phone && target === user.phone)) return
+    setPhoneBusy(true)
+    const ok = await sendBindPhoneCode(target)
+    setPhoneBusy(false)
+    if (ok) {
+      setPendingPhone(target)
+      setPhoneCode('')
+      setPhoneCodeSent(true)
+      setPhoneResendIn(60)
+      useToastStore.getState().push({ title: t(lang, 'phoneCodeSent', { phone: target }), kind: 'success' })
+    }
+  }
+
+  const confirmPhoneBind = async () => {
+    setPhoneBusy(true)
+    const ok = await confirmBindPhone(pendingPhone, phoneCode)
+    setPhoneBusy(false)
+    if (ok) {
+      useToastStore.getState().push({ title: t(lang, 'bindSuccess'), kind: 'success' })
+      setEditProfile(false)
+    }
+  }
+
+  const startPhoneReset = async () => {
+    setPhoneResetBusy(true)
+    const ok = await sendPhoneReset()
+    setPhoneResetBusy(false)
+    if (ok) {
+      setPhoneResetStep('sent')
+      setPhoneResetCode('')
+      setPhoneResetPassword('')
+      useToastStore.getState().push({ title: t(lang, 'phoneResetSent'), kind: 'success' })
+    }
+  }
+
+  const confirmPhoneResetAction = async () => {
+    setPhoneResetBusy(true)
+    const ok = await confirmPhoneReset(phoneResetCode, phoneResetPassword)
+    setPhoneResetBusy(false)
+    if (ok) {
+      useToastStore.getState().push({ title: t(lang, 'phoneResetDone'), kind: 'success' })
+      setPhoneResetStep('idle')
+      setPhoneResetCode('')
+      setPhoneResetPassword('')
+    }
+  }
+
   useEffect(() => {
     if (resendIn <= 0) return
     const timer = window.setTimeout(() => setResendIn((s) => s - 1), 1000)
     return () => window.clearTimeout(timer)
   }, [resendIn])
+
+  useEffect(() => {
+    if (phoneResendIn <= 0) return
+    const timer = window.setTimeout(() => setPhoneResendIn((s) => s - 1), 1000)
+    return () => window.clearTimeout(timer)
+  }, [phoneResendIn])
 
   useEffect(() => {
     if (!user) {
@@ -338,6 +423,9 @@ export default function Settings() {
               <div className="account-head-main">
                 <strong>{user.nickname ?? user.email}</strong>
                 <span className="muted small">{emailBound ? user.email : t(lang, 'emailNotBound')}</span>
+                <span className="muted small">
+                  {user.phone ? `${t(lang, 'phoneBound')}：${user.phone}` : t(lang, 'phoneNotBound')}
+                </span>
               </div>
               <button className="btn btn-primary btn-sm" onClick={openProfile}>
                 {t(lang, 'editProfile')}
@@ -820,6 +908,120 @@ export default function Settings() {
             </button>
           ) : (
             <p className="muted small">⚠️ {t(lang, 'emailNotBound')} · {t(lang, 'bindEmailHint')}</p>
+          )}
+          <label className="field">
+            <span>{t(lang, 'phone')}</span>
+            <span className="muted small">
+              {user?.phone
+                ? `${t(lang, 'currentPhone')}：${user.phone}`
+                : `⚠️ ${t(lang, 'phoneNotBound')}`}
+            </span>
+            <input
+              className="input"
+              type="tel"
+              value={phoneInput}
+              placeholder={t(lang, 'phoneOptional')}
+              onChange={(e) => {
+                setPhoneInput(e.target.value)
+                if (phoneCodeSent && e.target.value.trim() !== pendingPhone) setPhoneCodeSent(false)
+              }}
+            />
+          </label>
+          {!phoneCodeSent ? (
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              disabled={
+                phoneBusy || !phoneInput.trim() || (!!user?.phone && phoneInput.trim() === user.phone)
+              }
+              onClick={() => void sendPhoneCode()}
+            >
+              {phoneBusy ? t(lang, 'sendingCode') : t(lang, 'sendCode')}
+            </button>
+          ) : (
+            <div className="field">
+              <span>{t(lang, 'code')}</span>
+              <input
+                className="input"
+                inputMode="numeric"
+                maxLength={6}
+                value={phoneCode}
+                placeholder={t(lang, 'codePlaceholder')}
+                onChange={(e) => setPhoneCode(e.target.value.replace(/\D/g, ''))}
+              />
+              <p className="muted small">{t(lang, 'phoneCodeSent', { phone: pendingPhone })}</p>
+              <div className="form-actions">
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  disabled={phoneBusy || phoneCode.length < 4}
+                  onClick={() => void confirmPhoneBind()}
+                >
+                  {phoneBusy ? t(lang, 'binding') : t(lang, 'confirmBind')}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  disabled={phoneBusy || phoneResendIn > 0}
+                  onClick={() => void sendPhoneCode(pendingPhone)}
+                >
+                  {phoneResendIn > 0 ? t(lang, 'resendIn', { seconds: phoneResendIn }) : t(lang, 'resend')}
+                </button>
+              </div>
+            </div>
+          )}
+          {user?.phone ? (
+            phoneResetStep === 'idle' ? (
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                disabled={phoneResetBusy}
+                onClick={() => void startPhoneReset()}
+              >
+                {phoneResetBusy ? t(lang, 'sendingCode') : t(lang, 'phoneResetVia')}
+              </button>
+            ) : (
+              <div className="field">
+                <span>{t(lang, 'code')}</span>
+                <input
+                  className="input"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={phoneResetCode}
+                  placeholder={t(lang, 'codePlaceholder')}
+                  onChange={(e) => setPhoneResetCode(e.target.value.replace(/\D/g, ''))}
+                />
+                <span>{t(lang, 'newPassword')}</span>
+                <input
+                  className="input"
+                  type="password"
+                  value={phoneResetPassword}
+                  onChange={(e) => setPhoneResetPassword(e.target.value)}
+                />
+                <div className="form-actions">
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    disabled={
+                      phoneResetBusy || phoneResetCode.length < 4 || phoneResetPassword.length < 6
+                    }
+                    onClick={() => void confirmPhoneResetAction()}
+                  >
+                    {phoneResetBusy ? t(lang, 'binding') : t(lang, 'confirmReset')}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    disabled={phoneResetBusy}
+                    onClick={() => setPhoneResetStep('idle')}
+                  >
+                    {t(lang, 'cancel')}
+                  </button>
+                </div>
+              </div>
+            )
+          ) : (
+            <p className="muted small">⚠️ {t(lang, 'phoneNotBound')}</p>
           )}
           {authErrorText ? <p className="form-error">{authErrorText}</p> : null}
           <div className="form-actions">

@@ -95,6 +95,7 @@ export interface Settings {
 export interface UserInfo {
   id: string
   email: string
+  phone?: string
   nickname?: string
   avatarUrl?: string
   avatarOriginalUrl?: string
