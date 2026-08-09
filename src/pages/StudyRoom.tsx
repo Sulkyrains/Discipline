@@ -167,6 +167,15 @@ export default function StudyRoomPage() {
               {room.is_public ? t(lang, 'studyPublic') : t(lang, 'studyPrivate')}
             </span>
           </p>
+          {room.tags.length > 0 ? (
+            <div className="study-room-tags">
+              {room.tags.map((tag) => (
+                <span key={tag} className="chip">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          ) : null}
         </div>
       </header>
 

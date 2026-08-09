@@ -154,8 +154,12 @@ create table if not exists public.study_rooms (
   owner_id uuid not null references auth.users (id) on delete cascade,
   is_public boolean not null default false,
   max_members int not null default 20,
+  tags text[] not null default '{}'::text[],
   created_at timestamptz not null default now()
 );
+
+-- Discipline v2.1.5: 既有库请在 SQL Editor 执行：
+-- alter table public.study_rooms add column if not exists tags text[] not null default '{}'::text[];
 
 alter table public.study_rooms enable row level security;
 

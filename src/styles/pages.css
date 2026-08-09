@@ -1287,6 +1287,14 @@
   color: var(--muted);
 }
 
+.timer-clock {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+}
+
 .timer-controls {
   display: flex;
   justify-content: center;
@@ -1550,7 +1558,15 @@
 }
 
 .study-room-row {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.study-room-top {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
+  gap: 10px;
 }
 
 .study-room-main {
@@ -1697,9 +1713,27 @@
 
 .study-tags {
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 4px 0 10px;
+}
+
+.study-tags-chips {
+  display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin: 4px 0 10px;
+}
+
+.study-tag-filter {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.study-room-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .timer-mode-toggle {

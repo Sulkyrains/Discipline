@@ -8,6 +8,7 @@ export interface StudyRoom {
   owner_id: string
   is_public: boolean
   max_members: number
+  tags: string[]
   created_at: string
 }
 
@@ -24,6 +25,21 @@ export interface RoomMember {
 }
 
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+
+export const ROOM_TAGS = ['期末冲刺', '考研自习', '刷题', '晨间自习', '晚间自习', '番茄自习']
+
+function normalizeRoom(row: Record<string, unknown>): StudyRoom {
+  return {
+    id: String(row.id ?? ''),
+    code: String(row.code ?? ''),
+    name: String(row.name ?? ''),
+    owner_id: String(row.owner_id ?? ''),
+    is_public: Boolean(row.is_public),
+    max_members: Number(row.max_members ?? 20),
+    tags: Array.isArray(row.tags) ? row.tags.map(String) : [],
+    created_at: String(row.created_at ?? '')
+  }
+}
 
 export function generateRoomCode(): string {
   let code = ''
@@ -42,23 +58,32 @@ export async function listStudyRooms(): Promise<StudyRoom[]> {
     .order('created_at', { ascending: false })
     .limit(50)
   if (error || !data) return []
-  return data as StudyRoom[]
+  return (data as Record<string, unknown>[]).map(normalizeRoom)
 }
 
 export async function createStudyRoom(
   name: string,
   ownerId: string,
-  isPublic: boolean
+  isPublic: boolean,
+  tags: string[] = []
 ): Promise<StudyRoom | null> {
   if (!supabase) return null
   for (let attempt = 0; attempt < 6; attempt++) {
     const code = generateRoomCode()
     const { data, error } = await supabase
       .from('study_rooms')
-      .insert({ id: uid(), code, name, owner_id: ownerId, is_public: isPublic, max_members: 50 })
+      .insert({
+        id: uid(),
+        code,
+        name,
+        owner_id: ownerId,
+        is_public: isPublic,
+        max_members: 50,
+        tags
+      })
       .select()
       .maybeSingle()
-    if (!error && data) return data as StudyRoom
+    if (!error && data) return normalizeRoom(data as Record<string, unknown>)
   }
   return null
 }
@@ -71,14 +96,14 @@ export async function joinStudyRoomByCode(code: string): Promise<StudyRoom | nul
     .eq('code', code.trim().toUpperCase())
     .maybeSingle()
   if (error || !data) return null
-  return data as StudyRoom
+  return normalizeRoom(data as Record<string, unknown>)
 }
 
 export async function getStudyRoom(id: string): Promise<StudyRoom | null> {
   if (!supabase) return null
   const { data, error } = await supabase.from('study_rooms').select('*').eq('id', id).maybeSingle()
   if (error || !data) return null
-  return data as StudyRoom
+  return normalizeRoom(data as Record<string, unknown>)
 }
 
 export async function deleteStudyRoom(id: string): Promise<void> {

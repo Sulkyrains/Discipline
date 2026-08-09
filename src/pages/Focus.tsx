@@ -54,6 +54,7 @@ export default function Focus() {
   const [wlCollapsed, setWlCollapsed] = useState(true)
   const [confirmBind, setConfirmBind] = useState(false)
   const [taskPickerOpen, setTaskPickerOpen] = useState(false)
+  const [clockNow, setClockNow] = useState(() => new Date())
   const fsMode = useFocusStore((s) => s.fsMode)
   const setFsMode = useFocusStore((s) => s.setFsMode)
   const setLockedOrientation = useFocusStore((s) => s.setLockedOrientation)
@@ -81,6 +82,12 @@ export default function Focus() {
     })
     return unsub
   }, [registerEventHandler])
+
+  useEffect(() => {
+    if (!active) return
+    const iv = window.setInterval(() => setClockNow(new Date()), 1000)
+    return () => window.clearInterval(iv)
+  }, [active])
 
   const onStart = (e: ReactMouseEvent) => {
     e.stopPropagation()
@@ -221,6 +228,7 @@ export default function Focus() {
   const elapsed = Math.max(0, total - timer.remainingSeconds)
   const displaySeconds = settings.timerMode === 'countup' ? elapsed : timer.remainingSeconds
   const progress = settings.timerMode === 'countup' ? elapsed / total : 1 - timer.remainingSeconds / total
+  const clock = `${String(clockNow.getHours()).padStart(2, '0')}:${String(clockNow.getMinutes()).padStart(2, '0')}`
 
   return (
     <div className="page page-focus">
@@ -270,7 +278,7 @@ export default function Focus() {
         <ProgressRing size={248} stroke={12} progress={progress}>
           <span className="timer-phase-label">{t(lang, timer.phase)}</span>
           <strong className="timer-time">{fmtSeconds(displaySeconds)}</strong>
-          <span className="timer-rounds">{t(lang, 'roundsDone', { n: timer.roundsCompleted })}</span>
+          {active && settings.showFocusClock ? <span className="timer-clock">{clock}</span> : null}
         </ProgressRing>
       </div>
 
@@ -291,6 +299,15 @@ export default function Focus() {
         {timer.status === 'running' && timer.phase === 'focus' ? (
           <button className="btn btn-ghost btn-lg" onClick={() => void (fsMode !== 'off' ? exitFullscreen() : enterFullscreen())}>
             {fsMode !== 'off' ? t(lang, 'exitFullscreen') : t(lang, 'fullscreen')}
+          </button>
+        ) : null}
+        {timer.status === 'running' ? (
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            onClick={() => setSettings({ showFocusClock: !settings.showFocusClock })}
+          >
+            {settings.showFocusClock ? t(lang, 'hideClock') : t(lang, 'showClock')}
           </button>
         ) : null}
         {timer.phase === 'focus' && timer.status !== 'idle' ? (

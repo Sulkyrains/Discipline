@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.1.5',
+    date: '2026-08-10',
+    zh: '专注时间按所选任务归因：只有本轮明确点击选择的任务才会计入该任务时长（完成后自动解除绑定）；专注中可显示/隐藏当前时间；木质交互音效音量提升；移除计时数字下的“已完成 X 轮”小字；创建房间改为选择标签（供公开大厅按标签筛选找房），大厅房间卡片展示标签。',
+    en: 'Focus time is attributed only to the task explicitly selected for that round (binding clears on completion); the current time can be shown or hidden during focus; wood UI sound volume increased; removed the “X rounds done” caption under the timer; room creation now picks tags shown in the public lobby, which can also be used to filter rooms.'
+  },
+  {
     version: '2.1.4',
     date: '2026-08-10',
     zh: '专注页新增“正计时/倒计时”两种时间显示模式，可自由切换并记忆；专注全屏后切换页面不会退出全屏（全屏状态全局保留，应用内全屏遮罩跨页面常驻，专注结束/放弃时自动退出）；房间内固定显示每位成员“已专注 X 分钟”；创建房间新增快捷标签；移除公开房间列表中邀请码后的多余图标。',

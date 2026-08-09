@@ -86,6 +86,7 @@ describe('focus timer store', () => {
     expect(useFocusStore.getState().timer.phase).toBe('shortBreak')
     expect(useFocusStore.getState().timer.status).toBe('idle')
     expect(useFocusStore.getState().active).toBe(false)
+    expect(useFocusStore.getState().taskId).toBeNull()
     unsub()
   })
 

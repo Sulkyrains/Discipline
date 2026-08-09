@@ -24,7 +24,8 @@ const settings: Settings = {
   todoSort: 'time',
   reminderMode: 'sound',
   uiSoundVolume: 0.8,
-  timerMode: 'countdown'
+  timerMode: 'countdown',
+  showFocusClock: true
 }
 
 describe('timer state machine', () => {

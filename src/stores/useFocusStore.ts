@@ -88,7 +88,10 @@ function startInterval(): void {
           plannedMinutes: cfg.pomodoroMinutes,
           startedAt: st.startedAt ?? nowISO()
         })
-        useFocusStore.setState({ startedAt: null })
+        // Time is only attributed to a task when the user explicitly selected it
+        // for this session; clear the binding so the next round needs a new
+        // explicit selection before its time can count toward a task.
+        useFocusStore.setState({ startedAt: null, taskId: null })
         handlers.forEach((h) =>
           h({
             type: 'focusCompleted',

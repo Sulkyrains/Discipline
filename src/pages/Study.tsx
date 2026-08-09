@@ -7,6 +7,7 @@ import {
   getMyMembership,
   joinStudyRoomByCode,
   listStudyRooms,
+  ROOM_TAGS,
   type StudyRoom
 } from '../lib/studyRoom'
 import { useAppStore } from '../stores/useAppStore'
@@ -15,8 +16,6 @@ import { useFocusStore } from '../stores/useFocusStore'
 import { useStudyRoomStore } from '../stores/useStudyRoomStore'
 import { useToastStore } from '../stores/useToastStore'
 import EmptyState from '../components/EmptyState'
-
-const ROOM_TAGS = ['期末冲刺', '考研自习', '刷题', '晨间自习', '晚间自习', '番茄自习']
 
 export default function Study() {
   const lang = useAppStore((s) => s.settings.language)
@@ -28,6 +27,8 @@ export default function Study() {
   const [name, setName] = useState('')
   const [code, setCode] = useState('')
   const [isPublic, setIsPublic] = useState(true)
+  const [tags, setTags] = useState<string[]>([])
+  const [tagFilter, setTagFilter] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
 
@@ -73,7 +74,7 @@ export default function Study() {
       return
     }
     setBusy(true)
-    const room = await createStudyRoom(name.trim(), user.id, isPublic)
+    const room = await createStudyRoom(name.trim(), user.id, isPublic, tags)
     setBusy(false)
     if (room) {
       const status = await joinRoom(room.id)
@@ -172,16 +173,21 @@ export default function Study() {
           </span>
         </div>
         <div className="study-tags">
-          {ROOM_TAGS.map((tag) => (
-            <button
-              key={tag}
-              type="button"
-              className={`sound-chip${name === tag ? ' active' : ''}`}
-              onClick={() => setName(tag)}
-            >
-              {tag}
-            </button>
-          ))}
+          <span className="muted small">{t(lang, 'studyTagsHint')}</span>
+          <div className="study-tags-chips">
+            {ROOM_TAGS.map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                className={`sound-chip${tags.includes(tag) ? ' active' : ''}`}
+                onClick={() =>
+                  setTags((prev) => (prev.includes(tag) ? prev.filter((x) => x !== tag) : [...prev, tag]))
+                }
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="form-row">
           <label className="field">
@@ -217,23 +223,53 @@ export default function Study() {
           {refreshing ? t(lang, 'loading') : t(lang, 'studyRefresh')}
         </button>
       </div>
+      <div className="study-tags study-tag-filter">
+        <button
+          type="button"
+          className={`sound-chip${tagFilter === null ? ' active' : ''}`}
+          onClick={() => setTagFilter(null)}
+        >
+          {t(lang, 'studyAll')}
+        </button>
+        {ROOM_TAGS.map((tag) => (
+          <button
+            key={tag}
+            type="button"
+            className={`sound-chip${tagFilter === tag ? ' active' : ''}`}
+            onClick={() => setTagFilter(tagFilter === tag ? null : tag)}
+          >
+            {tag}
+          </button>
+        ))}
+      </div>
       {rooms.length === 0 ? (
         <EmptyState emoji="🏫" text={t(lang, 'studyEmptyRooms')} />
       ) : (
         <div className="study-room-list">
-          {rooms.map((room) => (
+          {(tagFilter ? rooms.filter((r) => r.tags.includes(tagFilter)) : rooms).map((room) => (
             <div key={room.id} className="card study-room-row">
-              <div className="study-room-main">
-                <strong>{room.name}</strong>
-                <span className="chip chip-tag">{room.code}</span>
+              <div className="study-room-top">
+                <div className="study-room-main">
+                  <strong>{room.name}</strong>
+                  <span className="chip chip-tag">{room.code}</span>
+                </div>
+                <button
+                  className="btn btn-primary btn-sm"
+                  disabled={focusActive}
+                  onClick={() => navigate(`/study/${room.id}`)}
+                >
+                  {t(lang, 'studyJoin')}
+                </button>
               </div>
-              <button
-                className="btn btn-primary btn-sm"
-                disabled={focusActive}
-                onClick={() => navigate(`/study/${room.id}`)}
-              >
-                {t(lang, 'studyJoin')}
-              </button>
+              {room.tags.length > 0 ? (
+                <div className="study-room-tags">
+                  {room.tags.map((tag) => (
+                    <span key={tag} className="chip">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
             </div>
           ))}
         </div>

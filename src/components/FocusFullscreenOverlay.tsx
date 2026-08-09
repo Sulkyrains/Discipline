@@ -18,6 +18,7 @@ function fmtSeconds(total: number): string {
 export default function FocusFullscreenOverlay() {
   const lang = useAppStore((s) => s.settings.language)
   const timerMode = useAppStore((s) => s.settings.timerMode)
+  const showFocusClock = useAppStore((s) => s.settings.showFocusClock)
   const fsMode = useFocusStore((s) => s.fsMode)
   const timer = useFocusStore((s) => s.timer)
   const exitFocusFullscreen = useFocusStore((s) => s.exitFocusFullscreen)
@@ -35,6 +36,8 @@ export default function FocusFullscreenOverlay() {
   const elapsed = Math.max(0, total - timer.remainingSeconds)
   const displaySeconds = timerMode === 'countup' ? elapsed : timer.remainingSeconds
   const progress = timerMode === 'countup' ? elapsed / total : 1 - timer.remainingSeconds / total
+  const now = new Date()
+  const clock = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
 
   return (
     <div className="focus-fs-overlay" onClick={exitFocusFullscreen}>
@@ -49,7 +52,7 @@ export default function FocusFullscreenOverlay() {
         <ProgressRing size={240} stroke={12} progress={progress}>
           <span className="timer-phase-label">{t(lang, timer.phase)}</span>
           <strong className="timer-time">{fmtSeconds(displaySeconds)}</strong>
-          <span className="timer-rounds">{t(lang, 'roundsDone', { n: timer.roundsCompleted })}</span>
+          {showFocusClock ? <span className="timer-clock">{clock}</span> : null}
         </ProgressRing>
         <div className="focus-fs-info">
           <span className="focus-fs-label">{t(lang, 'focusLandscapeHint')}</span>

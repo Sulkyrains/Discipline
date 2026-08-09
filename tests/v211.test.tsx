@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import FocusGuard from '../src/components/FocusGuard'
@@ -26,6 +26,7 @@ const roomRow = {
   owner_id: 'u1',
   is_public: true,
   max_members: 20,
+  tags: [],
   created_at: '2026-08-10T00:00:00.000Z'
 }
 
@@ -107,12 +108,13 @@ describe('v2.1.1 study room helpers', () => {
   })
 
   it('creates a room with the chosen visibility', async () => {
-    const room = await createStudyRoom('期末', 'u1', false)
+    const room = await createStudyRoom('期末', 'u1', false, ['刷题', '晚间自习'])
     expect(room?.id).toBe('r1')
     expect(insertCalls[0].rows[0]).toMatchObject({
       is_public: false,
       owner_id: 'u1',
-      max_members: 50
+      max_members: 50,
+      tags: ['刷题', '晚间自习']
     })
   })
 
@@ -194,10 +196,12 @@ describe('v2.1.3 study lobby focus block and refresh', () => {
     )
     expect(screen.getByText(t('zh', 'studyRefresh'))).toBeInTheDocument()
     expect(screen.queryByText('👑')).toBeNull()
-    fireEvent.click(screen.getByText('期末冲刺'))
+    expect(screen.getByRole('button', { name: t('zh', 'studyAll') })).toBeInTheDocument()
+    fireEvent.click(screen.getAllByText('期末冲刺')[0])
     expect(
       (screen.getByPlaceholderText(t('zh', 'studyRoomNamePh')) as HTMLInputElement).value
-    ).toBe('期末冲刺')
+    ).toBe('')
+    expect(screen.getAllByText('期末冲刺')[0].className).toContain('active')
     fireEvent.change(screen.getByPlaceholderText(t('zh', 'studyRoomNamePh')), {
       target: { value: '期末' }
     })
@@ -225,6 +229,7 @@ describe('v2.1.4 study room member focus duration', () => {
         owner_id: 'u1',
         is_public: true,
         max_members: 50,
+        tags: ['期末冲刺'],
         created_at: '2026-08-10T00:00:00.000Z'
       },
       members: [
@@ -243,5 +248,43 @@ describe('v2.1.4 study room member focus duration', () => {
     )
     expect(screen.getByText('已专注 5 分钟')).toBeInTheDocument()
     expect(screen.getByText('已专注 0 分钟')).toBeInTheDocument()
+  })
+})
+
+describe('v2.1.5 lobby room tags', () => {
+  it('shows tags on public room cards and filters rooms by tag', async () => {
+    useAuthStore.setState({
+      user: { id: 'u1', email: 'x@x.com', nickname: '小明' }
+    })
+    const tagged = { ...roomRow, id: 'r-tag', name: '考研冲刺房', tags: ['考研自习'] }
+    const plain = { ...roomRow, id: 'r-plain', name: '普通自习房', tags: [] }
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'study_memberships') return membershipChain()
+      return {
+        ...studyChain(),
+        select: () => ({
+          eq: () => ({
+            order: vi.fn(() => ({
+              limit: vi.fn(async () => ({ data: [tagged, plain], error: null }))
+            }))
+          })
+        })
+      }
+    })
+    const { container } = render(
+      <MemoryRouter>
+        <Study />
+      </MemoryRouter>
+    )
+    await waitFor(() => expect(screen.getByText('考研冲刺房')).toBeInTheDocument())
+    expect(screen.getByText('普通自习房')).toBeInTheDocument()
+    const taggedCard = screen.getByText('考研冲刺房').closest('.study-room-row') as HTMLElement
+    expect(within(taggedCard).getByText('考研自习')).toBeInTheDocument()
+    const filter = container.querySelector('.study-tag-filter') as HTMLElement
+    fireEvent.click(within(filter).getByRole('button', { name: '考研自习' }))
+    expect(screen.getByText('考研冲刺房')).toBeInTheDocument()
+    expect(screen.queryByText('普通自习房')).toBeNull()
+    fireEvent.click(within(filter).getByRole('button', { name: '考研自习' }))
+    expect(screen.getByText('普通自习房')).toBeInTheDocument()
   })
 })

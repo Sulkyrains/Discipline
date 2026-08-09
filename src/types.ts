@@ -91,6 +91,7 @@ export interface Settings {
   reminderMode: ReminderMode
   uiSoundVolume: number // 0..1
   timerMode: 'countdown' | 'countup'
+  showFocusClock: boolean
 }
 
 export interface UserInfo {

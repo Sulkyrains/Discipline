@@ -35,7 +35,8 @@ export const defaultSettings = (): Settings => ({
   todoSort: 'time',
   reminderMode: 'sound',
   uiSoundVolume: 0.8,
-  timerMode: 'countdown'
+  timerMode: 'countdown',
+  showFocusClock: true
 })
 
 interface AppStoreState extends AppData {
