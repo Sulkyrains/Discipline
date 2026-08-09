@@ -15,6 +15,7 @@ import { playUiSound } from './lib/uiSound'
 import { applyAutoTheme, clearAutoTheme } from './lib/autoTheme'
 import { syncFocusLockActive, syncFocusLockWhitelist } from './lib/focusLock'
 import { consumeAutoUpdated } from './lib/update'
+import { latestChangelog } from './lib/changelog'
 import { APP_VERSION } from './version'
 import { useAppStore } from './stores/useAppStore'
 import { useAuthStore } from './stores/useAuthStore'
@@ -25,6 +26,7 @@ import BottomNav from './components/BottomNav'
 import DailySplash from './components/DailySplash'
 import FocusGuard from './components/FocusGuard'
 import Onboarding from './components/Onboarding'
+import ErrorBoundary from './components/ErrorBoundary'
 import IslandHost from './components/IslandHost'
 import MergeDialog from './components/MergeDialog'
 import SoundPill from './components/SoundPill'
@@ -44,6 +46,7 @@ const Feedback = lazy(() => import('./pages/Feedback'))
 const Study = lazy(() => import('./pages/Study'))
 const StudyRoom = lazy(() => import('./pages/StudyRoom'))
 const Admin = lazy(() => import('./pages/Admin'))
+const Changelog = lazy(() => import('./pages/Changelog'))
 
 function RouteFallback() {
   const lang = useAppStore((s) => s.settings.language)
@@ -113,14 +116,25 @@ export default function App() {
     void import('./pages/Settings')
     void import('./pages/Study')
     void import('./pages/StudyRoom')
+    void import('./pages/Feedback')
+    void import('./pages/Changelog')
   }, [user])
+
+  useEffect(() => {
+    if (!entered) return
+    // Guest may open feedback/changelog right away; prefetch their chunks.
+    void import('./pages/Feedback')
+    void import('./pages/Changelog')
+  }, [entered])
 
   useEffect(() => {
     if (!entered) return
     if (consumeAutoUpdated()) {
       const lang = useAppStore.getState().settings.language
+      const latest = latestChangelog()
       useToastStore.getState().push({
         title: t(lang, 'updatedToLatest', { version: APP_VERSION }),
+        body: latest ? (lang === 'zh' ? latest.zh : latest.en) : undefined,
         kind: 'success'
       })
     }
@@ -265,27 +279,30 @@ export default function App() {
         <Splash onChoose={() => setEntered(true)} />
       ) : (
         <>
-          <Suspense fallback={<RouteFallback />}>
-            <Routes>
-              <Route path="/splash" element={<Splash />} />
-              <Route element={<FocusGuard />}>
-                <Route path="/" element={<Home />} />
-                <Route path="/timetable" element={<Timetable />} />
-                <Route path="/todos" element={<Todos />} />
-                <Route path="/focus" element={<Focus />} />
-                <Route path="/checkins" element={<Checkins />} />
-                <Route path="/stats" element={<Stats />} />
-                <Route path="/achievements" element={<Achievements />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/feedback" element={<Feedback />} />
-                <Route path="/study" element={<Study />} />
-                <Route path="/study/:id" element={<StudyRoom />} />
-                <Route path="/admin" element={<Admin />} />
-              </Route>
-              <Route path="/login" element={<Login />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Suspense>
+          <ErrorBoundary>
+            <Suspense fallback={<RouteFallback />}>
+              <Routes>
+                <Route path="/splash" element={<Splash />} />
+                <Route element={<FocusGuard />}>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/timetable" element={<Timetable />} />
+                  <Route path="/todos" element={<Todos />} />
+                  <Route path="/focus" element={<Focus />} />
+                  <Route path="/checkins" element={<Checkins />} />
+                  <Route path="/stats" element={<Stats />} />
+                  <Route path="/achievements" element={<Achievements />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/feedback" element={<Feedback />} />
+                  <Route path="/study" element={<Study />} />
+                  <Route path="/study/:id" element={<StudyRoom />} />
+                  <Route path="/admin" element={<Admin />} />
+                  <Route path="/changelog" element={<Changelog />} />
+                </Route>
+                <Route path="/login" element={<Login />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Suspense>
+          </ErrorBoundary>
           {!hideNav ? (
             <>
               <SoundPill />

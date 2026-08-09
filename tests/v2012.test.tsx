@@ -87,7 +87,7 @@ describe('v2.0.12 edit-profile email binding', () => {
       </MemoryRouter>
     )
     fireEvent.click(screen.getAllByText('编辑资料')[0])
-    expect(screen.getByLabelText('邮箱')).toBeInTheDocument()
+    expect(screen.getByLabelText(/^邮箱/)).toBeInTheDocument()
     expect(screen.getAllByText(/未绑定邮箱/).length).toBeGreaterThan(0)
     expect(screen.queryByText('通过邮箱重置密码')).toBeNull()
   })
@@ -102,7 +102,7 @@ describe('v2.0.12 edit-profile email binding', () => {
       </MemoryRouter>
     )
     fireEvent.click(screen.getAllByText('编辑资料')[0])
-    fireEvent.change(screen.getByLabelText('邮箱'), { target: { value: 'new@x.com' } })
+    fireEvent.change(screen.getByLabelText(/^邮箱/), { target: { value: 'new@x.com' } })
     fireEvent.click(screen.getAllByText('保存')[0])
     await waitFor(() => expect(mockUpdateUser).toHaveBeenCalledWith({ email: 'new@x.com' }))
   })

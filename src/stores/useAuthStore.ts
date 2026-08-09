@@ -334,8 +334,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   signOut: async () => {
-    if (supabase) await supabase.auth.signOut()
+    // Local-first: clear the session immediately so logout never blocks on the
+    // network; the remote session is revoked in the background.
     handleUser(null)
+    if (supabase) void supabase.auth.signOut().catch(() => undefined)
   },
 
   setPendingMerge: (v) => set({ pendingMerge: v }),

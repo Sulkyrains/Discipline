@@ -61,13 +61,27 @@ export default function Feedback() {
     setSubmitting(true)
     let ok = true
     if (user && supabase) {
+      const id = crypto.randomUUID()
       const { error } = await supabase.from('feedback').insert({
-        id: crypto.randomUUID(),
+        id,
         owner_id: user.id,
         data: { content: content.trim(), contact: contact.trim(), type },
         updated_at: new Date().toISOString()
       })
       ok = !error
+      if (!error) {
+        setCloudItems((prev) => [
+          {
+            id,
+            content: content.trim(),
+            contact: contact.trim(),
+            type,
+            createdAt: new Date().toISOString(),
+            status: 'pending'
+          },
+          ...prev
+        ])
+      }
     } else {
       addFeedback(content.trim(), contact.trim(), type)
     }

@@ -78,7 +78,6 @@ export default function Settings() {
   const [editProfile, setEditProfile] = useState(false)
   const [admin, setAdmin] = useState(false)
   const [pendingCrop, setPendingCrop] = useState<File | null>(null)
-  const [croppedFile, setCroppedFile] = useState<File | null>(null)
   const [croppedPreview, setCroppedPreview] = useState<string | null>(null)
   const [viewOriginal, setViewOriginal] = useState(false)
   const [syncing, setSyncing] = useState(false)
@@ -118,8 +117,7 @@ export default function Settings() {
   const openProfile = () => {
     setEditProfile(true)
     setNicknameInput(user?.nickname ?? '')
-    setEmailInput(user?.email ?? '')
-    setCroppedFile(null)
+    setEmailInput('')
     setCroppedPreview(null)
   }
 
@@ -133,13 +131,6 @@ export default function Settings() {
     if (emailChanged) {
       const ok = await bindEmail(emailInput)
       if (ok) useToastStore.getState().push({ title: t(lang, 'emailChangeSent'), kind: 'success' })
-    }
-    if (croppedFile) {
-      const ok = await uploadAvatar(croppedFile)
-      useToastStore.getState().push({
-        title: ok ? t(lang, 'avatarSaved') : t(lang, 'updateCheckFailed'),
-        kind: ok ? 'success' : 'warn'
-      })
     }
     setEditProfile(false)
   }
@@ -613,6 +604,11 @@ export default function Settings() {
           </Link>
         </div>
         <div className="settings-row">
+          <Link className="settings-link" to="/changelog">
+            📜 {t(lang, 'changelog')} →
+          </Link>
+        </div>
+        <div className="settings-row">
           <span className="muted">{t(lang, 'version')}</span>
           <span>{APP_VERSION}</span>
         </div>
@@ -649,7 +645,14 @@ export default function Settings() {
         onClose={() => setEditProfile(false)}
       >
         <div className="edit-profile">
-          <span className={`avatar-circle profile-preview${croppedPreview || user?.avatarUrl ? ' has-img' : ''}`}>
+          <button
+            type="button"
+            className={`avatar-circle profile-preview${croppedPreview || user?.avatarUrl ? ' has-img' : ''}`}
+            onClick={() =>
+              croppedPreview || user?.avatarUrl || user?.avatarOriginalUrl ? setViewOriginal(true) : undefined
+            }
+            title={t(lang, 'viewOriginalAvatar')}
+          >
             {croppedPreview ? (
               <img src={croppedPreview} alt="avatar" />
             ) : user?.avatarUrl ? (
@@ -659,7 +662,7 @@ export default function Settings() {
             ) : (
               <span>{user?.nickname?.[0] ?? '?'}</span>
             )}
-          </span>
+          </button>
           <label className="btn btn-ghost btn-sm">
             {t(lang, 'selectImage')}
             <input type="file" accept="image/*" hidden onChange={onEditAvatarPick} />
@@ -674,10 +677,12 @@ export default function Settings() {
           </label>
           <label className="field">
             <span>{t(lang, 'email')}</span>
+            <span className="muted small">{t(lang, 'currentEmail')}：{user?.email}</span>
             <input
               className="input"
               type="email"
               value={emailInput}
+              placeholder={t(lang, 'emailOptional')}
               onChange={(e) => setEmailInput(e.target.value)}
             />
           </label>
@@ -705,9 +710,16 @@ export default function Settings() {
           file={pendingCrop}
           onCancel={() => setPendingCrop(null)}
           onConfirm={(cropped) => {
-            setCroppedFile(cropped)
             setCroppedPreview(URL.createObjectURL(cropped))
             setPendingCrop(null)
+            void (async () => {
+              const ok = await uploadAvatar(cropped)
+              useToastStore.getState().push({
+                title: ok ? t(lang, 'avatarSaved') : t(lang, 'updateCheckFailed'),
+                kind: ok ? 'success' : 'warn'
+              })
+              if (ok) setCroppedPreview(null)
+            })()
           }}
         />
       ) : null}
@@ -715,7 +727,7 @@ export default function Settings() {
       {viewOriginal && user ? (
         <div className="avatar-lightbox" onClick={() => setViewOriginal(false)}>
           <img
-            src={user.avatarOriginalUrl ?? user.avatarUrl}
+            src={croppedPreview ?? user.avatarOriginalUrl ?? user.avatarUrl}
             alt={user.nickname ?? 'avatar'}
             onClick={(e) => e.stopPropagation()}
           />

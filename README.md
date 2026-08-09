@@ -35,6 +35,11 @@ npm run build      # 产物输出到 dist/
 - bug 反馈完善：反馈类型选择、登录后云端“我的反馈”列表与处理状态。
 - 专注模式与统计页 UI 已还原为 v1.9.24 视觉（两版设计预览已移除，保留自习室/登录/反馈等新功能）。
 
+## 线上地址与域名说明
+
+- 当前站点：https://discipline-8cb.pages.dev（Cloudflare Pages 自动生成的子域名）。
+- `discipline.pages.dev` 等裸域名已被 Cloudflare 保留/占用，免费改名不可行；如需更干净的域名，需提供自有域名并接入 Pages 自定义域名。
+
 ## v2.1 待办（延后）
 
 - APK 内强锁：完善 Android 无障碍服务与系统级前台应用拦截（当前保留 FocusLock 插件骨架与 Web 端白名单）。
