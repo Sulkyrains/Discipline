@@ -164,23 +164,14 @@ function waitForHandover(ms: number): Promise<boolean> {
 }
 
 /**
- * Last-resort fallback: unregister every service worker, wipe all caches and
- * hard-reload with a cache-busting query. With no worker intercepting the
- * navigation and no precache left, the browser loads the newest index.html
- * from the network and registers the fresh worker on boot.
+ * Last-resort fallback: reload with a cache-busting query. The service worker
+ * and its caches are deliberately left untouched — unregistering or wiping
+ * caches while the old worker still controls the page can leave the next load
+ * half-served (a blank/white screen, especially in mobile PWAs). The browser's
+ * own service-worker update check on this navigation installs the new worker;
+ * the following load (or the refresh hint) lands on the new build.
  */
-async function hardResetReload(
-  regs: readonly ServiceWorkerRegistration[]
-): Promise<boolean> {
-  try {
-    await Promise.all(regs.map((r) => r.unregister().catch(() => false)))
-    if ('caches' in window) {
-      const keys = await caches.keys()
-      await Promise.all(keys.map((k) => caches.delete(k).catch(() => false)))
-    }
-  } catch {
-    // keep going; the reload may still reach the network
-  }
+async function fallbackReload(): Promise<boolean> {
   window.location.href = cacheBustUrl()
   return true
 }
@@ -302,7 +293,7 @@ export async function clearCachesAndReload(): Promise<boolean> {
         ['activated'],
         SW_ACTIVATE_TIMEOUT_MS
       )
-      if (!activated && !controllerChangedSinceLoad) return hardResetReload(regs)
+      if (!activated && !controllerChangedSinceLoad) return fallbackReload()
     }
     // 3. Let the new worker take control (autoUpdate workers claim the page by
     //    themselves; prompt-mode workers need the SKIP_WAITING message sent
@@ -316,7 +307,7 @@ export async function clearCachesAndReload(): Promise<boolean> {
 
   // 4. Nothing new installed in time — force a full reset so the click still
   //    lands on the newest build instead of leaving the old page on screen.
-  return hardResetReload(regs)
+  return fallbackReload()
 }
 
 const UPDATED_KEY = 'discipline-auto-reloaded'

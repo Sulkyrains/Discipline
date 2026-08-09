@@ -35,7 +35,12 @@ describe('v2.0.31 service worker takeover', () => {
       unregister: vi.fn(async () => undefined),
       active: { scriptURL: 'https://x.pages.dev/sw.js?v=2.0.25' }
     }
-    const fresh: FakeReg = { update: vi.fn(async () => undefined), waiting: null, installing: null }
+    const fresh: FakeReg = {
+      update: vi.fn(async () => undefined),
+      waiting: null,
+      installing: null,
+      unregister: vi.fn(async () => undefined)
+    }
     stubServiceWorker([stale as FakeReg, fresh])
     const fakeLocation = stubLocation()
 
@@ -46,6 +51,7 @@ describe('v2.0.31 service worker takeover', () => {
     expect(stale.unregister).toHaveBeenCalled()
     expect(stale.update).not.toHaveBeenCalled()
     expect(fresh.update).toHaveBeenCalled()
+    expect(fresh.unregister).not.toHaveBeenCalled()
     expect(ok).toBe(true)
     expect(fakeLocation.href).toMatch(/^https:\/\/x\.pages\.dev\/\?v=\d+#\/settings$/)
     vi.useRealTimers()
@@ -54,6 +60,7 @@ describe('v2.0.31 service worker takeover', () => {
 
 interface FakeReg {
   update: ReturnType<typeof vi.fn>
+  unregister?: ReturnType<typeof vi.fn>
   waiting: {
     postMessage: ReturnType<typeof vi.fn>
     state: string
@@ -214,12 +221,13 @@ describe('v2.0.26 update now hands over to the service worker', () => {
     expect(fakeLocation.reload).toHaveBeenCalled()
   })
 
-  it('returns false and does not navigate when no new worker appears', async () => {
+  it('falls back to a cache-busting reload without touching the worker', async () => {
     vi.useFakeTimers()
     const reg: FakeReg = {
       update: vi.fn(async () => undefined),
       waiting: null,
-      installing: null
+      installing: null,
+      unregister: vi.fn(async () => undefined)
     }
     stubServiceWorker([reg])
     const fakeLocation = stubLocation()
@@ -229,6 +237,7 @@ describe('v2.0.26 update now hands over to the service worker', () => {
     const ok = await p
 
     expect(ok).toBe(true)
+    expect(reg.unregister).not.toHaveBeenCalled()
     expect(fakeLocation.href).toMatch(/^https:\/\/x\.pages\.dev\/\?v=\d+#\/settings$/)
     expect(useToastStore.getState().toasts.length).toBe(0)
   })

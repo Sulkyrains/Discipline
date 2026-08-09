@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.0.56',
+    date: '2026-08-10',
+    zh: '修复手机端更新/刷新后网站白屏：更新流程的强制兜底不再注销 Service Worker 或清空缓存（这会把仍控制页面的旧 SW 架空，导致下次加载残缺或白屏，尤其在手机 PWA 独立窗口），改为仅带参数刷新；正常交接路径不变，白屏不再出现。',
+    en: 'Fixed a white screen after updating/refreshing on mobile: the update fallback no longer unregisters the service worker or wipes caches (which could leave the still-controlling old worker unable to serve the next load, causing a blank page, especially in mobile PWAs). It now reloads with a cache-busting query only; the normal handover path is unchanged.'
+  },
+  {
     version: '2.0.55',
     date: '2026-08-10',
     zh: '修复“我的 → 立即同步”反复失败：应用生成的 id 为文本格式（id-xxx…），而数据库四张同步表（todos / timetables / focus_sessions / feedback）的 id 列是 uuid 类型，导致每次写入都被拒绝。请在 Supabase SQL Editor 执行一次 ALTER 将这几列改为 text（语句见更新说明），之后同步即可成功。',
