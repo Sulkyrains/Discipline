@@ -12,17 +12,17 @@ describe('v2.0.14 dark strip fix', () => {
 })
 
 describe('v2.0.14 update now skips the service worker', () => {
-  it('asks the new SW to take over, unregisters and reloads with a cache-buster', async () => {
-    const postMessage = vi.fn()
-    const unregister = vi.fn(async () => true)
+  it('updates the SW, hands over control and reloads with a cache-buster', async () => {
+    const waitingPostMessage = vi.fn()
+    const update = vi.fn(async () => undefined)
     const addEventListener = vi.fn((type: string, cb: () => void) => {
       if (type === 'controllerchange') cb()
     })
     const removeEventListener = vi.fn()
     Object.defineProperty(navigator, 'serviceWorker', {
       value: {
-        controller: { postMessage },
-        getRegistrations: vi.fn(async () => [{ unregister }]),
+        controller: { postMessage: vi.fn() },
+        getRegistrations: vi.fn(async () => [{ update, waiting: { postMessage: waitingPostMessage } }]),
         addEventListener,
         removeEventListener
       },
@@ -42,8 +42,8 @@ describe('v2.0.14 update now skips the service worker', () => {
 
     await clearCachesAndReload()
 
-    expect(postMessage).toHaveBeenCalledWith({ type: 'SKIP_WAITING' })
-    expect(unregister).toHaveBeenCalled()
+    expect(update).toHaveBeenCalled()
+    expect(waitingPostMessage).toHaveBeenCalledWith({ type: 'SKIP_WAITING' })
     expect(fakeLocation.href).toMatch(/^https:\/\/x\.pages\.dev\/\?v=\d+#\/settings$/)
   })
 })

@@ -14,31 +14,44 @@ export function needsUpdate(remote: string | null, current: string): boolean {
 }
 
 export async function clearCachesAndReload(): Promise<void> {
-  // Ask the newest service worker to take control immediately, then wait for
-  // the handover so the reload is served by the new worker instead of the old
-  // cached one (this is what makes "立即更新" actually work on mobile/PWA).
-  try {
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' })
-      await new Promise<void>((resolve) => {
-        const onController = () => {
-          navigator.serviceWorker.removeEventListener('controllerchange', onController)
-          resolve()
-        }
-        navigator.serviceWorker.addEventListener('controllerchange', onController)
-        window.setTimeout(resolve, 1500)
-      })
-    }
-  } catch {
-    // service worker control handover unavailable; continue below
-  }
+  // Reliable "update now" for mobile/PWA:
+  // 1. Fetch the newest service worker script and install it.
+  // 2. If a new worker is waiting, tell it to take over and wait (briefly) for
+  //    the handover so the reload is served by the new worker.
+  // 3. Clear all caches, then do a top-level navigation with a cache-buster.
+  // We intentionally do NOT unregister the active worker: on phones, an
+  // unregistered-but-still-active worker keeps serving the old page.
+  let postedTakeover = false
   try {
     if ('serviceWorker' in navigator) {
-      const registrations = await navigator.serviceWorker.getRegistrations()
-      await Promise.all(registrations.map((r) => r.unregister()))
+      const regs = await navigator.serviceWorker.getRegistrations()
+      for (const reg of regs) {
+        try {
+          await reg.update()
+        } catch {
+          /* ignore */
+        }
+      }
+      const waiting = regs.find((r) => r.waiting)?.waiting
+      if (waiting) {
+        waiting.postMessage({ type: 'SKIP_WAITING' })
+        postedTakeover = true
+      } else if (navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' })
+      }
+      if (postedTakeover) {
+        await new Promise<void>((resolve) => {
+          const onController = () => {
+            navigator.serviceWorker.removeEventListener('controllerchange', onController)
+            resolve()
+          }
+          navigator.serviceWorker.addEventListener('controllerchange', onController)
+          window.setTimeout(resolve, 2500)
+        })
+      }
     }
   } catch {
-    // service worker unavailable; continue
+    // service worker handover unavailable; continue below
   }
   if ('caches' in window) {
     try {
