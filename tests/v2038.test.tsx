@@ -5,6 +5,7 @@ import MergeDialog from '../src/components/MergeDialog'
 import { CHANGELOG } from '../src/lib/changelog'
 import { formatDateTime } from '../src/lib/format'
 import { t } from '../src/lib/i18n'
+import { getCachedAdmin, setCachedAdmin } from '../src/lib/admin'
 import Settings from '../src/pages/Settings'
 import Todos from '../src/pages/Todos'
 import { defaultSettings, useAppStore } from '../src/stores/useAppStore'
@@ -18,12 +19,13 @@ const mockPushLocal = vi.fn()
 const mockPullRemote = vi.fn()
 const mockReqPerm = vi.fn(async () => true)
 let mockIsAdminResult = false
+const mockGetSession = vi.fn()
 
 vi.mock('../src/lib/supabase', () => ({
   isSupabaseConfigured: () => true,
   supabase: {
     auth: {
-      getSession: vi.fn(async () => ({ data: { session: null } })),
+      getSession: () => mockGetSession(),
       onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })),
       signInWithPassword: (...args: unknown[]) => mockSignIn(...args),
       updateUser: (...args: unknown[]) => mockUpdateUser(...args),
@@ -36,7 +38,22 @@ vi.mock('../src/lib/supabase', () => ({
 }))
 
 vi.mock('../src/lib/admin', () => ({
-  isAdmin: vi.fn(async () => mockIsAdminResult)
+  isAdmin: vi.fn(async () => mockIsAdminResult),
+  getCachedAdmin: (userId: string) => {
+    try {
+      const raw = localStorage.getItem('discipline-admin-' + userId)
+      return raw === '1' ? true : raw === '0' ? false : null
+    } catch {
+      return null
+    }
+  },
+  setCachedAdmin: (userId: string, value: boolean) => {
+    try {
+      localStorage.setItem('discipline-admin-' + userId, value ? '1' : '0')
+    } catch {
+      // ignore
+    }
+  }
 }))
 
 vi.mock('../src/lib/notifications', () => ({
@@ -66,13 +83,16 @@ function resetStores() {
     todoQuickTags: [],
     customSounds: []
   })
-  useAuthStore.setState({ user: null, loading: false, error: null, pendingMerge: false, recovery: false })
+  useAuthStore.setState({ user: null, loading: false, error: null, pendingMerge: false, recovery: false, admin: false })
+  localStorage.removeItem('discipline-admin-u1')
   useToastStore.setState({ toasts: [] })
   mockSignIn.mockReset()
   mockUpdateUser.mockReset()
   mockPushLocal.mockReset()
   mockPullRemote.mockReset()
   mockReqPerm.mockReset()
+  mockGetSession.mockReset()
+  mockGetSession.mockResolvedValue({ data: { session: null } })
   mockIsAdminResult = false
 }
 
@@ -92,27 +112,56 @@ describe('v2.0.38 changelog and time format', () => {
 })
 
 describe('v2.0.38 admin badge', () => {
-  it('shows the admin badge for administrators', async () => {
-    mockIsAdminResult = true
-    useAuthStore.setState({ user: { id: 'u1', email: 'real@x.com', nickname: '小明' } })
+  it('shows the plain-text admin badge for administrators', () => {
+    useAuthStore.setState({ user: { id: 'u1', email: 'real@x.com', nickname: '小明' }, admin: true })
     render(
       <MemoryRouter>
         <Settings />
       </MemoryRouter>
     )
-    await waitFor(() =>
-      expect(screen.getByText(new RegExp(t('zh', 'adminBadge')))).toBeInTheDocument()
-    )
+    expect(screen.getByText(t('zh', 'adminBadge'))).toBeInTheDocument()
   })
 
-  it('hides the admin badge for regular users', async () => {
+  it('hides the admin badge for regular users', () => {
     useAuthStore.setState({ user: { id: 'u1', email: 'real@x.com', nickname: '小明' } })
     render(
       <MemoryRouter>
         <Settings />
       </MemoryRouter>
     )
-    await waitFor(() => expect(screen.queryByText(new RegExp(t('zh', 'adminBadge')))).toBeNull())
+    expect(screen.queryByText(t('zh', 'adminBadge'))).toBeNull()
+  })
+
+  it('caches the admin status locally and applies it on init', async () => {
+    setCachedAdmin('u1', true)
+    expect(getCachedAdmin('u1')).toBe(true)
+    mockIsAdminResult = true
+    mockGetSession.mockResolvedValue({
+      data: {
+        session: { user: { id: 'u1', email: 'real@x.com', user_metadata: { nickname: '小明' } } }
+      }
+    })
+    useAuthStore.setState({ user: null, admin: false })
+    useAuthStore.getState().init()
+    await waitFor(() => expect(useAuthStore.getState().admin).toBe(true))
+    expect(getCachedAdmin('u1')).toBe(true)
+  })
+})
+
+describe('v2.0.39 edit-profile layout', () => {
+  it('places change-password above the phone section', () => {
+    useAuthStore.setState({ user: { id: 'u1', email: 'real@x.com', nickname: '小明' } })
+    render(
+      <MemoryRouter>
+        <Settings />
+      </MemoryRouter>
+    )
+    fireEvent.click(screen.getAllByText(t('zh', 'editProfile'))[0])
+    const oldPwLabel = screen.getByLabelText(t('zh', 'oldPassword')).closest('label') as HTMLElement
+    const phoneLabel = screen.getByLabelText(/手机号/).closest('label') as HTMLElement
+    expect(
+      oldPwLabel.compareDocumentPosition(phoneLabel) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
   })
 })
 

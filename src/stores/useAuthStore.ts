@@ -14,11 +14,13 @@ import {
   uploadAvatarPair,
   upsertProfile
 } from '../lib/account'
+import { getCachedAdmin, isAdmin, setCachedAdmin } from '../lib/admin'
 import { useAppStore } from './useAppStore'
 import { useToastStore } from './useToastStore'
 
 interface AuthState {
   user: UserInfo | null
+  admin: boolean
   loading: boolean
   error: string | null
   pendingMerge: boolean
@@ -41,6 +43,7 @@ interface AuthState {
   setRecovery: (v: boolean) => void
   resetPassword: (email: string) => Promise<boolean>
   signOut: () => Promise<void>
+  setAdmin: (v: boolean) => void
   setPendingMerge: (v: boolean) => void
   mergeWithCloud: () => Promise<boolean>
   refreshUser: () => Promise<void>
@@ -52,8 +55,17 @@ function handleUser(user: UserInfo | null): void {
     const pending = app.countLocalRecords() > 0 && app.mergedFor !== user.id
     useAuthStore.setState({ user, loading: false, pendingMerge: pending, error: null })
   } else {
-    useAuthStore.setState({ user: null, loading: false, pendingMerge: false })
+    useAuthStore.setState({ user: null, loading: false, pendingMerge: false, admin: false })
   }
+}
+
+function refreshAdmin(userId: string): void {
+  const cached = getCachedAdmin(userId)
+  if (cached !== null) useAuthStore.setState({ admin: cached })
+  void isAdmin(userId).then((ok) => {
+    useAuthStore.setState({ admin: ok })
+    setCachedAdmin(userId, ok)
+  })
 }
 
 function sameUser(a: UserInfo, b: UserInfo): boolean {
@@ -134,6 +146,7 @@ async function healDisplayName(u: { id: string; user_metadata?: unknown }): Prom
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
+  admin: false,
   loading: false,
   error: null,
   pendingMerge: false,
@@ -155,7 +168,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     void supabase.auth.getSession().then(({ data }) => {
       const u = data.session?.user
       handleUser(u ? userInfoFromAuth(u) : null)
-      if (u) void healDisplayName(u)
+      if (u) {
+        void healDisplayName(u)
+        refreshAdmin(u.id)
+      }
     })
     supabase.auth.onAuthStateChange((_event, session) => {
       if (_event === 'PASSWORD_RECOVERY') set({ recovery: true })
@@ -163,6 +179,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (u) {
         handleUser(userInfoFromAuth(u))
         void healDisplayName(u)
+        refreshAdmin(u.id)
         const meta = (u.user_metadata ?? {}) as { nickname?: unknown }
         if (typeof meta.nickname === 'string' && meta.nickname) {
           void upsertProfile({ userId: u.id, nickname: meta.nickname, authEmail: u.email ?? '' })
@@ -189,6 +206,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const fresh = userInfoFromAuth(u)
       if (!sameUser(current, fresh)) handleUser(fresh)
       void healDisplayName(u)
+      refreshAdmin(u.id)
     } catch {
       /* ignore transient sync failures */
     }
@@ -631,6 +649,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     handleUser(null)
     if (supabase) void supabase.auth.signOut().catch(() => undefined)
   },
+
+  setAdmin: (v) => set({ admin: v }),
 
   setPendingMerge: (v) => set({ pendingMerge: v }),
 

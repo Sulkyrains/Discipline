@@ -18,7 +18,6 @@ import { consumeAutoUpdated } from './lib/update'
 import { latestChangelog } from './lib/changelog'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
 import { lastFeedbackSeen } from './lib/feedback'
-import { isAdmin } from './lib/admin'
 import { APP_VERSION } from './version'
 import { useAppStore } from './stores/useAppStore'
 import { useAuthStore } from './stores/useAuthStore'
@@ -172,7 +171,7 @@ export default function App() {
     let last = 0
     const check = async () => {
       try {
-        if (!(await isAdmin(user.id))) return
+        if (!useAuthStore.getState().admin) return
         const { count, error } = await supabase!
           .from('feedback')
           .select('id', { count: 'exact', head: true })

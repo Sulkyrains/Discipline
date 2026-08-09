@@ -7,6 +7,48 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.0.45',
+    date: '2026-08-09',
+    zh: '验证发布：真实环境端到端验证通过——“立即更新”一次点击即到达最新版。',
+    en: 'Verification release: the live end-to-end check passed — “Update now” reaches the newest version in one tap.'
+  },
+  {
+    version: '2.0.44',
+    date: '2026-08-09',
+    zh: '验证发布：内容与 2.0.42 一致，用于完成真实环境端到端验证（等待窗口加长后“立即更新”一次到位）。',
+    en: 'Verification release: identical to 2.0.42, completing the live end-to-end check that “Update now” lands on the new version in one tap (with a longer verification wait).'
+  },
+  {
+    version: '2.0.43',
+    date: '2026-08-09',
+    zh: '验证发布：内容与 2.0.42 一致，用于真实环境端到端验证“立即更新”一次到位。',
+    en: 'Verification release: identical to 2.0.42, shipped to confirm the update-now flow on the live site.'
+  },
+  {
+    version: '2.0.42',
+    date: '2026-08-09',
+    zh: '将“立即更新”等待新 Service Worker 安装激活的时间延长至最长 90 秒：首次部署后 8MB 音频预缓存从 CDN 冷缓存下载可能超过 30 秒，此前会提前触发兜底重置导致第一次刷新仍是旧页；延长等待后慢网络也能原位完成交接，一次点击即到最新版（兜底仍保留）。',
+    en: 'Extended the “Update now” wait for the new service worker to install and activate to up to 90s: after a deploy the ~8 MB audio precache is fetched from a cold CDN edge and can take more than 30s, which previously triggered the fallback reset and left the first refresh on the old page. With the longer wait, slow networks complete the handover in place so one tap reaches the newest build (the fallback remains).'
+  },
+  {
+    version: '2.0.41',
+    date: '2026-08-09',
+    zh: '验证发布：内容与 2.0.40 一致，用于真实环境端到端验证“立即更新”一次到位。',
+    en: 'Verification release: identical to 2.0.40, shipped to confirm the update-now flow on the live site.'
+  },
+  {
+    version: '2.0.40',
+    date: '2026-08-09',
+    zh: '修复“立即更新”仍无法生效的根因：真实网络下初始 Service Worker 安装（约 8MB 预缓存）可能超过 10 秒，首次接管被旧的时间启发式误判为“新版本已接管”，导致点击更新只刷新旧页面。现改为：无控制器加载时忽略首次接管，仅当页面已被旧 SW 控制后的接管才走快速路径；配合强制兜底（注销注册+清缓存+带参刷新），一次点击必达最新版。',
+    en: 'Fixed the root cause of “Update now” still failing: on real networks the initial service-worker install (~8 MB precache) can take over 10 seconds, so the first takeover was misclassified as a newer build taking over and the tap just reloaded the old page. The first takeover on an uncontrolled load is now ignored; only takeovers after the page is already controlled use the instant path, backed by the forced-reset fallback so one tap always reaches the newest build.'
+  },
+  {
+    version: '2.0.39',
+    date: '2026-08-09',
+    zh: '修复“立即更新”在部分设备仍无法生效：Service Worker 交接超时后自动注销旧注册、清空缓存并强制刷新，保证一次点击到达最新版；进入“我的”页时管理员标识与“反馈管理”即时显示（管理员状态本地缓存+后台校验）；编辑资料中修改密码移至手机号上方；管理员徽标去掉符号；已打开默认应用设置页引导将 Chrome 设为默认浏览器。',
+    en: 'Fixed “Update now” still failing on some devices: when the service-worker handover times out, the app now unregisters old workers, clears caches and force-reloads so one tap always reaches the newest build; the admin badge and “Feedback admin” now render instantly on the Me page (cached admin status with background refresh); change-password moved above the phone section in edit profile; removed the shield symbol from the admin badge; opened the default-apps settings page to set Chrome as the default browser.'
+  },
+  {
     version: '2.0.38',
     date: '2026-08-09',
     zh: '修复邮件重置密码：点击邮件链接返回站点后自动弹出重置密码框；编辑资料新增“旧密码+新密码”手动改密；更新日志补全至 v1.0.0；“我的”页新增管理员身份标识；待办提醒配置与课程一致；修复“合并到云端”点击无反馈；反馈时间精确到年月日。',

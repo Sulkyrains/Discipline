@@ -39,7 +39,7 @@ function resetStores() {
     todoQuickTags: [],
     customSounds: []
   })
-  useAuthStore.setState({ user: null, loading: false, error: null, pendingMerge: false })
+  useAuthStore.setState({ user: null, loading: false, error: null, pendingMerge: false, admin: false })
   useFeedbackStore.setState({ pendingCount: 0, userNewReplyCount: 0 })
   useFocusStore.setState({
     timer: { phase: 'focus', status: 'idle', remainingSeconds: 15 * 60, roundsCompleted: 0 },
@@ -108,7 +108,7 @@ describe('v2.0.19 red pending badge', () => {
       }
       return { upsert: vi.fn(async () => ({ error: null })) }
     })
-    useAuthStore.setState({ user: { id: 'u1', email: 'x@x.com', nickname: '站长' } })
+    useAuthStore.setState({ user: { id: 'u1', email: 'x@x.com', nickname: '站长' }, admin: true })
     useFeedbackStore.setState({ pendingCount: 3 })
     const { container } = renderSettings()
     await waitFor(() => {
@@ -129,7 +129,7 @@ describe('v2.0.19 red pending badge', () => {
       }
       return { upsert: vi.fn(async () => ({ error: null })) }
     })
-    useAuthStore.setState({ user: { id: 'u1', email: 'x@x.com', nickname: '站长' } })
+    useAuthStore.setState({ user: { id: 'u1', email: 'x@x.com', nickname: '站长' }, admin: true })
     useFeedbackStore.setState({ pendingCount: 0 })
     const { container } = renderSettings()
     await waitFor(() => expect(screen.getByText(/反馈管理/)).toBeInTheDocument())

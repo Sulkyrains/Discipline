@@ -6,7 +6,10 @@ const SW_UPDATE_TIMEOUT_MS = 20_000
 const SW_POLL_MS = 120
 const SW_STATE_WAIT_MS = 1_500
 const SW_HANDOVER_MS = 5_000
-const SW_ACTIVATE_TIMEOUT_MS = 30_000
+// The first install after a deploy downloads the ~8 MB precache from a cold
+// CDN edge; on slower connections this can take well over 30 seconds. Give it
+// enough room so the handover completes in place instead of falling back.
+const SW_ACTIVATE_TIMEOUT_MS = 90_000
 
 /**
  * True once this page's service worker has been replaced. The generated
@@ -16,7 +19,7 @@ const SW_ACTIVATE_TIMEOUT_MS = 30_000
  * — there is nothing left to install, so applying the update is instant.
  */
 let controllerChangedSinceLoad = false
-const controllerLoadTime = Date.now()
+let firstControllerChangeHandled = false
 const hadControllerAtLoad =
   typeof navigator !== 'undefined' && 'serviceWorker' in navigator
     ? !!navigator.serviceWorker.controller
@@ -24,13 +27,20 @@ const hadControllerAtLoad =
 if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
   try {
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      // The very first claim on a fresh load (the initial worker installing and
-      // taking control) is not an update. Only a takeover that happens while
-      // the app was already controlled — or well after load — means a newer
-      // build can be applied with an instant reload.
-      if (hadControllerAtLoad || Date.now() - controllerLoadTime > 10_000) {
+      // On a fresh load, the initial worker claiming the page is NOT an
+      // update — even when its install (including the ~8 MB precache) takes a
+      // while. Only a takeover that happens while the page was already
+      // controlled, or a second takeover on an initially-uncontrolled load,
+      // means a newer build can be applied with an instant reload.
+      if (hadControllerAtLoad) {
         controllerChangedSinceLoad = true
+        return
       }
+      if (!firstControllerChangeHandled) {
+        firstControllerChangeHandled = true
+        return
+      }
+      controllerChangedSinceLoad = true
     })
   } catch {
     // ignore
@@ -151,17 +161,37 @@ function waitForHandover(ms: number): Promise<boolean> {
 }
 
 /**
+ * Last-resort fallback: unregister every service worker, wipe all caches and
+ * hard-reload with a cache-busting query. With no worker intercepting the
+ * navigation and no precache left, the browser loads the newest index.html
+ * from the network and registers the fresh worker on boot.
+ */
+async function hardResetReload(
+  regs: readonly ServiceWorkerRegistration[]
+): Promise<boolean> {
+  try {
+    await Promise.all(regs.map((r) => r.unregister().catch(() => false)))
+    if ('caches' in window) {
+      const keys = await caches.keys()
+      await Promise.all(keys.map((k) => caches.delete(k).catch(() => false)))
+    }
+  } catch {
+    // keep going; the reload may still reach the network
+  }
+  window.location.href = cacheBustUrl()
+  return true
+}
+
+/**
  * Applies a queued update by handing control to the newly installed service
  * worker and reloading through it.
  *
- * Returns true when an update was applied (a navigation started) and false
- * when no update could be installed within the timeout (the caller keeps the
- * page and shows an error).
+ * Returns true when a navigation was started (either through the new worker or
+ * via the forced fallback reset) and false only when even the fallback failed.
  *
- * IMPORTANT: caches are intentionally never deleted here. The active worker
- * serves navigation from its own precache; wiping it makes the reload fail.
- * Outdated precache caches are removed automatically by workbox's
- * cleanupOutdatedCaches() in the new worker.
+ * Caches are only wiped in the last-resort fallback, when no worker can be
+ * handed over; otherwise the active worker serves navigation from its intact
+ * precache and outdated precache caches are cleaned up by workbox.
  */
 export async function clearCachesAndReload(): Promise<boolean> {
   // Browsers without service worker support: a cache-busting navigation
@@ -269,7 +299,7 @@ export async function clearCachesAndReload(): Promise<boolean> {
         ['activated'],
         SW_ACTIVATE_TIMEOUT_MS
       )
-      if (!activated && !controllerChangedSinceLoad) return false
+      if (!activated && !controllerChangedSinceLoad) return hardResetReload(regs)
     }
     // 3. Let the new worker take control (autoUpdate workers claim the page by
     //    themselves; prompt-mode workers need the SKIP_WAITING message sent
@@ -281,9 +311,9 @@ export async function clearCachesAndReload(): Promise<boolean> {
     return true
   }
 
-  // 4. Nothing new installed in time — keep the page and let the caller
-  //    surface the failure.
-  return false
+  // 4. Nothing new installed in time — force a full reset so the click still
+  //    lands on the newest build instead of leaving the old page on screen.
+  return hardResetReload(regs)
 }
 
 const UPDATED_KEY = 'discipline-auto-reloaded'

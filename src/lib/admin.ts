@@ -1,6 +1,25 @@
 import { supabase } from './supabase'
 import type { FeedbackMessage } from './feedback'
 
+const ADMIN_CACHE_PREFIX = 'discipline-admin-'
+
+export function getCachedAdmin(userId: string): boolean | null {
+  try {
+    const raw = localStorage.getItem(ADMIN_CACHE_PREFIX + userId)
+    return raw === '1' ? true : raw === '0' ? false : null
+  } catch {
+    return null
+  }
+}
+
+export function setCachedAdmin(userId: string, value: boolean): void {
+  try {
+    localStorage.setItem(ADMIN_CACHE_PREFIX + userId, value ? '1' : '0')
+  } catch {
+    // ignore
+  }
+}
+
 export interface AdminFeedbackRow {
   id: string
   ownerId: string

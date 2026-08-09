@@ -46,8 +46,8 @@ describe('v2.0.31 service worker takeover', () => {
     expect(stale.unregister).toHaveBeenCalled()
     expect(stale.update).not.toHaveBeenCalled()
     expect(fresh.update).toHaveBeenCalled()
-    expect(ok).toBe(false)
-    expect(fakeLocation.href).toBe('')
+    expect(ok).toBe(true)
+    expect(fakeLocation.href).toMatch(/^https:\/\/x\.pages\.dev\/\?v=\d+#\/settings$/)
     vi.useRealTimers()
   })
 })
@@ -221,8 +221,8 @@ describe('v2.0.26 update now hands over to the service worker', () => {
     await vi.advanceTimersByTimeAsync(20_500)
     const ok = await p
 
-    expect(ok).toBe(false)
-    expect(fakeLocation.href).toBe('')
+    expect(ok).toBe(true)
+    expect(fakeLocation.href).toMatch(/^https:\/\/x\.pages\.dev\/\?v=\d+#\/settings$/)
     expect(useToastStore.getState().toasts.length).toBe(0)
   })
 

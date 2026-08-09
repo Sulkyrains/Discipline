@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* Minimal CDP end-to-end check for the manual "Update now" flow.
  *
- * Usage (all optional, sensible defaults for the 2.0.36 -> 2.0.37 check):
+ * Usage (all optional; env E2E_BASE_URL/E2E_INITIAL/E2E_FINAL override):
  *   node scripts/e2e-update.mjs [baseUrl] [expectedInitial] [expectedFinal] [resultFile] [timeoutSec]
  *
  * Connects to an already-running headless Edge/Chrome on CDP_PORT (default 9333),
@@ -15,7 +15,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-const [baseUrl = 'http://127.0.0.1:4173', initial = '2.0.36', final = '2.0.37', resultFile = 'e2e-result.json', timeoutSec = '420'] = process.argv.slice(2)
+const [baseUrl = process.env.E2E_BASE_URL ?? 'http://127.0.0.1:4173', initial = process.env.E2E_INITIAL ?? '2.0.38', final = process.env.E2E_FINAL ?? '2.0.39', resultFile = 'e2e-result.json', timeoutSec = '420'] = process.argv.slice(2)
 const port = process.env.CDP_PORT ?? '9333'
 const TIMEOUT = (Number(timeoutSec) || 300) * 1000
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -179,12 +179,26 @@ async function main() {
   }
 
   const enterApp = async () => {
-    await waitFor(
-      () =>
-        evalJs(`!!document.querySelector('.splash-mode-btn') || !!document.querySelector('.page-home')`),
-      'mode gate or app shell',
-      30000
-    )
+    try {
+      await waitFor(
+        () =>
+          evalJs(
+            `!!document.querySelector('.splash-mode-btn') || !!document.querySelector('.page-home')`
+          ),
+        'mode gate or app shell',
+        30000
+      )
+    } catch (e) {
+      const dump = await evalJs(
+        `JSON.stringify({
+          href: location.href,
+          title: document.title,
+          body: document.body ? document.body.innerText.slice(0, 300) : null
+        })`
+      ).catch(() => 'dump failed')
+      console.log('DEBUG dump:', dump)
+      throw e
+    }
     if (!(await evalJs(`!!document.querySelector('.page-home')`))) {
       await evalJs(
         `(() => { const b = [...document.querySelectorAll('.splash-mode-btn')].find(x => x.innerText.includes('游客') || x.innerText.includes('Guest')); if (b) { b.click(); return true } return false })()`
@@ -308,7 +322,10 @@ async function main() {
       }
     })
   })
-  await Promise.race([reloaded, sleep(45000)])
+  // The first install after a deploy downloads ~8 MB from a cold CDN edge and
+  // can take well over a minute; give the handover room to complete before the
+  // harness reloads on its own.
+  await Promise.race([reloaded, sleep(150000)])
   await enterApp()
   await sleep(1000)
   await go('settings')

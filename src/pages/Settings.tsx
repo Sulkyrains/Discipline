@@ -16,7 +16,6 @@ import ConfirmDialog from '../components/ConfirmDialog'
 import Sheet from '../components/Sheet'
 import AvatarCropper from '../components/AvatarCropper'
 import { isDerivedEmail } from '../lib/account'
-import { isAdmin } from '../lib/admin'
 import { useFeedbackStore } from '../stores/useFeedbackStore'
 import {
   dedupeCustomName,
@@ -60,6 +59,7 @@ export default function Settings() {
   const addCustomSound = useAppStore((s) => s.addCustomSound)
   const removeCustomSound = useAppStore((s) => s.removeCustomSound)
   const user = useAuthStore((s) => s.user)
+  const admin = useAuthStore((s) => s.admin)
   const authError = useAuthStore((s) => s.error)
   const signOut = useAuthStore((s) => s.signOut)
   const updateNickname = useAuthStore((s) => s.updateNickname)
@@ -101,7 +101,6 @@ export default function Settings() {
   const [changePwBusy, setChangePwBusy] = useState(false)
   const [updating, setUpdating] = useState(false)
   const [editProfile, setEditProfile] = useState(false)
-  const [admin, setAdmin] = useState(false)
   const [pendingCrop, setPendingCrop] = useState<File | null>(null)
   const [croppedPreview, setCroppedPreview] = useState<string | null>(null)
   const [viewOriginal, setViewOriginal] = useState(false)
@@ -265,20 +264,6 @@ export default function Settings() {
     return () => window.clearTimeout(timer)
   }, [phoneResendIn])
 
-  useEffect(() => {
-    if (!user) {
-      setAdmin(false)
-      return
-    }
-    let alive = true
-    void isAdmin(user.id).then((ok) => {
-      if (alive) setAdmin(ok)
-    })
-    return () => {
-      alive = false
-    }
-  }, [user])
-
   const resetByEmail = async () => {
     const ok = await sendResetEmail()
     useToastStore.getState().push({
@@ -435,7 +420,7 @@ export default function Settings() {
               <div className="account-head-main">
                 <strong>{user.nickname ?? user.email}</strong>
                 <span className="muted small">{emailBound ? user.email : t(lang, 'emailNotBound')}</span>
-                {admin ? <span className="chip chip-ok">🛡 {t(lang, 'adminBadge')}</span> : null}
+                {admin ? <span className="chip chip-ok">{t(lang, 'adminBadge')}</span> : null}
                 {user.phone ? (
                   <span className="muted small">
                     {t(lang, 'phoneBound')}：{user.phone}
@@ -912,6 +897,48 @@ export default function Settings() {
           ) : (
             <p className="muted small">⚠️ {t(lang, 'emailNotBound')} · {t(lang, 'bindEmailHint')}</p>
           )}
+          <p className="muted small">🔒 {t(lang, 'changePassword')}</p>
+          <label className="field">
+            <span>{t(lang, 'oldPassword')}</span>
+            <input
+              className="input"
+              type="password"
+              value={oldPassword}
+              autoComplete="current-password"
+              onChange={(e) => setOldPassword(e.target.value)}
+            />
+          </label>
+          <label className="field">
+            <span>{t(lang, 'password')}</span>
+            <input
+              className="input"
+              type="password"
+              value={newPassword}
+              autoComplete="new-password"
+              onChange={(e) => setNewPassword(e.target.value)}
+            />
+          </label>
+          <label className="field">
+            <span>{t(lang, 'confirmPassword')}</span>
+            <input
+              className="input"
+              type="password"
+              value={newPassword2}
+              autoComplete="new-password"
+              onChange={(e) => setNewPassword2(e.target.value)}
+            />
+          </label>
+          {newPassword2 !== '' && newPassword !== newPassword2 ? (
+            <p className="form-error">{t(lang, 'passwordMismatch')}</p>
+          ) : null}
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            disabled={changePwBusy || newPassword.length < 6 || newPassword !== newPassword2}
+            onClick={() => void changePw()}
+          >
+            {changePwBusy ? t(lang, 'binding') : t(lang, 'changePassword')}
+          </button>
           <label className="field">
             <span>
               {t(lang, 'phone')} <span className="badge badge-next">{t(lang, 'phoneDisabled')}</span>
@@ -1026,48 +1053,6 @@ export default function Settings() {
           ) : (
             <p className="muted small">⚠️ {t(lang, 'phoneNotBound')}</p>
           )}
-          <p className="muted small">🔒 {t(lang, 'changePassword')}</p>
-          <label className="field">
-            <span>{t(lang, 'oldPassword')}</span>
-            <input
-              className="input"
-              type="password"
-              value={oldPassword}
-              autoComplete="current-password"
-              onChange={(e) => setOldPassword(e.target.value)}
-            />
-          </label>
-          <label className="field">
-            <span>{t(lang, 'password')}</span>
-            <input
-              className="input"
-              type="password"
-              value={newPassword}
-              autoComplete="new-password"
-              onChange={(e) => setNewPassword(e.target.value)}
-            />
-          </label>
-          <label className="field">
-            <span>{t(lang, 'confirmPassword')}</span>
-            <input
-              className="input"
-              type="password"
-              value={newPassword2}
-              autoComplete="new-password"
-              onChange={(e) => setNewPassword2(e.target.value)}
-            />
-          </label>
-          {newPassword2 !== '' && newPassword !== newPassword2 ? (
-            <p className="form-error">{t(lang, 'passwordMismatch')}</p>
-          ) : null}
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm"
-            disabled={changePwBusy || newPassword.length < 6 || newPassword !== newPassword2}
-            onClick={() => void changePw()}
-          >
-            {changePwBusy ? t(lang, 'binding') : t(lang, 'changePassword')}
-          </button>
           {authErrorText ? <p className="form-error">{authErrorText}</p> : null}
           <div className="form-actions">
             <button className="btn btn-ghost" onClick={() => setEditProfile(false)}>
