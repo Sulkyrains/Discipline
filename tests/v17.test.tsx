@@ -102,7 +102,7 @@ function resetStores() {
 describe('v1.7 real white noise assets', () => {
   const audioDir = join(process.cwd(), 'public', 'audio')
 
-  it('ships all eleven non-empty mp3 files for offline use', () => {
+  it('ships all mp3 files for offline use (14 tracks after v2.0.54)', () => {
     expect(existsSync(audioDir)).toBe(true)
     const files = readdirSync(audioDir)
       .filter((f) => f.endsWith('.mp3'))
@@ -114,18 +114,21 @@ describe('v1.7 real white noise assets', () => {
       'ocean.mp3',
       'piano-beautiful.mp3',
       'piano-calm.mp3',
+      'piano-dream.mp3',
       'piano-relax.mp3',
+      'piano-romance.mp3',
+      'piano-silent.mp3',
+      'piano-sky.mp3',
       'rain.mp3',
       'stream.mp3',
-      'thunder.mp3',
-      'wind.mp3'
+      'thunder.mp3'
     ])
     for (const f of files) {
       expect(statSync(join(audioDir, f)).size).toBeGreaterThan(100_000)
     }
   })
 
-  it('SOUNDS exposes the eight natural sounds with labels and files', () => {
+  it('SOUNDS exposes the seven natural sounds with labels and files', () => {
     expect(SOUNDS.map((s) => s.id)).toEqual([
       'rain',
       'stream',
@@ -133,8 +136,7 @@ describe('v1.7 real white noise assets', () => {
       'campfire',
       'forest',
       'thunder',
-      'insects',
-      'wind'
+      'insects'
     ])
     for (const s of SOUNDS) {
       expect(s.zh.length).toBeGreaterThan(0)
@@ -143,15 +145,23 @@ describe('v1.7 real white noise assets', () => {
     }
   })
 
-  it('MUSIC exposes three calm piano tracks with labels and files', () => {
-    expect(MUSIC.map((m) => m.id)).toEqual(['piano-calm', 'piano-relax', 'piano-beautiful'])
+  it('MUSIC exposes seven calm piano tracks with labels and files', () => {
+    expect(MUSIC.map((m) => m.id)).toEqual([
+      'piano-calm',
+      'piano-relax',
+      'piano-beautiful',
+      'piano-dream',
+      'piano-sky',
+      'piano-romance',
+      'piano-silent'
+    ])
     for (const m of MUSIC) {
       expect(m.zh.length).toBeGreaterThan(0)
       expect(m.en.length).toBeGreaterThan(0)
       expect(m.file.endsWith(`${m.id}.mp3`)).toBe(true)
       expect(statSync(join(process.cwd(), 'public', m.file)).size).toBeGreaterThan(100_000)
     }
-    expect(ALL_TRACKS).toHaveLength(11)
+    expect(ALL_TRACKS).toHaveLength(14)
   })
 })
 

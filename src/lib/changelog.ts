@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.0.54',
+    date: '2026-08-09',
+    zh: '移除“山风”白噪音；纯音乐专区新增 4 首免版权钢琴曲（钢琴·梦境 / 星河 / 浪漫 / 静谧）。鸟之诗为受版权保护曲目无法内置，可用“设置 → 导入音源 → 导入纯音乐”导入自己的文件。',
+    en: 'Removed the “Mountain wind” white noise; added 4 royalty-free piano tracks to the music section (Dreamy / Starlit / Romantic / Silent Piano). “Tori no Uta” is copyrighted and cannot be bundled; import your own file via Settings → Import sounds → Music.'
+  },
+  {
     version: '2.0.53',
     date: '2026-08-09',
     zh: '手动更新提速至秒级：音频文件移出 Service Worker 预缓存，安装只需下载约 1MB 应用壳，更新通常数秒内完成（音频改为播放时联网加载）；并在更新入口标注“若遇无法更新，请多刷新几次网站”。',

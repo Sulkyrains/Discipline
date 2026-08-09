@@ -206,13 +206,13 @@ describe('v1.9.22 focus fullscreen', () => {
 describe('v1.9.22 calm music section', () => {
   beforeEach(resetStores)
 
-  it('renders three music chips below the white noise card', () => {
+  it('renders the music chips below the white noise card', () => {
     render(
       <MemoryRouter>
         <Focus />
       </MemoryRouter>
     )
-    expect(MUSIC).toHaveLength(3)
+    expect(MUSIC.length).toBeGreaterThanOrEqual(6)
     expect(screen.getByText(/钢琴·宁静/)).toBeInTheDocument()
     expect(screen.getByText(/钢琴·舒缓/)).toBeInTheDocument()
     expect(screen.getByText(/钢琴·唯美/)).toBeInTheDocument()

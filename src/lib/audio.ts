@@ -1,7 +1,14 @@
 import { getCustomAudioUrl, isCustomSoundId } from './customAudio'
 
-export type NoiseId = 'rain' | 'stream' | 'ocean' | 'campfire' | 'forest' | 'thunder' | 'insects' | 'wind'
-export type MusicId = 'piano-calm' | 'piano-relax' | 'piano-beautiful'
+export type NoiseId = 'rain' | 'stream' | 'ocean' | 'campfire' | 'forest' | 'thunder' | 'insects'
+export type MusicId =
+  | 'piano-calm'
+  | 'piano-relax'
+  | 'piano-beautiful'
+  | 'piano-dream'
+  | 'piano-sky'
+  | 'piano-romance'
+  | 'piano-silent'
 export type CustomSoundId = `custom:${string}`
 export type SoundId = NoiseId | MusicId | CustomSoundId
 
@@ -19,14 +26,17 @@ export const SOUNDS: SoundDef[] = [
   { id: 'campfire', zh: '篝火', en: 'Campfire', file: 'audio/campfire.mp3' },
   { id: 'forest', zh: '森林鸟鸣', en: 'Forest birds', file: 'audio/forest.mp3' },
   { id: 'thunder', zh: '雷雨', en: 'Thunder rain', file: 'audio/thunder.mp3' },
-  { id: 'insects', zh: '夏夜虫鸣', en: 'Night insects', file: 'audio/insects.mp3' },
-  { id: 'wind', zh: '山风', en: 'Mountain wind', file: 'audio/wind.mp3' }
+  { id: 'insects', zh: '夏夜虫鸣', en: 'Night insects', file: 'audio/insects.mp3' }
 ]
 
 export const MUSIC: SoundDef[] = [
   { id: 'piano-calm', zh: '钢琴·宁静', en: 'Calm Piano', file: 'audio/piano-calm.mp3' },
   { id: 'piano-relax', zh: '钢琴·舒缓', en: 'Relaxing Piano', file: 'audio/piano-relax.mp3' },
-  { id: 'piano-beautiful', zh: '钢琴·唯美', en: 'Beautiful Piano', file: 'audio/piano-beautiful.mp3' }
+  { id: 'piano-beautiful', zh: '钢琴·唯美', en: 'Beautiful Piano', file: 'audio/piano-beautiful.mp3' },
+  { id: 'piano-dream', zh: '钢琴·梦境', en: 'Dreamy Piano', file: 'audio/piano-dream.mp3' },
+  { id: 'piano-sky', zh: '钢琴·星河', en: 'Starlit Piano', file: 'audio/piano-sky.mp3' },
+  { id: 'piano-romance', zh: '钢琴·浪漫', en: 'Romantic Piano', file: 'audio/piano-romance.mp3' },
+  { id: 'piano-silent', zh: '钢琴·静谧', en: 'Silent Piano', file: 'audio/piano-silent.mp3' }
 ]
 
 export const ALL_TRACKS: SoundDef[] = [...SOUNDS, ...MUSIC]

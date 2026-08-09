@@ -33,8 +33,8 @@ function resetStores() {
 }
 
 describe('v1.9.13 natural sounds expansion', () => {
-  it('expands natural white noise to eight tracks', () => {
-    expect(SOUNDS).toHaveLength(8)
+  it('keeps seven natural white-noise tracks (mountain wind removed in v2.0.54)', () => {
+    expect(SOUNDS).toHaveLength(7)
     expect(SOUNDS.map((s) => s.id)).toEqual([
       'rain',
       'stream',
@@ -42,8 +42,7 @@ describe('v1.9.13 natural sounds expansion', () => {
       'campfire',
       'forest',
       'thunder',
-      'insects',
-      'wind'
+      'insects'
     ])
   })
 })
