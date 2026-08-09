@@ -94,4 +94,27 @@ describe('v2.0.46 pushLocal resilience', () => {
     expect(res.ok).toBe(false)
     expect(res.message).toContain('todos')
   })
+
+  it('generates an id when a feedback item is missing one', async () => {
+    const res = await pushLocal('u1', {
+      ...base,
+      feedback: [
+        {
+          id: undefined as unknown as string,
+          content: 'x',
+          contact: '',
+          type: 'bug',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          status: 'pending'
+        }
+      ]
+    })
+    expect(res.ok).toBe(true)
+    const fb = upsertCalls.find((c) => c.table === 'feedback')
+    expect(fb).toBeDefined()
+    const rows = fb?.rows as Array<{ id: string }>
+    expect(rows).toHaveLength(1)
+    expect(typeof rows[0].id).toBe('string')
+    expect(rows[0].id.length).toBeGreaterThan(0)
+  })
 })

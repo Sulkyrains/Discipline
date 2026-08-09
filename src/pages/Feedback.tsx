@@ -115,9 +115,9 @@ export default function Feedback() {
     if (!content.trim() || submitting) return
     setSubmitting(true)
     let ok = true
-    const payload = { content: content.trim(), contact: contact.trim(), type }
+    const id = crypto.randomUUID()
+    const payload = { id, content: content.trim(), contact: contact.trim(), type }
     if (user && supabase) {
-      const id = crypto.randomUUID()
       const { error } = await supabase.from('feedback').insert({
         id,
         owner_id: user.id,
@@ -142,7 +142,7 @@ export default function Feedback() {
         await supabase
           .from('feedback')
           .insert({
-            id: crypto.randomUUID(),
+            id,
             owner_id: null,
             data: payload,
             updated_at: new Date().toISOString()

@@ -49,9 +49,14 @@ export async function pushLocal(userId: string, data: AppData): Promise<PushResu
     }
   }
 
+  const genId = (): string =>
+    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : 'id-' + Math.random().toString(36).slice(2) + Date.now().toString(36)
+
   const rows = (items: Array<Course | Todo | FocusSession | FeedbackItem>) =>
     items.map((item) => ({
-      id: item.id,
+      id: item.id || genId(),
       owner_id: userId,
       data: item,
       updated_at:
@@ -126,11 +131,27 @@ export async function pullRemote(userId: string): Promise<Partial<AppData> | nul
       supabase.from('todos').select('data').eq('owner_id', userId),
       supabase.from('focus_sessions').select('data').eq('owner_id', userId),
       supabase.from('user_achievements').select('achievement_id').eq('owner_id', userId),
-      supabase.from('feedback').select('data').eq('owner_id', userId)
+      supabase.from('feedback').select('data, status, updated_at').eq('owner_id', userId)
     ])
 
     const extract = <T,>(rows: { data: T }[] | null): T[] =>
       Array.isArray(rows) ? rows.map((r) => r.data) : []
+
+    // Feedback rows store the item in `data` without its id/status/timestamp;
+    // rebuild a full FeedbackItem from the row columns so re-pushing never
+    // hits a null primary key.
+    const feedbackExtract = (
+      rows: Array<{ id: unknown; data: Partial<FeedbackItem>; status?: unknown; updated_at?: string }> | null
+    ): FeedbackItem[] =>
+      Array.isArray(rows)
+        ? rows.map((r) => ({
+            ...r.data,
+            id: String(r.id),
+            status: r.status === 'done' ? 'done' : 'pending',
+            createdAt:
+              r.data.createdAt ?? r.updated_at ?? new Date().toISOString()
+          }) as FeedbackItem)
+        : []
 
     return {
       settings: (settingsRes.data?.data as Settings) ?? undefined,
@@ -138,7 +159,14 @@ export async function pullRemote(userId: string): Promise<Partial<AppData> | nul
       todos: extract<Todo>(todosRes.data),
       sessions: extract<FocusSession>(sessionsRes.data),
       unlocked: Array.isArray(achRes.data) ? achRes.data.map((r) => r.achievement_id) : [],
-      feedback: extract<FeedbackItem>(feedbackRes.data)
+      feedback: feedbackExtract(
+        feedbackRes.data as Array<{
+          id: unknown
+          data: Partial<FeedbackItem>
+          status?: unknown
+          updated_at?: string
+        }> | null
+      )
     }
   } catch {
     return null

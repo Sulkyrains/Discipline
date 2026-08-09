@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.0.57',
+    date: '2026-08-10',
+    zh: '修复手机端同步报错“feedback: null value in column id”：提交反馈时未把 id 写入云端 data，云端拉回本地后该记录缺少 id，再次同步即主键为空。现已让提交携带 id、云端拉取时用行 id 补全、推送时自动为缺失的 id 生成，同步恢复正常。',
+    en: 'Fixed mobile sync error “feedback: null value in column id”: submitted feedback did not store its id inside the cloud data, so after pulling it back the local copy had no id and re-pushing hit a null primary key. Submissions now include the id, cloud pulls rebuild it from the row, and pushes auto-generate a missing id — sync works again.'
+  },
+  {
     version: '2.0.56',
     date: '2026-08-10',
     zh: '修复手机端更新/刷新后网站白屏：更新流程的强制兜底不再注销 Service Worker 或清空缓存（这会把仍控制页面的旧 SW 架空，导致下次加载残缺或白屏，尤其在手机 PWA 独立窗口），改为仅带参数刷新；正常交接路径不变，白屏不再出现。',
