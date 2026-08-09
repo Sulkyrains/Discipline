@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.1.9',
+    date: '2026-08-10',
+    zh: '修复 v2.1.8 引入的两个问题：头像上传失败（存储策略在部分 Supabase 版本上不兼容导致上传被拒，已改为自动降级为仅目录归属校验，上传恢复可用）；头像上传失败的提示文案错误地显示为“检查更新失败”，已改为明确的“头像更新失败，请重试”（设置页与注册页同步修正）。',
+    en: 'Fixed two issues introduced by v2.1.8: avatar uploads failing (the storage policy was incompatible on some Supabase versions and rejected uploads; it now automatically falls back to ownership-only checks so uploads work again); the avatar failure toast wrongly said “update check failed” and now clearly says “avatar update failed, please retry” (both on the settings and register pages).'
+  },
+  {
     version: '2.1.8',
     date: '2026-08-10',
     zh: '安全综合加固：修复依赖中危漏洞（react-router 升级至 7.18.2，含 open redirect 修复）；全站增加严格内容安全策略（CSP）与安全响应头（nosniff/frame/referrer/permissions/HSTS）；昵称→邮箱查询增加每昵称 10 分钟限流，头像上传在服务端校验图片类型与 10MB 上限；完成 RLS/管理员接口审计（全表 RLS + owner 策略、管理员函数校验 admins 成员，无需额外改动）。需在 Supabase SQL Editor 执行一次新版 schema.sql（限流表 + 存储策略）。',

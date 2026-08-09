@@ -42,7 +42,7 @@ export default function Login() {
           const applied = presetEmoji ? await st.setAvatarEmoji(presetEmoji) : await st.uploadAvatar(avatarFile as File)
           if (!applied) {
             useToastStore.getState().push({
-              title: t(lang, 'updateCheckFailed'),
+              title: t(lang, 'avatarSaveFailed'),
               kind: 'warn'
             })
           }

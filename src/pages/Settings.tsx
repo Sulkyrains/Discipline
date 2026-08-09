@@ -1075,7 +1075,7 @@ export default function Settings() {
             void (async () => {
               const ok = await uploadAvatar(cropped)
               useToastStore.getState().push({
-                title: ok ? t(lang, 'avatarSaved') : t(lang, 'updateCheckFailed'),
+                title: ok ? t(lang, 'avatarSaved') : t(lang, 'avatarSaveFailed'),
                 kind: ok ? 'success' : 'warn'
               })
               if (ok) setCroppedPreview(null)

@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { t } from '../src/lib/i18n'
 
 function read(rel: string): string {
   return readFileSync(join(process.cwd(), rel), 'utf8')
@@ -45,5 +46,16 @@ describe('v2.1.8 schema hardening', () => {
     expect(sql).toContain("metadata->>'mimetype'")
     expect(sql).toContain("metadata->>'contentType'")
     expect(sql).toContain("(metadata->>'size')::bigint <= 10485760")
+  })
+})
+
+describe('v2.1.9 avatar failure messaging', () => {
+  it('uses a dedicated avatar error message instead of the update-check text', () => {
+    expect(t('zh', 'avatarSaveFailed')).toBe('头像更新失败，请重试')
+    expect(t('en', 'avatarSaveFailed')).toBe('Avatar update failed. Try again.')
+    const settings = read('src/pages/Settings.tsx')
+    const login = read('src/pages/Login.tsx')
+    expect(settings).toContain("ok ? t(lang, 'avatarSaved') : t(lang, 'avatarSaveFailed')")
+    expect(login).not.toContain("t(lang, 'updateCheckFailed')")
   })
 })
