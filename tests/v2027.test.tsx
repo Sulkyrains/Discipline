@@ -18,5 +18,6 @@ describe('v2.0.27 settings footer', () => {
     expect(screen.getByText('版权所属')).toBeInTheDocument()
     expect(screen.getByText('怏')).toBeInTheDocument()
     expect(screen.getByText('联系作者')).toBeInTheDocument()
+    expect(screen.getByText('2868377495')).toBeInTheDocument()
   })
 })

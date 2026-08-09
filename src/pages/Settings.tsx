@@ -799,7 +799,7 @@ export default function Settings() {
         </div>
         <div className="settings-row">
           <span className="muted">{t(lang, 'contactAuthor')}</span>
-          <span />
+          <span>2868377495</span>
         </div>
       </section>
 

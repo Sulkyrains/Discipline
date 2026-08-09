@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.2.0',
+    date: '2026-08-10',
+    zh: '细节优化与体验调整。',
+    en: 'Minor polish and experience tweaks.'
+  },
+  {
     version: '2.1.10',
     date: '2026-08-10',
     zh: '彻底修复头像上传：头像桶恢复为“仅本人目录可写”的可靠存储策略（不再依赖 Supabase 版本差异较大的 metadata 校验，客户端仍保留 image/* 与 10MB 校验）；头像上传失败时把 Supabase 返回的具体错误显示在提示里，便于定位。',
