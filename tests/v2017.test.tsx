@@ -58,9 +58,22 @@ function resetStores() {
 describe('v2.0.17 changelog dates', () => {
   it('uses the real release dates', () => {
     const dateOf = (v: string) => CHANGELOG.find((e) => e.version === v)?.date
+    expect(dateOf('2.0.0')).toBe('2026-08-08')
+    expect(dateOf('2.0.1')).toBe('2026-08-08')
+    expect(dateOf('2.0.2')).toBe('2026-08-08')
+    expect(dateOf('2.0.3')).toBe('2026-08-08')
+    expect(dateOf('2.0.4')).toBe('2026-08-08')
     expect(dateOf('2.0.5')).toBe('2026-08-08')
+    expect(dateOf('2.0.6')).toBe('2026-08-08')
+    expect(dateOf('2.0.7')).toBe('2026-08-08')
     expect(dateOf('2.0.8')).toBe('2026-08-08')
+    expect(dateOf('2.0.9')).toBe('2026-08-09')
+    expect(dateOf('2.0.10')).toBe('2026-08-09')
+    expect(dateOf('2.0.11')).toBe('2026-08-09')
+    expect(dateOf('2.0.12')).toBe('2026-08-09')
+    expect(dateOf('2.0.13')).toBe('2026-08-09')
     expect(dateOf('2.0.14')).toBe('2026-08-09')
+    expect(dateOf('2.0.15')).toBe('2026-08-09')
     expect(dateOf('2.0.16')).toBe('2026-08-09')
   })
 })
