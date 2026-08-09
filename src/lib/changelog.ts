@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.0.23',
+    date: '2026-08-09',
+    zh: '修复更新日志时间显示错误：2.0.17–2.0.22 误标为 08-10，已修正为 08-09；版本号递增以触发“立即更新”提示，让老客户端收到本次修复。',
+    en: 'Fixed incorrect changelog dates: 2.0.17–2.0.22 were wrongly marked 08-10 and are now 08-09; version bumped so the update banner reaches older clients.'
+  },
+  {
     version: '2.0.22',
     date: '2026-08-09',
     zh: '提供 Supabase 管理员查询昵称的函数；管理员与用户都可删除反馈；管理员反馈列表显示提交人昵称（安全函数直连）。',
