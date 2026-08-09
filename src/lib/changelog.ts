@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.0.46',
+    date: '2026-08-09',
+    zh: '修复“合并到云端”一直同步失败：成就表外键导致整体失败（代码有 39 个成就，数据库仅种子 9 个），现按数据库实际存在的成就过滤后再写入，各数据表独立容错互不阻塞，失败时显示具体原因；网站域名更改为 your-discipline.pages.dev（pages.dev 子域名不允许下划线，采用连字符等效写法，格式与原先一致）。',
+    en: 'Fixed “Merge to cloud” always failing: the achievements foreign key broke the whole sync (the app defines 39 achievements but the database only seeded 9). Unlocked achievements are now filtered against the database before writing, each table syncs independently without blocking the others, and failures show the actual reason. The site domain changed to your-discipline.pages.dev (underscores are not allowed in pages.dev subdomains, so a hyphen is used; the format matches before).'
+  },
+  {
     version: '2.0.45',
     date: '2026-08-09',
     zh: '验证发布：真实环境端到端验证通过——“立即更新”一次点击即到达最新版。',

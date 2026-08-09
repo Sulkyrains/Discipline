@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { t } from '../lib/i18n'
 import { useAppStore } from '../stores/useAppStore'
 import { useAuthStore } from '../stores/useAuthStore'
-import { useToastStore } from '../stores/useToastStore'
 import ConfirmDialog from './ConfirmDialog'
 
 export default function MergeDialog() {
@@ -18,11 +17,8 @@ export default function MergeDialog() {
   const confirm = async () => {
     if (merging) return
     setMerging(true)
-    const ok = await mergeWithCloud()
+    await mergeWithCloud()
     setMerging(false)
-    if (!ok) {
-      useToastStore.getState().push({ title: t(lang, 'mergeFailed'), kind: 'warn' })
-    }
   }
 
   return (

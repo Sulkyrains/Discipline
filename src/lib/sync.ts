@@ -39,63 +39,82 @@ export interface PushResult {
 export async function pushLocal(userId: string, data: AppData): Promise<PushResult> {
   if (!supabase) return { ok: false, message: 'not-configured' }
   const db = supabase
-  try {
-    const rows = (items: Array<Course | Todo | FocusSession | FeedbackItem>) =>
-      items.map((item) => ({
-        id: item.id,
-        owner_id: userId,
-        data: item,
-        updated_at:
-          'updatedAt' in item && item.updatedAt ? item.updatedAt : new Date().toISOString()
-      }))
-
-    const collections: Array<{
-      table: string
-      rows: unknown[]
-    }> = [
-      { table: 'timetables', rows: rows(data.courses) },
-      { table: 'todos', rows: rows(data.todos) },
-      { table: 'focus_sessions', rows: rows(data.sessions) },
-      { table: 'feedback', rows: rows(data.feedback) }
-    ]
-
-    const run = (p: PromiseLike<{ error: unknown }>) =>
-      Promise.resolve(p).then(({ error }) => {
-        if (error) throw error
-      })
-
-    await Promise.all([
-      run(db.from('profiles').upsert({ id: userId }, { onConflict: 'id' })),
-      run(
-        db
-          .from('settings')
-          .upsert({ owner_id: userId, data: data.settings, updated_at: new Date().toISOString() }, {
-            onConflict: 'owner_id'
-          })
-      ),
-      ...collections
-        .filter((c) => c.rows.length > 0)
-        .map((c) => run(db.from(c.table).upsert(c.rows, { onConflict: 'id' }))),
-      data.unlocked.length > 0
-        ? run(
-            db
-              .from('user_achievements')
-              .upsert(
-                data.unlocked.map((achievementId) => ({
-                  owner_id: userId,
-                  achievement_id: achievementId,
-                  unlocked_at: new Date().toISOString()
-                })),
-                { onConflict: 'owner_id,achievement_id' }
-              )
-          )
-        : Promise.resolve()
-    ])
-
-    return { ok: true }
-  } catch (e) {
-    return { ok: false, message: e instanceof Error ? e.message : String(e) }
+  const errors: string[] = []
+  const run = async (label: string, p: PromiseLike<{ error: unknown }>) => {
+    try {
+      const { error } = await Promise.resolve(p)
+      if (error) errors.push(`${label}: ${String((error as { message?: unknown })?.message ?? error)}`)
+    } catch (e) {
+      errors.push(`${label}: ${e instanceof Error ? e.message : String(e)}`)
+    }
   }
+
+  const rows = (items: Array<Course | Todo | FocusSession | FeedbackItem>) =>
+    items.map((item) => ({
+      id: item.id,
+      owner_id: userId,
+      data: item,
+      updated_at:
+        'updatedAt' in item && item.updatedAt ? item.updatedAt : new Date().toISOString()
+    }))
+
+  const collections: Array<{ table: string; rows: unknown[] }> = [
+    { table: 'timetables', rows: rows(data.courses) },
+    { table: 'todos', rows: rows(data.todos) },
+    { table: 'focus_sessions', rows: rows(data.sessions) },
+    { table: 'feedback', rows: rows(data.feedback) }
+  ]
+
+  await run('profiles', db.from('profiles').upsert({ id: userId }, { onConflict: 'id' }))
+  await run(
+    'settings',
+    db
+      .from('settings')
+      .upsert({ owner_id: userId, data: data.settings, updated_at: new Date().toISOString() }, {
+        onConflict: 'owner_id'
+      })
+  )
+  for (const c of collections) {
+    if (c.rows.length > 0) {
+      await run(c.table, db.from(c.table).upsert(c.rows, { onConflict: 'id' }))
+    }
+  }
+
+  // user_achievements has a foreign key to achievements; the app defines more
+  // achievements than the database seeds, so only push IDs that actually exist
+  // there. A failure here must never block the rest of the sync.
+  if (data.unlocked.length > 0) {
+    try {
+      const { data: existing, error } = await db.from('achievements').select('id')
+      const valid =
+        !error && Array.isArray(existing) ? new Set(existing.map((r) => String(r.id))) : null
+      const ids = valid ? data.unlocked.filter((id) => valid.has(id)) : []
+      if (ids.length > 0) {
+        await run(
+          'user_achievements',
+          db
+            .from('user_achievements')
+            .upsert(
+              ids.map((achievementId) => ({
+                owner_id: userId,
+                achievement_id: achievementId,
+                unlocked_at: new Date().toISOString()
+              })),
+              { onConflict: 'owner_id,achievement_id' }
+            )
+        )
+      }
+    } catch {
+      // achievements sync is best-effort
+    }
+  }
+
+  const critical = ['profiles', 'settings', 'timetables', 'todos', 'focus_sessions', 'feedback']
+  const criticalErrors = errors.filter((e) => critical.some((c) => e.startsWith(c + ':')))
+  if (criticalErrors.length > 0) {
+    return { ok: false, message: errors.join('；') }
+  }
+  return { ok: true, message: errors.length > 0 ? errors.join('；') : undefined }
 }
 
 export async function pullRemote(userId: string): Promise<Partial<AppData> | null> {

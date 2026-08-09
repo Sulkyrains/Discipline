@@ -670,6 +670,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       useToastStore.getState().push({ title: t(lang, 'dataSynced'), kind: 'success' })
       return true
     }
+    const lang = useAppStore.getState().settings.language
+    useToastStore.getState().push({
+      title: t(lang, 'mergeFailed'),
+      body: push.message ?? undefined,
+      kind: 'warn'
+    })
     return false
   }
 }))
