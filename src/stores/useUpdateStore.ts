@@ -1,6 +1,16 @@
 import { create } from 'zustand'
-import { fetchRemoteVersion, needsUpdate } from '../lib/update'
+import { applyUpdateNow, fetchRemoteVersion, needsUpdate } from '../lib/update'
+import { useFocusStore } from './useFocusStore'
 import { APP_VERSION } from '../version'
+
+let autoApplying = false
+let lastAutoRemote: string | null = null
+
+/** Test-only reset for the auto-apply guards. */
+export function __resetAutoApplyForTests(): void {
+  autoApplying = false
+  lastAutoRemote = null
+}
 
 export type UpdateStatus = 'idle' | 'checking' | 'outdated' | 'current' | 'error'
 
@@ -32,6 +42,21 @@ export const useUpdateStore = create<UpdateState>((set) => ({
     }
     const outdated = needsUpdate(remote, APP_VERSION)
     set({ status: outdated ? 'outdated' : 'current', lastRemote: remote, lastCheckedAt: Date.now() })
+    if (
+      outdated &&
+      remote !== lastAutoRemote &&
+      !autoApplying &&
+      !useFocusStore.getState().active
+    ) {
+      // Fully automatic updates: apply right away, once per detected version.
+      // A running focus session is spared until it ends (the next check then
+      // applies). The manual banner/buttons remain as a fallback.
+      autoApplying = true
+      lastAutoRemote = remote
+      void applyUpdateNow().finally(() => {
+        autoApplying = false
+      })
+    }
     return outdated ? 'outdated' : 'current'
   },
   reset: () => set({ status: 'idle', lastRemote: null, lastCheckedAt: null })

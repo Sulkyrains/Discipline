@@ -16,6 +16,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 const [baseUrl = process.env.E2E_BASE_URL ?? 'http://127.0.0.1:4173', initial = process.env.E2E_INITIAL ?? '2.0.38', final = process.env.E2E_FINAL ?? '2.0.39', resultFile = 'e2e-result.json', timeoutSec = '420'] = process.argv.slice(2)
+const auto = process.env.E2E_AUTO === '1'
 const port = process.env.CDP_PORT ?? '9333'
 const TIMEOUT = (Number(timeoutSec) || 300) * 1000
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -274,33 +275,35 @@ async function main() {
           const s = x.innerText.trim()
           return s === '立即更新' || s === 'Update now'
         })
-        if (b) { b.click(); return 'clicked' }
+        if (b) { ${auto ? "return 'detected'" : "b.click(); return 'clicked'"} }
         return 'none'
       })()`
     ).catch(() => 'none')
-    if (hit === 'clicked') {
+    if (hit === 'clicked' || hit === 'detected') {
       clicked = true
-      void evalJs(
-        `(async () => {
-          const reg = await navigator.serviceWorker.getRegistration()
-          const started = Date.now()
-          for (let i = 0; i < 40; i++) {
-            const entry = {
-              ms: Date.now() - started,
-              installing: reg?.installing ? reg.installing.state : null,
-              waiting: reg?.waiting ? 'waiting' : null,
-              active: reg?.active?.state ?? null,
-              cc: window.__cc ?? 0,
-              failToast: [...document.querySelectorAll('.toast, [class*="toast"]')].some((x) => x.innerText.includes('更新失败'))
+      if (!auto) {
+        void evalJs(
+          `(async () => {
+            const reg = await navigator.serviceWorker.getRegistration()
+            const started = Date.now()
+            for (let i = 0; i < 40; i++) {
+              const entry = {
+                ms: Date.now() - started,
+                installing: reg?.installing ? reg.installing.state : null,
+                waiting: reg?.waiting ? 'waiting' : null,
+                active: reg?.active?.state ?? null,
+                cc: window.__cc ?? 0,
+                failToast: [...document.querySelectorAll('.toast, [class*="toast"]')].some((x) => x.innerText.includes('更新失败'))
+              }
+              window.__swTrace.push(JSON.stringify(entry))
+              sessionStorage.setItem('__swTrace', JSON.stringify(window.__swTrace))
+              sessionStorage.setItem('__cc', String(window.__cc ?? 0))
+              await new Promise((r) => setTimeout(r, 400))
             }
-            window.__swTrace.push(JSON.stringify(entry))
-            sessionStorage.setItem('__swTrace', JSON.stringify(window.__swTrace))
-            sessionStorage.setItem('__cc', String(window.__cc ?? 0))
-            await new Promise((r) => setTimeout(r, 400))
-          }
-          return true
-        })()`
-      ).catch(() => {})
+            return true
+          })()`
+        ).catch(() => {})
+      }
       break
     }
     await sleep(3000)

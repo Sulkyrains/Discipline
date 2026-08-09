@@ -7,7 +7,7 @@ import { todayKey } from '../src/lib/format'
 import { applyUpdateNow, clearCachesAndReload } from '../src/lib/update'
 import { defaultSettings, useAppStore } from '../src/stores/useAppStore'
 import { useToastStore } from '../src/stores/useToastStore'
-import { useUpdateStore } from '../src/stores/useUpdateStore'
+import { useUpdateStore, __resetAutoApplyForTests } from '../src/stores/useUpdateStore'
 import { APP_VERSION } from '../src/version'
 
 vi.mock('../src/lib/update', async (importOriginal) => {
@@ -60,6 +60,7 @@ describe('v1.9.17 auto-update on check', () => {
     window.sessionStorage.clear()
     reloadMock.mockClear()
     applyMock.mockClear()
+    __resetAutoApplyForTests()
     vi.unstubAllGlobals()
   })
 
@@ -74,6 +75,7 @@ describe('v1.9.17 auto-update on check', () => {
     expect(await screen.findByText(t('zh', 'updateNowSettings'))).toBeInTheDocument()
     expect(useToastStore.getState().toasts.some((x) => x.title === t('zh', 'updateFound'))).toBe(true)
     expect(reloadMock).not.toHaveBeenCalled()
+    expect(applyMock).toHaveBeenCalled()
     expect(useUpdateStore.getState().status).toBe('outdated')
   })
 

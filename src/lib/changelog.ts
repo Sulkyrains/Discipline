@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.0.58',
+    date: '2026-08-10',
+    zh: '自本版本起改为全自动更新：检测到新版本后自动安装并刷新，无需手动点击；专注进行中会等专注结束后再自动更新，避免打断计时；首页与设置里的更新按钮保留为兜底。',
+    en: 'Fully automatic updates from this version: when a new build is detected it installs and reloads by itself — no manual action needed. Updates wait for an in-progress focus session to end, and the manual update buttons stay as a fallback.'
+  },
+  {
     version: '2.0.57',
     date: '2026-08-10',
     zh: '修复手机端同步报错“feedback: null value in column id”：提交反馈时未把 id 写入云端 data，云端拉回本地后该记录缺少 id，再次同步即主键为空。现已让提交携带 id、云端拉取时用行 id 补全、推送时自动为缺失的 id 生成，同步恢复正常。',
