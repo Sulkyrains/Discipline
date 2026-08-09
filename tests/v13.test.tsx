@@ -109,6 +109,11 @@ describe('v1.3 add-course flow', () => {
     fireEvent.change(screen.getByPlaceholderText('高等数学'), {
       target: { value: '英语' }
     })
+    // The form pre-selects today's weekday; clear it so the test is
+    // deterministic regardless of the current date.
+    ;[...document.querySelectorAll('.sound-chip.active')].forEach((el) =>
+      fireEvent.click(el)
+    )
     fireEvent.click(screen.getByText('周一'))
     fireEvent.click(screen.getByText('周三'))
     fireEvent.click(screen.getByText('保存课程'))

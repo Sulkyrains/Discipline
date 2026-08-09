@@ -17,28 +17,28 @@ create table if not exists public.settings (
 );
 
 create table if not exists public.timetables (
-  id uuid primary key,
+  id text primary key,
   owner_id uuid not null references auth.users (id) on delete cascade,
   data jsonb not null,
   updated_at timestamptz not null default now()
 );
 
 create table if not exists public.todos (
-  id uuid primary key,
+  id text primary key,
   owner_id uuid not null references auth.users (id) on delete cascade,
   data jsonb not null,
   updated_at timestamptz not null default now()
 );
 
 create table if not exists public.focus_sessions (
-  id uuid primary key,
+  id text primary key,
   owner_id uuid not null references auth.users (id) on delete cascade,
   data jsonb not null,
   updated_at timestamptz not null default now()
 );
 
 create table if not exists public.feedback (
-  id uuid primary key,
+  id text primary key,
   owner_id uuid not null references auth.users (id) on delete cascade,
   data jsonb not null,
   updated_at timestamptz not null default now()

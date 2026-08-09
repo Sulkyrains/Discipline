@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.0.55',
+    date: '2026-08-10',
+    zh: '修复“我的 → 立即同步”反复失败：应用生成的 id 为文本格式（id-xxx…），而数据库四张同步表（todos / timetables / focus_sessions / feedback）的 id 列是 uuid 类型，导致每次写入都被拒绝。请在 Supabase SQL Editor 执行一次 ALTER 将这几列改为 text（语句见更新说明），之后同步即可成功。',
+    en: 'Fixed “Sync now” failing repeatedly: the app generates text ids (id-xxx…) but the four sync tables (todos / timetables / focus_sessions / feedback) had uuid id columns, so every write was rejected. Run the one-time ALTER in the Supabase SQL Editor to change those columns to text (see the release notes); sync works afterwards.'
+  },
+  {
     version: '2.0.54',
     date: '2026-08-09',
     zh: '移除“山风”白噪音；纯音乐专区新增 4 首免版权钢琴曲（钢琴·梦境 / 星河 / 浪漫 / 静谧）。鸟之诗为受版权保护曲目无法内置，可用“设置 → 导入音源 → 导入纯音乐”导入自己的文件。',
