@@ -90,6 +90,7 @@ export interface Settings {
   todoSort: SortMode
   reminderMode: ReminderMode
   uiSoundVolume: number // 0..1
+  timerMode: 'countdown' | 'countup'
 }
 
 export interface UserInfo {

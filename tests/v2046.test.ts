@@ -40,7 +40,8 @@ const base: AppData = {
     courseSort: 'time',
     todoSort: 'time',
     reminderMode: 'sound',
-    uiSoundVolume: 0.8
+    uiSoundVolume: 0.8,
+    timerMode: 'countdown'
   },
   courses: [],
   todos: [],

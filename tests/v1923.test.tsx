@@ -15,6 +15,7 @@ import Checkins from '../src/pages/Checkins'
 import Focus from '../src/pages/Focus'
 import Settings from '../src/pages/Settings'
 import SoundPill from '../src/components/SoundPill'
+import FocusFullscreenOverlay from '../src/components/FocusFullscreenOverlay'
 import type { FocusSession } from '../src/types'
 
 function resetStores() {
@@ -39,7 +40,9 @@ function resetStores() {
     active: false,
     phase: 'focus',
     taskId: null,
-    startedAt: null
+    startedAt: null,
+    fsMode: 'off',
+    lockedOrientation: false
   })
   useSoundStore.setState({ sound: null, volume: 0.5 })
   document.documentElement.dataset.theme = 'china'
@@ -85,6 +88,7 @@ describe('v1.9.23 landscape focus fullscreen', () => {
     const { container } = render(
       <MemoryRouter>
         <Focus />
+        <FocusFullscreenOverlay />
       </MemoryRouter>
     )
     expect(document.documentElement.dataset.theme).toBe('china')
@@ -170,6 +174,7 @@ describe('v1.9.23 landscape focus fullscreen', () => {
     const { container } = render(
       <MemoryRouter>
         <Focus />
+        <FocusFullscreenOverlay />
       </MemoryRouter>
     )
     fireEvent.click(screen.getByText('全屏'))

@@ -11,6 +11,7 @@ import Focus from '../src/pages/Focus'
 import Timetable from '../src/pages/Timetable'
 import Todos from '../src/pages/Todos'
 import SoundPill from '../src/components/SoundPill'
+import FocusFullscreenOverlay from '../src/components/FocusFullscreenOverlay'
 import type { Todo } from '../src/types'
 
 vi.mock('../src/lib/notifications', async (importOriginal) => {
@@ -39,7 +40,9 @@ function resetStores() {
     active: false,
     phase: 'focus',
     taskId: null,
-    startedAt: null
+    startedAt: null,
+    fsMode: 'off',
+    lockedOrientation: false
   })
   useSoundStore.setState({ sound: null, volume: 0.5 })
 }
@@ -193,6 +196,7 @@ describe('v1.9.22 focus fullscreen', () => {
     const { container } = render(
       <MemoryRouter>
         <Focus />
+        <FocusFullscreenOverlay />
       </MemoryRouter>
     )
     fireEvent.click(screen.getByText('全屏'))

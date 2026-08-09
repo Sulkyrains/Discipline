@@ -37,6 +37,7 @@ import MergeDialog from './components/MergeDialog'
 import SoundPill from './components/SoundPill'
 import ConfirmDialog from './components/ConfirmDialog'
 import StudyRoomBar from './components/StudyRoomBar'
+import FocusFullscreenOverlay from './components/FocusFullscreenOverlay'
 import Splash from './pages/Splash'
 import Home from './pages/Home'
 import Timetable from './pages/Timetable'
@@ -370,6 +371,7 @@ export default function App() {
       ) : (
         <>
           <StudyRoomBar />
+          <FocusFullscreenOverlay />
           <ErrorBoundary>
             <Suspense fallback={<RouteFallback />}>
               <Routes>

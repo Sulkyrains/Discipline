@@ -209,11 +209,9 @@ export default function StudyRoomPage() {
                 ) : null}
               </span>
               <span className={`chip chip-status-${m.status}`}>{t(lang, statusKey(m.status))}</span>
-              {m.status === 'focus' && m.focusSeconds > 0 ? (
-                <span className="muted small">
-                  {t(lang, 'studyFocusMinutes', { n: Math.max(1, Math.floor(m.focusSeconds / 60)) })}
-                </span>
-              ) : null}
+              <span className="muted small">
+                {t(lang, 'studyFocusMinutes', { n: Math.floor(m.focusSeconds / 60) })}
+              </span>
               {room.owner_id === user.id &&
               m.userId !== user.id &&
               isRemovableMember(m, KICK_AFTER_MINUTES) ? (

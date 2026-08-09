@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.1.4',
+    date: '2026-08-10',
+    zh: '专注页新增“正计时/倒计时”两种时间显示模式，可自由切换并记忆；专注全屏后切换页面不会退出全屏（全屏状态全局保留，应用内全屏遮罩跨页面常驻，专注结束/放弃时自动退出）；房间内固定显示每位成员“已专注 X 分钟”；创建房间新增快捷标签；移除公开房间列表中邀请码后的多余图标。',
+    en: 'Focus page adds count-up/count-down display modes (freely switchable and remembered); entering fullscreen during focus now survives page switches (the fullscreen state is global and the in-app overlay persists across routes, exiting only when focus ends or is abandoned); every room member always shows “Focused X min”; room creation gets quick-name tags; removed the redundant icon after the invite code in the public room list.'
+  },
+  {
     version: '2.1.3',
     date: '2026-08-10',
     zh: '自习室优化：房间人数上限 50 人（满员拒绝加入）；公开房间列表新增“刷新”按钮；房间内专注时长动态刷新（每 5 秒更新）；专注开始后不可再创建或加入房间并显示醒目提示（已加入的房间不受影响）。',

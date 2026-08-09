@@ -54,9 +54,11 @@ export default function Focus() {
   const [wlCollapsed, setWlCollapsed] = useState(true)
   const [confirmBind, setConfirmBind] = useState(false)
   const [taskPickerOpen, setTaskPickerOpen] = useState(false)
-  const [fsMode, setFsMode] = useState<'off' | 'system' | 'inapp'>('off')
+  const fsMode = useFocusStore((s) => s.fsMode)
+  const setFsMode = useFocusStore((s) => s.setFsMode)
+  const setLockedOrientation = useFocusStore((s) => s.setLockedOrientation)
+  const exitFocusFullscreen = useFocusStore((s) => s.exitFocusFullscreen)
   const pendingStart = useRef(false)
-  const lockedOrientationRef = useRef(false)
 
   const customNoise = customSounds.filter((c) => c.kind === 'noise').map((c) => customTrackDef(c.id, c.name))
   const customMusic = customSounds.filter((c) => c.kind === 'music').map((c) => customTrackDef(c.id, c.name))
@@ -120,7 +122,7 @@ export default function Focus() {
         try {
           if (orient && typeof orient.lock === 'function') {
             await orient.lock('landscape')
-            lockedOrientationRef.current = true
+            setLockedOrientation(true)
           }
         } catch {
           /* orientation lock unsupported or denied; fullscreen still active */
@@ -133,25 +135,14 @@ export default function Focus() {
     setFsMode('inapp')
   }
 
-  const exitFullscreen = () => {
-    if (lockedOrientationRef.current) {
-      try {
-        const orient = (screen as unknown as { orientation?: { unlock?: () => void } }).orientation
-        orient?.unlock?.()
-      } catch {
-        /* ignore */
-      }
-      lockedOrientationRef.current = false
-    }
-    if (document.fullscreenElement && typeof document.exitFullscreen === 'function') {
-      void document.exitFullscreen().catch(() => undefined)
-    }
-    setFsMode('off')
-  }
+  const exitFullscreen = () => exitFocusFullscreen()
 
   useEffect(() => {
     const onChange = () => {
-      if (!document.fullscreenElement) setFsMode((m) => (m === 'system' ? 'off' : m))
+      if (!document.fullscreenElement) {
+        const cur = useFocusStore.getState().fsMode
+        if (cur === 'system') useFocusStore.getState().setFsMode('off')
+      }
     }
     document.addEventListener('fullscreenchange', onChange)
     return () => document.removeEventListener('fullscreenchange', onChange)
@@ -159,38 +150,9 @@ export default function Focus() {
 
   useEffect(() => {
     if (timer.status !== 'running') {
-      if (lockedOrientationRef.current) {
-        try {
-          const orient = (screen as unknown as { orientation?: { unlock?: () => void } }).orientation
-          orient?.unlock?.()
-        } catch {
-          /* ignore */
-        }
-        lockedOrientationRef.current = false
-      }
-      if (document.fullscreenElement && typeof document.exitFullscreen === 'function') {
-        void document.exitFullscreen().catch(() => undefined)
-      }
-      setFsMode('off')
+      exitFocusFullscreen()
     }
-  }, [timer.status])
-
-  useEffect(() => {
-    return () => {
-      if (lockedOrientationRef.current) {
-        try {
-          const orient = (screen as unknown as { orientation?: { unlock?: () => void } }).orientation
-          orient?.unlock?.()
-        } catch {
-          /* ignore */
-        }
-        lockedOrientationRef.current = false
-      }
-      if (document.fullscreenElement && typeof document.exitFullscreen === 'function') {
-        void document.exitFullscreen().catch(() => undefined)
-      }
-    }
-  }, [])
+  }, [timer.status, exitFocusFullscreen])
 
   const changeDuration = (minutes: number) => {
     const clamped = Math.max(10, Math.min(300, Number.isFinite(minutes) ? minutes : 10))
@@ -256,7 +218,9 @@ export default function Focus() {
         ? settings.shortBreakMinutes
         : settings.longBreakMinutes
   const total = minutesToSeconds(phaseMinutes)
-  const progress = 1 - timer.remainingSeconds / total
+  const elapsed = Math.max(0, total - timer.remainingSeconds)
+  const displaySeconds = settings.timerMode === 'countup' ? elapsed : timer.remainingSeconds
+  const progress = settings.timerMode === 'countup' ? elapsed / total : 1 - timer.remainingSeconds / total
 
   return (
     <div className="page page-focus">
@@ -285,10 +249,27 @@ export default function Focus() {
         ))}
       </div>
 
+      <div className="seg timer-mode-toggle">
+        <button
+          type="button"
+          className={`seg-item${settings.timerMode === 'countdown' ? ' active' : ''}`}
+          onClick={() => setSettings({ timerMode: 'countdown' })}
+        >
+          {t(lang, 'timerCountDown')}
+        </button>
+        <button
+          type="button"
+          className={`seg-item${settings.timerMode === 'countup' ? ' active' : ''}`}
+          onClick={() => setSettings({ timerMode: 'countup' })}
+        >
+          {t(lang, 'timerCountUp')}
+        </button>
+      </div>
+
       <div className="timer-wrap">
         <ProgressRing size={248} stroke={12} progress={progress}>
           <span className="timer-phase-label">{t(lang, timer.phase)}</span>
-          <strong className="timer-time">{fmtSeconds(timer.remainingSeconds)}</strong>
+          <strong className="timer-time">{fmtSeconds(displaySeconds)}</strong>
           <span className="timer-rounds">{t(lang, 'roundsDone', { n: timer.roundsCompleted })}</span>
         </ProgressRing>
       </div>
@@ -559,25 +540,6 @@ export default function Focus() {
           </label>
         ) : null}
       </div>
-
-      {fsMode === 'inapp' ? (
-        <div className="focus-fs-overlay" onClick={exitFullscreen}>
-          <button className="btn btn-ghost focus-fs-close" onClick={exitFullscreen} aria-label={t(lang, 'exitFullscreen')}>
-            ✕
-          </button>
-          <div className="focus-fs-body">
-            <ProgressRing size={240} stroke={12} progress={progress}>
-              <span className="timer-phase-label">{t(lang, timer.phase)}</span>
-              <strong className="timer-time">{fmtSeconds(timer.remainingSeconds)}</strong>
-              <span className="timer-rounds">{t(lang, 'roundsDone', { n: timer.roundsCompleted })}</span>
-            </ProgressRing>
-            <div className="focus-fs-info">
-              <span className="focus-fs-label">{t(lang, 'focusLandscapeHint')}</span>
-              <p className="muted">{t(lang, 'tapToExit')}</p>
-            </div>
-          </div>
-        </div>
-      ) : null}
 
       <ConfirmDialog
         open={confirmAbandon}

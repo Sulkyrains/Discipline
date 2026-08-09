@@ -30,6 +30,8 @@ interface FocusStore {
   phase: TimerPhase
   taskId: string | null
   startedAt: string | null
+  fsMode: 'off' | 'system' | 'inapp'
+  lockedOrientation: boolean
   start: () => void
   pause: () => void
   abandon: () => void
@@ -39,6 +41,9 @@ interface FocusStore {
   setTaskId: (id: string | null) => void
   setActive: (v: boolean) => void
   setPhase: (p: TimerPhase) => void
+  setFsMode: (m: 'off' | 'system' | 'inapp') => void
+  setLockedOrientation: (v: boolean) => void
+  exitFocusFullscreen: () => void
   registerEventHandler: (h: EventHandler) => () => void
   dispose: () => void
 }
@@ -112,6 +117,8 @@ export const useFocusStore = create<FocusStore>((set, get) => ({
   phase: 'focus',
   taskId: null,
   startedAt: null,
+  fsMode: 'off',
+  lockedOrientation: false,
 
   start: () => {
     const s = get()
@@ -167,6 +174,30 @@ export const useFocusStore = create<FocusStore>((set, get) => ({
   setTaskId: (id) => set({ taskId: id }),
   setActive: (v) => set({ active: v }),
   setPhase: (p) => set({ phase: p }),
+
+  setFsMode: (m) => set({ fsMode: m }),
+  setLockedOrientation: (v) => set({ lockedOrientation: v }),
+
+  exitFocusFullscreen: () => {
+    const st = get()
+    if (st.lockedOrientation) {
+      try {
+        const orient = (screen as unknown as { orientation?: { unlock?: () => void } }).orientation
+        orient?.unlock?.()
+      } catch {
+        /* ignore */
+      }
+      st.setLockedOrientation(false)
+    }
+    if (
+      typeof document !== 'undefined' &&
+      document.fullscreenElement &&
+      typeof document.exitFullscreen === 'function'
+    ) {
+      void document.exitFullscreen().catch(() => undefined)
+    }
+    st.setFsMode('off')
+  },
 
   registerEventHandler: (h) => {
     handlers.add(h)

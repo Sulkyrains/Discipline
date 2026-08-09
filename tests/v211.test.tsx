@@ -15,7 +15,9 @@ import {
 } from '../src/lib/studyRoom'
 import { useFocusStore } from '../src/stores/useFocusStore'
 import { useAuthStore } from '../src/stores/useAuthStore'
+import { useStudyRoomStore } from '../src/stores/useStudyRoomStore'
 import Study from '../src/pages/Study'
+import StudyRoomPage from '../src/pages/StudyRoom'
 
 const roomRow = {
   id: 'r1',
@@ -191,6 +193,11 @@ describe('v2.1.3 study lobby focus block and refresh', () => {
       </MemoryRouter>
     )
     expect(screen.getByText(t('zh', 'studyRefresh'))).toBeInTheDocument()
+    expect(screen.queryByText('👑')).toBeNull()
+    fireEvent.click(screen.getByText('期末冲刺'))
+    expect(
+      (screen.getByPlaceholderText(t('zh', 'studyRoomNamePh')) as HTMLInputElement).value
+    ).toBe('期末冲刺')
     fireEvent.change(screen.getByPlaceholderText(t('zh', 'studyRoomNamePh')), {
       target: { value: '期末' }
     })
@@ -202,5 +209,39 @@ describe('v2.1.3 study lobby focus block and refresh', () => {
     expect(screen.getByRole('button', { name: /创建房间/ })).toBeEnabled()
     fireEvent.click(screen.getByText(t('zh', 'studyRefresh')))
     expect(mockFrom).toHaveBeenCalled()
+  })
+})
+
+describe('v2.1.4 study room member focus duration', () => {
+  it('always shows each member focused minutes regardless of status', () => {
+    useAuthStore.setState({
+      user: { id: 'u1', email: 'u1@discipline.local', nickname: '小明' }
+    })
+    useStudyRoomStore.setState({
+      room: {
+        id: 'r1',
+        code: 'ABCDEF',
+        name: '期末冲刺',
+        owner_id: 'u1',
+        is_public: true,
+        max_members: 50,
+        created_at: '2026-08-10T00:00:00.000Z'
+      },
+      members: [
+        { userId: 'u1', name: '小明', status: 'focus', focusSeconds: 5 * 60, joinedAt: 1000 },
+        { userId: 'u2', name: '小红', status: 'idle', focusSeconds: 0, joinedAt: 2000 }
+      ],
+      joinedAt: 1000,
+      kickedAt: 0
+    })
+    render(
+      <MemoryRouter initialEntries={['/study/r1']}>
+        <Routes>
+          <Route path="/study/:id" element={<StudyRoomPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+    expect(screen.getByText('已专注 5 分钟')).toBeInTheDocument()
+    expect(screen.getByText('已专注 0 分钟')).toBeInTheDocument()
   })
 })

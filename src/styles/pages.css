@@ -1695,6 +1695,18 @@
   gap: 6px;
 }
 
+.study-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 10px;
+}
+
+.timer-mode-toggle {
+  justify-content: center;
+  margin: 0 0 12px;
+}
+
 .sound-chips {
   display: flex;
   flex-wrap: wrap;

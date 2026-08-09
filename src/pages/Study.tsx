@@ -16,6 +16,8 @@ import { useStudyRoomStore } from '../stores/useStudyRoomStore'
 import { useToastStore } from '../stores/useToastStore'
 import EmptyState from '../components/EmptyState'
 
+const ROOM_TAGS = ['期末冲刺', '考研自习', '刷题', '晨间自习', '晚间自习', '番茄自习']
+
 export default function Study() {
   const lang = useAppStore((s) => s.settings.language)
   const user = useAuthStore((s) => s.user)
@@ -169,6 +171,18 @@ export default function Study() {
             {isPublic ? t(lang, 'studyPublicHint') : t(lang, 'studyPrivateHint')}
           </span>
         </div>
+        <div className="study-tags">
+          {ROOM_TAGS.map((tag) => (
+            <button
+              key={tag}
+              type="button"
+              className={`sound-chip${name === tag ? ' active' : ''}`}
+              onClick={() => setName(tag)}
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
         <div className="form-row">
           <label className="field">
             <span>{t(lang, 'studyJoinCode')}</span>
@@ -212,7 +226,6 @@ export default function Study() {
               <div className="study-room-main">
                 <strong>{room.name}</strong>
                 <span className="chip chip-tag">{room.code}</span>
-                {room.owner_id === user.id ? <span className="chip">👑</span> : null}
               </div>
               <button
                 className="btn btn-primary btn-sm"
