@@ -46,6 +46,7 @@ interface AuthState {
   setAdmin: (v: boolean) => void
   setPendingMerge: (v: boolean) => void
   mergeWithCloud: () => Promise<boolean>
+  autoSync: () => Promise<boolean>
   refreshUser: () => Promise<void>
 }
 
@@ -54,6 +55,12 @@ function handleUser(user: UserInfo | null): void {
     const app = useAppStore.getState()
     const pending = app.countLocalRecords() > 0 && app.mergedFor !== user.id
     useAuthStore.setState({ user, loading: false, pendingMerge: pending, error: null })
+    // A fresh device (or cleared local data) has nothing to merge, so it would
+    // never be prompted to sync and would stay empty. Pull the cloud data
+    // automatically so the same account sees its data on every device.
+    if (app.mergedFor !== user.id && app.countLocalRecords() === 0) {
+      void useAuthStore.getState().autoSync()
+    }
   } else {
     useAuthStore.setState({ user: null, loading: false, pendingMerge: false, admin: false })
   }
@@ -66,6 +73,54 @@ function refreshAdmin(userId: string): void {
     useAuthStore.setState({ admin: ok })
     setCachedAdmin(userId, ok)
   })
+}
+
+let syncRunning = false
+
+/**
+ * Pull cloud -> merge with local -> push the merged result. Sequencing the
+ * pull before the push avoids the previous race where a concurrent pull could
+ * read stale data, and merging before pushing prevents an older device from
+ * clobbering newer edits made on another device.
+ */
+async function runSync(showFeedback: boolean): Promise<boolean> {
+  if (syncRunning) return false
+  const user = useAuthStore.getState().user
+  if (!user || !supabase) return false
+  syncRunning = true
+  try {
+    const local = useAppStore.getState()
+    const cloud = await pullRemote(user.id)
+    const merged = cloud ? mergeCollections(local, cloud) : local
+    const push = await pushLocal(user.id, merged)
+    if (cloud) useAppStore.getState().replaceAll(merged)
+    if (push.ok) {
+      useAppStore.getState().setMergedFor(user.id)
+      useAuthStore.setState({ pendingMerge: false })
+      if (showFeedback) {
+        const lang = useAppStore.getState().settings.language
+        useToastStore.getState().push({ title: t(lang, 'dataSynced'), kind: 'success' })
+      }
+      return true
+    }
+    if (showFeedback) {
+      const lang = useAppStore.getState().settings.language
+      useToastStore.getState().push({
+        title: t(lang, 'mergeFailed'),
+        body: push.message,
+        kind: 'warn'
+      })
+    }
+    return false
+  } catch {
+    if (showFeedback) {
+      const lang = useAppStore.getState().settings.language
+      useToastStore.getState().push({ title: t(lang, 'mergeFailed'), kind: 'warn' })
+    }
+    return false
+  } finally {
+    syncRunning = false
+  }
 }
 
 function sameUser(a: UserInfo, b: UserInfo): boolean {
@@ -189,9 +244,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         set({ recovery: false })
       }
     })
-    // Keep nickname/avatar in sync across devices: poll the server session and
-    // refresh whenever a tab on another device changes the profile.
-    const sync = () => void useAuthStore.getState().refreshUser()
+    // Keep the account in sync across devices: poll the server session for
+    // profile changes and run a silent data sync so edits made on another
+    // device show up here (and vice versa) without a manual button.
+    const sync = () => {
+      void useAuthStore.getState().refreshUser()
+      void useAuthStore.getState().autoSync()
+    }
     window.setInterval(sync, 45 * 1000)
     document.addEventListener('visibilitychange', sync)
   },
@@ -654,30 +713,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   setPendingMerge: (v) => set({ pendingMerge: v }),
 
-  mergeWithCloud: async () => {
-    const user = get().user
-    if (!user || !supabase) return false
-    const local = useAppStore.getState()
-    const [push, cloud] = await Promise.all([pushLocal(user.id, local), pullRemote(user.id)])
-    if (cloud) {
-      const merged = mergeCollections(local, cloud)
-      useAppStore.getState().replaceAll(merged)
-    }
-    if (push.ok) {
-      useAppStore.getState().setMergedFor(user.id)
-      set({ pendingMerge: false })
-      const lang = useAppStore.getState().settings.language
-      useToastStore.getState().push({ title: t(lang, 'dataSynced'), kind: 'success' })
-      return true
-    }
-    const lang = useAppStore.getState().settings.language
-    useToastStore.getState().push({
-      title: t(lang, 'mergeFailed'),
-      body: push.message ?? undefined,
-      kind: 'warn'
-    })
-    return false
-  }
+  mergeWithCloud: () => runSync(true),
+  autoSync: () => runSync(false)
 }))
 
 export const isSupabaseConfiguredFn = isSupabaseConfigured

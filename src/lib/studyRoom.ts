@@ -68,21 +68,29 @@ export async function createStudyRoom(
   tags: string[] = []
 ): Promise<StudyRoom | null> {
   if (!supabase) return null
+  const db = supabase
   for (let attempt = 0; attempt < 6; attempt++) {
     const code = generateRoomCode()
-    const { data, error } = await supabase
+    const base = {
+      id: uid(),
+      code,
+      name,
+      owner_id: ownerId,
+      is_public: isPublic,
+      max_members: 50
+    }
+    let { data, error } = await db
       .from('study_rooms')
-      .insert({
-        id: uid(),
-        code,
-        name,
-        owner_id: ownerId,
-        is_public: isPublic,
-        max_members: 50,
-        tags
-      })
+      .insert({ ...base, tags })
       .select()
       .maybeSingle()
+    if (error && tags.length > 0) {
+      // Databases created before v2.1.5 have no tags column; retry the same
+      // code without tags so room creation still succeeds (tags degrade).
+      const retry = await db.from('study_rooms').insert(base).select().maybeSingle()
+      data = retry.data
+      error = retry.error
+    }
     if (!error && data) return normalizeRoom(data as Record<string, unknown>)
   }
   return null

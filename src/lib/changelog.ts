@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.1.6',
+    date: '2026-08-10',
+    zh: '修复同一账号手机端与 PC 端数据不同步：新设备登录后自动拉取云端数据（无需手动合并），并增加定时/切回前台时静默同步；同步改为“先拉取→合并→再推送”，避免旧设备覆盖另一设备的新修改；修复创建房间失败（旧数据库无标签列时自动降级重试，建房不再失败）。',
+    en: 'Fixed data sync between phone and PC for the same account: fresh devices now auto-pull cloud data on login, plus periodic and on-foreground silent sync; sync now pulls, merges, then pushes so an older device cannot overwrite newer edits from another device; fixed room creation failing when the database predates the tags column (auto-fallback retry).'
+  },
+  {
     version: '2.1.5',
     date: '2026-08-10',
     zh: '专注时间按所选任务归因：只有本轮明确点击选择的任务才会计入该任务时长（完成后自动解除绑定）；专注中可显示/隐藏当前时间；木质交互音效音量提升；移除计时数字下的“已完成 X 轮”小字；创建房间改为选择标签（供公开大厅按标签筛选找房），大厅房间卡片展示标签。',
