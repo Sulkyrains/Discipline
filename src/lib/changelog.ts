@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.0.25',
+    date: '2026-08-09',
+    zh: '登录/刷新时自动补齐老账号缺失的 display_name 元数据，让 Supabase 用户列表能直接显示昵称（新账号注册时已写入，无需手动回填 SQL）。',
+    en: 'Auto-fills display_name metadata for existing accounts on login/refresh, so Supabase shows the nickname for every user (new accounts already write it).'
+  },
+  {
     version: '2.0.24',
     date: '2026-08-09',
     zh: '修复点击“立即更新”后网页无法打开的问题：更新时不再清空 Service Worker 预缓存，改用干净地址由新 Service Worker 直接接管并提供新页面。',

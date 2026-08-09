@@ -77,6 +77,45 @@ function userInfoFromAuth(u: { id: string; email?: string | null; user_metadata?
   }
 }
 
+/**
+ * Best-effort metadata backfill for older accounts (created before v2.0.16):
+ * their nickname lives in user metadata (or profiles) but display_name is
+ * missing, so Supabase's user list shows no display name. Whenever we see a
+ * session, copy nickname -> display_name/full_name exactly once (idempotent:
+ * no-op once display_name exists). New accounts already write all three.
+ */
+async function healDisplayName(u: { id: string; user_metadata?: unknown }): Promise<void> {
+  if (!supabase) return
+  const meta = (u.user_metadata ?? {}) as { nickname?: unknown; display_name?: unknown }
+  const hasDisplay =
+    typeof meta.display_name === 'string' && meta.display_name.trim() !== ''
+  if (hasDisplay) return
+  const metaNickname = typeof meta.nickname === 'string' && meta.nickname ? meta.nickname : ''
+  let nickname = metaNickname
+  if (!nickname) {
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('nickname')
+        .eq('id', u.id)
+        .maybeSingle()
+      if (data && typeof data.nickname === 'string' && data.nickname) {
+        nickname = data.nickname
+      }
+    } catch {
+      // profiles lookup unavailable (RLS or missing table); metadata only
+    }
+  }
+  if (!nickname) return
+  try {
+    await supabase.auth.updateUser({
+      data: { nickname, display_name: nickname, full_name: nickname }
+    })
+  } catch {
+    // best-effort; retried on the next session sync
+  }
+}
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   loading: false,
@@ -88,11 +127,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     void supabase.auth.getSession().then(({ data }) => {
       const u = data.session?.user
       handleUser(u ? userInfoFromAuth(u) : null)
+      if (u) void healDisplayName(u)
     })
     supabase.auth.onAuthStateChange((_event, session) => {
       const u = session?.user
       if (u) {
         handleUser(userInfoFromAuth(u))
+        void healDisplayName(u)
         const meta = (u.user_metadata ?? {}) as { nickname?: unknown }
         if (typeof meta.nickname === 'string' && meta.nickname) {
           void upsertProfile({ userId: u.id, nickname: meta.nickname, authEmail: u.email ?? '' })
@@ -117,6 +158,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (!u) return
       const fresh = userInfoFromAuth(u)
       if (!sameUser(current, fresh)) handleUser(fresh)
+      void healDisplayName(u)
     } catch {
       /* ignore transient sync failures */
     }
@@ -146,6 +188,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         if (retry.data?.user && !retry.error) {
           const info = userInfoFromAuth(retry.data.user)
           handleUser(info)
+          void healDisplayName(retry.data.user)
           void upsertProfile({ userId: retry.data.user.id, nickname: resolvedNickname, authEmail: mapped })
           return true
         }
@@ -157,6 +200,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
     const info = userInfoFromAuth(data.user)
     handleUser(info)
+    void healDisplayName(data.user)
     const meta = (data.user.user_metadata ?? {}) as { nickname?: unknown }
     const nickname = typeof meta.nickname === 'string' && meta.nickname ? meta.nickname : resolvedNickname
     if (nickname) {
