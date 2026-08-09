@@ -310,10 +310,14 @@ export default function Settings() {
                 {syncing ? t(lang, 'syncing') : t(lang, 'syncNow')}
               </button>
               {admin ? (
-                <Link className="btn btn-ghost btn-sm" to="/admin">
-                  🛠 {t(lang, 'adminPanel')}
-                  {pendingCount > 0 ? ` (${pendingCount})` : ''}
-                </Link>
+                <span className="admin-badge-wrap">
+                  <Link className="btn btn-ghost btn-sm" to="/admin">
+                    🛠 {t(lang, 'adminPanel')}
+                  </Link>
+                  {pendingCount > 0 ? (
+                    <span className="badge badge-red">{pendingCount > 99 ? '99+' : pendingCount}</span>
+                  ) : null}
+                </span>
               ) : null}
               <button className="btn btn-ghost btn-sm" onClick={() => void signOut()}>
                 {t(lang, 'logout')} · {t(lang, 'backGuest')}

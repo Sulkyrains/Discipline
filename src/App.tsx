@@ -31,6 +31,7 @@ import DailySplash from './components/DailySplash'
 import FocusGuard from './components/FocusGuard'
 import Onboarding from './components/Onboarding'
 import ErrorBoundary from './components/ErrorBoundary'
+import ScrollToTop from './components/ScrollToTop'
 import IslandHost from './components/IslandHost'
 import MergeDialog from './components/MergeDialog'
 import SoundPill from './components/SoundPill'
@@ -354,6 +355,7 @@ export default function App() {
 
   return (
     <div className="app-shell">
+      <ScrollToTop />
       {!entered ? (
         <Splash onChoose={() => setEntered(true)} />
       ) : (

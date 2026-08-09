@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.0.19',
+    date: '2026-08-10',
+    zh: '反馈管理未处理数量改为红色角标更醒目；进入更新日志/问题反馈等页面默认回到顶部。',
+    en: 'Pending feedback count now shows as a red badge; changelog/feedback pages start at the top.'
+  },
+  {
     version: '2.0.18',
     date: '2026-08-10',
     zh: '恢复反馈表单联系方式输入；移除问题反馈标题下与编辑资料里的无意义内部邮箱；用户端已处理且已读的反馈自动沉底置灰。',
