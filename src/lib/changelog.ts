@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.0.29',
+    date: '2026-08-09',
+    zh: '修复“立即更新”点击后长时间显示“正在更新…”却最终未更新的问题：新版本 Service Worker 安装后会直接自动接管，不再需要等待 waiting 状态，点击后通常 1–2 秒内完成刷新（最长约 5 秒）；若新版本已在后台接管则立即刷新。手机号绑定/找回功能暂未启用（需先在 Supabase 配置短信服务），界面已标注。',
+    en: 'Fixed “Update now” showing “Updating…” for a long time without applying: the new service worker takes over automatically, so the app reloads within 1–2 seconds (up to ~5s) instead of waiting for a waiting state; if the new worker already claimed the page, it reloads instantly. Phone binding/recovery is now marked as not enabled yet (an SMS provider must be configured in Supabase first).'
+  },
+  {
     version: '2.0.28',
     date: '2026-08-09',
     zh: '新增手机号绑定与找回（与邮箱一致：验证码绑定 + 通过手机号重置密码）；反馈删除成功后两端均提示；发送回复后自动清空输入框。',

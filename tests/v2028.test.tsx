@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { t } from '../src/lib/i18n'
@@ -117,7 +117,7 @@ describe('v2.0.28 phone binding and recovery', () => {
 })
 
 describe('v2.0.28 settings phone flow', () => {
-  it('offers the phone field and the send-code flow inside edit profile', async () => {
+  it('marks phone as not enabled yet and disables the flow inside edit profile', async () => {
     useAuthStore.setState({ user: { id: 'u1', email: 'u_abc@discipline.app', nickname: '小明' } })
     mockUpdateUser.mockResolvedValue({ error: null })
     render(
@@ -127,13 +127,14 @@ describe('v2.0.28 settings phone flow', () => {
     )
     fireEvent.click(screen.getAllByText(t('zh', 'editProfile'))[0])
     expect(screen.getByText(t('zh', 'phone'))).toBeInTheDocument()
-    fireEvent.change(screen.getByPlaceholderText(t('zh', 'phoneOptional')), {
-      target: { value: '13800000000' }
-    })
+    expect(screen.getAllByText(t('zh', 'phoneDisabled')).length).toBeGreaterThan(0)
+    expect(screen.getByText(new RegExp(t('zh', 'phoneDisabledHint')))).toBeInTheDocument()
+    const phoneInput = screen.getByPlaceholderText(t('zh', 'phoneOptional'))
+    expect(phoneInput).toBeDisabled()
+    fireEvent.change(phoneInput, { target: { value: '13800000000' } })
     const sendButtons = screen.getAllByText(t('zh', 'sendCode'))
-    fireEvent.click(sendButtons[sendButtons.length - 1])
-    await waitFor(() => expect(mockUpdateUser).toHaveBeenCalledWith({ phone: '13800000000' }))
-    expect(screen.getByPlaceholderText(t('zh', 'codePlaceholder'))).toBeInTheDocument()
+    expect(sendButtons[sendButtons.length - 1]).toBeDisabled()
+    expect(mockUpdateUser).not.toHaveBeenCalled()
   })
 })
 

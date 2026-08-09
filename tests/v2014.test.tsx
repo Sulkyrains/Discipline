@@ -2,7 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { t } from '../src/lib/i18n'
-import { applyUpdateNow, clearCachesAndReload } from '../src/lib/update'
+import {
+  applyUpdateNow,
+  clearCachesAndReload,
+  __resetControllerChangedForTests,
+  __setControllerChangedForTests
+} from '../src/lib/update'
 import { defaultSettings, useAppStore } from '../src/stores/useAppStore'
 import { useToastStore } from '../src/stores/useToastStore'
 
@@ -31,7 +36,7 @@ function stubLocation() {
   return fakeLocation
 }
 
-function stubServiceWorker(regs: FakeReg[], fireControllerChange = false) {
+function stubServiceWorker(regs: FakeReg[], fireControllerChange = false, controller: unknown = null) {
   Object.defineProperty(navigator, 'serviceWorker', {
     value: {
       getRegistrations: vi.fn(async () => regs),
@@ -39,7 +44,7 @@ function stubServiceWorker(regs: FakeReg[], fireControllerChange = false) {
         if (type === 'controllerchange' && fireControllerChange) cb()
       }),
       removeEventListener: vi.fn(),
-      controller: null
+      controller
     },
     configurable: true
   })
@@ -51,6 +56,7 @@ describe('v2.0.26 update now hands over to the service worker', () => {
     useToastStore.setState({ toasts: [] })
   })
   afterEach(() => {
+    __resetControllerChangedForTests()
     vi.unstubAllGlobals()
     vi.useRealTimers()
   })
@@ -105,6 +111,51 @@ describe('v2.0.26 update now hands over to the service worker', () => {
     await p
 
     expect(waitingPostMessage).toHaveBeenCalledWith({ type: 'SKIP_WAITING' })
+    expect(fakeLocation.href).toBe('https://x.pages.dev/#/settings')
+  })
+
+  it('reloads immediately when the new worker already claimed the page', async () => {
+    __setControllerChangedForTests(true)
+    const reg: FakeReg = { update: vi.fn(), waiting: null, installing: null }
+    stubServiceWorker([reg])
+    const fakeLocation = stubLocation()
+
+    const ok = await clearCachesAndReload()
+
+    expect(ok).toBe(true)
+    expect(reg.update).not.toHaveBeenCalled()
+    expect(fakeLocation.href).toBe('https://x.pages.dev/#/settings')
+  })
+
+  it('waits for an autoUpdate worker to activate, then reloads after handover', async () => {
+    vi.useFakeTimers()
+    const stateCb: { fn: (() => void) | null } = { fn: null }
+    let state = 'installing'
+    const reg: FakeReg = {
+      update: vi.fn(async () => {
+        reg.installing = {
+          state,
+          addEventListener: vi.fn((_type: string, cb: () => void) => {
+            stateCb.fn = cb
+          }),
+          removeEventListener: vi.fn()
+        }
+      }),
+      waiting: null,
+      installing: null
+    }
+    stubServiceWorker([reg], false, { scriptURL: 'sw.js' })
+    const fakeLocation = stubLocation()
+
+    const p = clearCachesAndReload()
+    await vi.advanceTimersByTimeAsync(0)
+    state = 'activated'
+    reg.installing!.state = state
+    stateCb.fn?.()
+    await vi.advanceTimersByTimeAsync(2_200)
+    const ok = await p
+
+    expect(ok).toBe(true)
     expect(fakeLocation.href).toBe('https://x.pages.dev/#/settings')
   })
 

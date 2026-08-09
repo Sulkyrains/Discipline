@@ -2,7 +2,28 @@ import { t } from './i18n'
 import { useAppStore } from '../stores/useAppStore'
 import { useToastStore } from '../stores/useToastStore'
 
-const SW_UPDATE_TIMEOUT_MS = 10_000
+const SW_UPDATE_TIMEOUT_MS = 5_000
+const SW_POLL_MS = 120
+const SW_STATE_WAIT_MS = 1_500
+const SW_HANDOVER_MS = 2_000
+
+/**
+ * True once this page's service worker has been replaced. The generated
+ * worker runs in "autoUpdate" mode: a freshly installed worker skips the
+ * waiting state, activates and claims the page by itself. When that already
+ * happened while the app was open, a plain reload is served by the new build
+ * — there is nothing left to install, so applying the update is instant.
+ */
+let controllerChangedSinceLoad = false
+if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+  try {
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      controllerChangedSinceLoad = true
+    })
+  } catch {
+    // ignore
+  }
+}
 
 export async function fetchRemoteVersion(base?: string): Promise<string | null> {
   try {
@@ -27,6 +48,64 @@ function cacheBustUrl(): string {
   return (
     window.location.origin + window.location.pathname + '?v=' + Date.now() + window.location.hash
   )
+}
+
+function navigateCleanUrl(): void {
+  window.location.href = window.location.origin + window.location.pathname + window.location.hash
+}
+
+/**
+ * Waits until `worker` reaches one of `states`, or until `ms` elapses.
+ */
+function waitForWorkerState(
+  worker: ServiceWorker | null,
+  states: string[],
+  ms: number
+): Promise<boolean> {
+  if (!worker) return Promise.resolve(false)
+  if (states.includes(worker.state)) return Promise.resolve(true)
+  return new Promise((resolve) => {
+    let done = false
+    const onState = () => {
+      if (!states.includes(worker.state) || done) return
+      done = true
+      worker.removeEventListener('statechange', onState)
+      window.clearTimeout(timer)
+      resolve(true)
+    }
+    const timer = window.setTimeout(() => {
+      if (done) return
+      done = true
+      worker.removeEventListener('statechange', onState)
+      resolve(false)
+    }, ms)
+    worker.addEventListener('statechange', onState)
+  })
+}
+
+/**
+ * Waits for the new worker to take control of this page (controllerchange).
+ * Resolves immediately when the page was never controlled by a worker.
+ */
+function waitForHandover(ms: number): Promise<boolean> {
+  if (!navigator.serviceWorker.controller) return Promise.resolve(false)
+  return new Promise((resolve) => {
+    let done = false
+    const onController = () => {
+      if (done) return
+      done = true
+      navigator.serviceWorker.removeEventListener('controllerchange', onController)
+      window.clearTimeout(timer)
+      resolve(true)
+    }
+    const timer = window.setTimeout(() => {
+      if (done) return
+      done = true
+      navigator.serviceWorker.removeEventListener('controllerchange', onController)
+      resolve(false)
+    }, ms)
+    navigator.serviceWorker.addEventListener('controllerchange', onController)
+  })
 }
 
 /**
@@ -61,68 +140,85 @@ export async function clearCachesAndReload(): Promise<boolean> {
     window.location.href = cacheBustUrl()
     return true
   }
-  // 1. Fetch and install the newest worker on every registration.
-  for (const reg of regs) {
-    try {
-      await reg.update()
-    } catch {
-      /* ignore */
-    }
+
+  // Fast path: the new worker already installed and claimed this page while
+  // the app was open (autoUpdate). A reload is served by the new build and
+  // waiting for a "waiting" worker would just time out — go immediately.
+  if (controllerChangedSinceLoad) {
+    navigateCleanUrl()
+    return true
   }
-  // 2. Wait (up to 10s) for a worker to reach the "waiting" state. The update
-  //    promise can resolve before the install finishes, so poll and watch the
-  //    installing worker's state transitions instead of checking once.
+
+  // Kick off the update check on every registration; don't block on it.
+  for (const reg of regs) {
+    reg.update().catch(() => {})
+  }
+
+  const wasControlled = !!navigator.serviceWorker.controller
   const deadline = Date.now() + SW_UPDATE_TIMEOUT_MS
   let waiting: ServiceWorker | null = null
-  while (Date.now() < deadline && !waiting) {
+  let ready = false
+
+  // 1. Wait for a new worker to appear. Prompt-mode workers land in
+  //    "waiting"; autoUpdate workers skip straight to "activated" and claim
+  //    the page (controllerchange), which `controllerChangedSinceLoad` picks
+  //    up even mid-flight.
+  while (Date.now() < deadline && !waiting && !ready) {
+    if (controllerChangedSinceLoad) {
+      ready = true
+      break
+    }
     for (const reg of regs) {
       if (reg.waiting) {
         waiting = reg.waiting
         break
       }
       const installing = reg.installing
-      if (installing && installing.state !== 'activated') {
-        await new Promise<void>((resolve) => {
-          const onState = () => {
-            if (installing.state === 'installed' || installing.state === 'activated') {
-              installing.removeEventListener('statechange', onState)
-              resolve()
-            }
-          }
-          installing.addEventListener('statechange', onState)
-          window.setTimeout(() => {
-            installing.removeEventListener('statechange', onState)
-            resolve()
-          }, 2000)
-        })
-        if (reg.waiting) {
-          waiting = reg.waiting
+      if (installing) {
+        const state = installing.state as string
+        if (state === 'activated') {
+          ready = true
           break
         }
+        if (state !== 'installed') {
+          await waitForWorkerState(installing, ['installed', 'activated'], SW_STATE_WAIT_MS)
+          if (reg.waiting) {
+            waiting = reg.waiting
+            break
+          }
+          if ((installing.state as string) === 'activated') {
+            ready = true
+            break
+          }
+        }
+      } else if (reg.active && reg.active.state === 'activated' && !wasControlled) {
+        // The page was never controlled by a worker; a freshly activated
+        // worker will serve the next navigation.
+        ready = true
+        break
       }
     }
-    if (!waiting) await sleep(250)
+    if (!waiting && !ready) await sleep(SW_POLL_MS)
   }
-  if (!waiting) return false
-  // 3. Ask the waiting worker to take over, then wait for the handover.
-  waiting.postMessage({ type: 'SKIP_WAITING' })
-  const handedOver = await new Promise<boolean>((resolve) => {
-    const onController = () => {
-      navigator.serviceWorker.removeEventListener('controllerchange', onController)
-      resolve(true)
+
+  if (waiting) {
+    waiting.postMessage({ type: 'SKIP_WAITING' })
+  }
+
+  if (ready || waiting) {
+    // 2. Let the new worker take control (autoUpdate workers do this by
+    //    themselves; prompt-mode workers need the SKIP_WAITING message sent
+    //    above), then reload through it so the new build is served.
+    if (wasControlled) {
+      await waitForHandover(SW_HANDOVER_MS)
     }
-    navigator.serviceWorker.addEventListener('controllerchange', onController)
-    window.setTimeout(() => {
-      navigator.serviceWorker.removeEventListener('controllerchange', onController)
-      resolve(false)
-    }, SW_UPDATE_TIMEOUT_MS)
-  })
-  if (!handedOver) return false
-  // 4. Navigate with a clean URL (no cache-buster query) so the newly
-  //    activated worker serves the new build from its intact precache.
-  window.location.href =
-    window.location.origin + window.location.pathname + window.location.hash
-  return true
+    navigateCleanUrl()
+    return true
+  }
+
+  // 3. Nothing new installed in time — keep the page and let the caller
+  //    surface the failure.
+  return false
 }
 
 const UPDATED_KEY = 'discipline-auto-reloaded'
@@ -173,4 +269,15 @@ export function consumeAutoUpdated(): boolean {
   } catch {
     return false
   }
+}
+
+/**
+ * Test-only helpers for the controller-change fast-path flag.
+ */
+export function __resetControllerChangedForTests(): void {
+  controllerChangedSinceLoad = false
+}
+
+export function __setControllerChangedForTests(value: boolean): void {
+  controllerChangedSinceLoad = value
 }

@@ -424,7 +424,7 @@ export default function Settings() {
                 <strong>{user.nickname ?? user.email}</strong>
                 <span className="muted small">{emailBound ? user.email : t(lang, 'emailNotBound')}</span>
                 <span className="muted small">
-                  {user.phone ? `${t(lang, 'phoneBound')}：${user.phone}` : t(lang, 'phoneNotBound')}
+                  {user.phone ? `${t(lang, 'phoneBound')}：${user.phone}` : t(lang, 'phoneNotBound')} · {t(lang, 'phoneDisabled')}
                 </span>
               </div>
               <button className="btn btn-primary btn-sm" onClick={openProfile}>
@@ -910,7 +910,9 @@ export default function Settings() {
             <p className="muted small">⚠️ {t(lang, 'emailNotBound')} · {t(lang, 'bindEmailHint')}</p>
           )}
           <label className="field">
-            <span>{t(lang, 'phone')}</span>
+            <span>
+              {t(lang, 'phone')} <span className="badge badge-next">{t(lang, 'phoneDisabled')}</span>
+            </span>
             <span className="muted small">
               {user?.phone
                 ? `${t(lang, 'currentPhone')}：${user.phone}`
@@ -921,19 +923,19 @@ export default function Settings() {
               type="tel"
               value={phoneInput}
               placeholder={t(lang, 'phoneOptional')}
+              disabled
               onChange={(e) => {
                 setPhoneInput(e.target.value)
                 if (phoneCodeSent && e.target.value.trim() !== pendingPhone) setPhoneCodeSent(false)
               }}
             />
           </label>
+          <p className="muted small">⚠️ {t(lang, 'phoneDisabledHint')}</p>
           {!phoneCodeSent ? (
             <button
               type="button"
               className="btn btn-ghost btn-sm"
-              disabled={
-                phoneBusy || !phoneInput.trim() || (!!user?.phone && phoneInput.trim() === user.phone)
-              }
+              disabled
               onClick={() => void sendPhoneCode()}
             >
               {phoneBusy ? t(lang, 'sendingCode') : t(lang, 'sendCode')}
@@ -954,7 +956,7 @@ export default function Settings() {
                 <button
                   type="button"
                   className="btn btn-primary btn-sm"
-                  disabled={phoneBusy || phoneCode.length < 4}
+                  disabled
                   onClick={() => void confirmPhoneBind()}
                 >
                   {phoneBusy ? t(lang, 'binding') : t(lang, 'confirmBind')}
@@ -962,7 +964,7 @@ export default function Settings() {
                 <button
                   type="button"
                   className="btn btn-ghost btn-sm"
-                  disabled={phoneBusy || phoneResendIn > 0}
+                  disabled
                   onClick={() => void sendPhoneCode(pendingPhone)}
                 >
                   {phoneResendIn > 0 ? t(lang, 'resendIn', { seconds: phoneResendIn }) : t(lang, 'resend')}
@@ -975,7 +977,7 @@ export default function Settings() {
               <button
                 type="button"
                 className="btn btn-ghost btn-sm"
-                disabled={phoneResetBusy}
+                disabled
                 onClick={() => void startPhoneReset()}
               >
                 {phoneResetBusy ? t(lang, 'sendingCode') : t(lang, 'phoneResetVia')}
@@ -1002,9 +1004,7 @@ export default function Settings() {
                   <button
                     type="button"
                     className="btn btn-primary btn-sm"
-                    disabled={
-                      phoneResetBusy || phoneResetCode.length < 4 || phoneResetPassword.length < 6
-                    }
+                    disabled
                     onClick={() => void confirmPhoneResetAction()}
                   >
                     {phoneResetBusy ? t(lang, 'binding') : t(lang, 'confirmReset')}
@@ -1012,7 +1012,7 @@ export default function Settings() {
                   <button
                     type="button"
                     className="btn btn-ghost btn-sm"
-                    disabled={phoneResetBusy}
+                    disabled
                     onClick={() => setPhoneResetStep('idle')}
                   >
                     {t(lang, 'cancel')}
