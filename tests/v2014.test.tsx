@@ -40,7 +40,7 @@ describe('v2.0.31 service worker takeover', () => {
     const fakeLocation = stubLocation()
 
     const p = clearCachesAndReload()
-    await vi.advanceTimersByTimeAsync(5_200)
+    await vi.advanceTimersByTimeAsync(20_500)
     const ok = await p
 
     expect(stale.unregister).toHaveBeenCalled()
@@ -54,7 +54,12 @@ describe('v2.0.31 service worker takeover', () => {
 
 interface FakeReg {
   update: ReturnType<typeof vi.fn>
-  waiting: { postMessage: ReturnType<typeof vi.fn> } | null
+  waiting: {
+    postMessage: ReturnType<typeof vi.fn>
+    state: string
+    addEventListener: ReturnType<typeof vi.fn>
+    removeEventListener: ReturnType<typeof vi.fn>
+  } | null
   installing: { state: string; addEventListener: ReturnType<typeof vi.fn>; removeEventListener: ReturnType<typeof vi.fn> } | null
 }
 
@@ -98,7 +103,12 @@ describe('v2.0.26 update now hands over to the service worker', () => {
     const waitingPostMessage = vi.fn()
     const reg: FakeReg = {
       update: vi.fn(async () => {
-        reg.waiting = { postMessage: waitingPostMessage }
+        reg.waiting = {
+          postMessage: waitingPostMessage,
+          state: 'activated',
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn()
+        }
       }),
       waiting: null,
       installing: null
@@ -140,7 +150,12 @@ describe('v2.0.26 update now hands over to the service worker', () => {
     state = 'installed'
     reg.installing!.state = state
     installedCb.fn?.()
-    reg.waiting = { postMessage: waitingPostMessage }
+    reg.waiting = {
+      postMessage: waitingPostMessage,
+      state: 'activated',
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn()
+    }
     await p
 
     expect(waitingPostMessage).toHaveBeenCalledWith({ type: 'SKIP_WAITING' })
@@ -185,7 +200,7 @@ describe('v2.0.26 update now hands over to the service worker', () => {
     state = 'activated'
     reg.installing!.state = state
     stateCb.fn?.()
-    await vi.advanceTimersByTimeAsync(2_200)
+    await vi.advanceTimersByTimeAsync(5_300)
     const ok = await p
 
     expect(ok).toBe(true)
@@ -203,7 +218,7 @@ describe('v2.0.26 update now hands over to the service worker', () => {
     const fakeLocation = stubLocation()
 
     const p = clearCachesAndReload()
-    await vi.advanceTimersByTimeAsync(10_500)
+    await vi.advanceTimersByTimeAsync(20_500)
     const ok = await p
 
     expect(ok).toBe(false)

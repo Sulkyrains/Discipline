@@ -2,10 +2,11 @@ import { t } from './i18n'
 import { useAppStore } from '../stores/useAppStore'
 import { useToastStore } from '../stores/useToastStore'
 
-const SW_UPDATE_TIMEOUT_MS = 5_000
+const SW_UPDATE_TIMEOUT_MS = 20_000
 const SW_POLL_MS = 120
 const SW_STATE_WAIT_MS = 1_500
-const SW_HANDOVER_MS = 2_000
+const SW_HANDOVER_MS = 5_000
+const SW_ACTIVATE_TIMEOUT_MS = 30_000
 
 /**
  * True once this page's service worker has been replaced. The generated
@@ -15,10 +16,21 @@ const SW_HANDOVER_MS = 2_000
  * — there is nothing left to install, so applying the update is instant.
  */
 let controllerChangedSinceLoad = false
+const controllerLoadTime = Date.now()
+const hadControllerAtLoad =
+  typeof navigator !== 'undefined' && 'serviceWorker' in navigator
+    ? !!navigator.serviceWorker.controller
+    : false
 if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
   try {
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      controllerChangedSinceLoad = true
+      // The very first claim on a fresh load (the initial worker installing and
+      // taking control) is not an update. Only a takeover that happens while
+      // the app was already controlled — or well after load — means a newer
+      // build can be applied with an instant reload.
+      if (hadControllerAtLoad || Date.now() - controllerLoadTime > 10_000) {
+        controllerChangedSinceLoad = true
+      }
     })
   } catch {
     // ignore
@@ -232,22 +244,44 @@ export async function clearCachesAndReload(): Promise<boolean> {
     if (!waiting && !ready) await sleep(SW_POLL_MS)
   }
 
-  if (waiting) {
-    waiting.postMessage({ type: 'SKIP_WAITING' })
+  // The new worker may have claimed the page while the loop above was
+  // exiting; that means a reload is already served by the new build.
+  if (controllerChangedSinceLoad) {
+    navigateCleanUrl()
+    return true
   }
 
-  if (ready || waiting) {
-    // 2. Let the new worker take control (autoUpdate workers do this by
+  let target: ServiceWorker | null = null
+  if (waiting) {
+    waiting.postMessage({ type: 'SKIP_WAITING' })
+    target = waiting
+  } else {
+    target = regs.map((r) => r.installing ?? r.waiting).find((w) => w !== null) ?? null
+  }
+
+  if (ready || waiting || target) {
+    // 2. Wait for the new worker to finish installing and activate. A fresh
+    //    precache (including the ~8 MB audio library) can take several seconds
+    //    to download; navigating earlier would be served by the OLD worker.
+    if (target && !controllerChangedSinceLoad) {
+      const activated = await waitForWorkerState(
+        target,
+        ['activated'],
+        SW_ACTIVATE_TIMEOUT_MS
+      )
+      if (!activated && !controllerChangedSinceLoad) return false
+    }
+    // 3. Let the new worker take control (autoUpdate workers claim the page by
     //    themselves; prompt-mode workers need the SKIP_WAITING message sent
     //    above), then reload through it so the new build is served.
-    if (wasControlled) {
+    if (wasControlled && !controllerChangedSinceLoad) {
       await waitForHandover(SW_HANDOVER_MS)
     }
     navigateCleanUrl()
     return true
   }
 
-  // 3. Nothing new installed in time — keep the page and let the caller
+  // 4. Nothing new installed in time — keep the page and let the caller
   //    surface the failure.
   return false
 }

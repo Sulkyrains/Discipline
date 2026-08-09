@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { t } from '../src/lib/i18n'
 import { defaultSettings, useAppStore } from '../src/stores/useAppStore'
 import { useAuthStore } from '../src/stores/useAuthStore'
+import { useFeedbackStore } from '../src/stores/useFeedbackStore'
 import { useToastStore } from '../src/stores/useToastStore'
 import Settings from '../src/pages/Settings'
 import Feedback from '../src/pages/Feedback'
@@ -149,6 +150,18 @@ describe('v2.0.28 settings phone flow', () => {
 })
 
 describe('v2.0.28 feedback deletion toast', () => {
+  it('shows a numeric badge on the feedback entry with the unread reply count', () => {
+    useAuthStore.setState({ user: { id: 'u1', email: 'u_abc@discipline.app', nickname: '小明' } })
+    useFeedbackStore.setState({ userNewReplyCount: 5 })
+    render(
+      <MemoryRouter>
+        <Settings />
+      </MemoryRouter>
+    )
+    expect(screen.getByText('5', { selector: '.badge-num' })).toBeInTheDocument()
+    expect(screen.queryByText('●')).toBeNull()
+  })
+
   it('shows a success toast after deleting a local feedback item', () => {
     useAppStore.setState({
       feedback: [

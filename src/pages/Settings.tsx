@@ -101,7 +101,7 @@ export default function Settings() {
   const [croppedPreview, setCroppedPreview] = useState<string | null>(null)
   const [viewOriginal, setViewOriginal] = useState(false)
   const [syncing, setSyncing] = useState(false)
-  const userHasNewReply = useFeedbackStore((s) => s.userHasNewReply)
+  const userNewReplyCount = useFeedbackStore((s) => s.userNewReplyCount)
   const pendingCount = useFeedbackStore((s) => s.pendingCount)
   const updateStatus = useUpdateStore((s) => s.status)
   const updateChecking = updateStatus === 'checking'
@@ -731,7 +731,9 @@ export default function Settings() {
         <div className="settings-row">
           <Link className="settings-link" to="/feedback">
             {t(lang, 'feedback')}
-            {userHasNewReply ? <span className="chip chip-ok">●</span> : null} →
+            {userNewReplyCount > 0 ? (
+              <span className="badge-num">{userNewReplyCount > 99 ? '99+' : userNewReplyCount}</span>
+            ) : null} →
           </Link>
         </div>
         <div className="settings-row">

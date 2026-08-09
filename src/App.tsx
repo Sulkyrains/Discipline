@@ -17,7 +17,7 @@ import { syncFocusLockActive, syncFocusLockWhitelist } from './lib/focusLock'
 import { consumeAutoUpdated } from './lib/update'
 import { latestChangelog } from './lib/changelog'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
-import { lastFeedbackSeen, markFeedbackSeen } from './lib/feedback'
+import { lastFeedbackSeen } from './lib/feedback'
 import { isAdmin } from './lib/admin'
 import { APP_VERSION } from './version'
 import { useAppStore } from './stores/useAppStore'
@@ -129,6 +129,7 @@ export default function App() {
 
   useEffect(() => {
     if (!user || !isSupabaseConfigured()) return
+    let lastReplyCount = 0
     const check = async () => {
       try {
         const since = new Date(lastFeedbackSeen(user.id)).toISOString()
@@ -139,16 +140,16 @@ export default function App() {
           .gt('updated_at', since)
           .limit(20)
         if (error || !data) return
-        const hasReply = data.some(
+        const newReplyCount = data.filter(
           (r) =>
             (typeof r.reply === 'string' && r.reply) ||
             (Array.isArray(r.messages) && r.messages.length > 0)
-        )
-        if (hasReply) {
-          useFeedbackStore.getState().setUserHasNewReply(true)
+        ).length
+        useFeedbackStore.getState().setUserNewReplyCount(newReplyCount)
+        if (newReplyCount > lastReplyCount) {
+          lastReplyCount = newReplyCount
           const lang2 = useAppStore.getState().settings.language
           useToastStore.getState().push({ title: t(lang2, 'feedbackNewReply'), kind: 'info' })
-          markFeedbackSeen(user.id)
         }
       } catch {
         /* ignore transient failures */

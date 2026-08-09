@@ -235,6 +235,22 @@
   color: var(--primary);
 }
 
+.badge-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
 .progress-bar {
   height: 8px;
   border-radius: 999px;

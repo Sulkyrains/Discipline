@@ -101,7 +101,7 @@ export default function Feedback() {
       if (!alive) return
       if (!result.error && Array.isArray(result.data)) {
         setCloudItems(mapRows(result.data as Array<Record<string, unknown>>))
-        useFeedbackStore.getState().setUserHasNewReply(false)
+        useFeedbackStore.getState().setUserNewReplyCount(0)
         markFeedbackSeen(user.id)
       }
     })()

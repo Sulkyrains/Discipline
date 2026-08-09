@@ -2,14 +2,14 @@ import { create } from 'zustand'
 
 interface FeedbackNotifyState {
   pendingCount: number
-  userHasNewReply: boolean
+  userNewReplyCount: number
   setPendingCount: (n: number) => void
-  setUserHasNewReply: (v: boolean) => void
+  setUserNewReplyCount: (n: number) => void
 }
 
 export const useFeedbackStore = create<FeedbackNotifyState>((set) => ({
   pendingCount: 0,
-  userHasNewReply: false,
+  userNewReplyCount: 0,
   setPendingCount: (n) => set({ pendingCount: n }),
-  setUserHasNewReply: (v) => set({ userHasNewReply: v })
+  setUserNewReplyCount: (n) => set({ userNewReplyCount: n })
 }))

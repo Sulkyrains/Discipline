@@ -40,7 +40,7 @@ function resetStores() {
     customSounds: []
   })
   useAuthStore.setState({ user: null, loading: false, error: null, pendingMerge: false })
-  useFeedbackStore.setState({ pendingCount: 0, userHasNewReply: false })
+  useFeedbackStore.setState({ pendingCount: 0, userNewReplyCount: 0 })
   useFocusStore.setState({
     timer: { phase: 'focus', status: 'idle', remainingSeconds: 15 * 60, roundsCompleted: 0 },
     active: false,

@@ -7,6 +7,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.0.37',
+    date: '2026-08-09',
+    zh: '修复“立即更新”点击后仍停留在旧版本的根本问题：首次加载时初始 Service Worker 接管页面会被误判为“新版本已接管”，导致点击更新后直接刷新旧页面、从不安装新版本。现在只有页面已有旧 SW 控制或加载 10 秒后发生的接管才走快速路径；否则会完整等待新 Service Worker 安装并激活（含约 8MB 音频预缓存，最长约 30 秒）后再刷新，一次点击即可切到新版本。',
+    en: 'Fixed the root cause of “Update now” staying on the old version: the initial service worker claiming the page on first load was mistaken for a newer build already taking over, so tapping Update just reloaded the old page without ever installing the new worker. The instant path now only applies to takeovers that happen while the page is already controlled (or later than 10s after load); otherwise the app fully waits for the new service worker to install and activate (including the ~8 MB audio precache, up to ~30s) before reloading, so one tap applies the update.'
+  },
+  {
+    version: '2.0.32',
+    date: '2026-08-09',
+    zh: '用户端“问题反馈”入口由红点改为数字角标，显示未读回复数量（超过 99 显示 99+），打开反馈页后清零。',
+    en: 'The user-side “Feedback” entry now shows a numeric badge with the number of unread replies (capped at 99+) instead of a dot; it clears when the feedback page is opened.'
+  },
+  {
     version: '2.0.31',
     date: '2026-08-09',
     zh: '修复“立即更新/刷新后仍停留在旧版本”的根本问题：生成的 Service Worker 现在会在安装后立即激活并接管页面（skipWaiting + clientsClaim），新版本装好后马上生效，不再被旧 Service Worker 拦截旧页面；同时自动清理早期版本遗留的 sw.js?v=版本号 注册，避免旧注册一直返回旧页面。',
