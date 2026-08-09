@@ -699,6 +699,17 @@ export default function Settings() {
         </div>
       </section>
 
+      <section className="card settings-section settings-footer">
+        <div className="settings-row">
+          <span className="muted">{t(lang, 'copyrightOwner')}</span>
+          <span>怏</span>
+        </div>
+        <div className="settings-row">
+          <span className="muted">{t(lang, 'contactAuthor')}</span>
+          <span />
+        </div>
+      </section>
+
       <Sheet
         open={editProfile}
         title={t(lang, 'editProfile')}

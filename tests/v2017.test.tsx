@@ -85,6 +85,7 @@ describe('v2.0.17 changelog dates', () => {
     expect(dateOf('2.0.24')).toBe('2026-08-09')
     expect(dateOf('2.0.25')).toBe('2026-08-09')
     expect(dateOf('2.0.26')).toBe('2026-08-09')
+    expect(dateOf('2.0.27')).toBe('2026-08-09')
   })
 })
 

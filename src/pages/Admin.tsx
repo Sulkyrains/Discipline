@@ -141,7 +141,7 @@ export default function Admin() {
       ) : (
         <div className="admin-feedback-list">
           {rows.map((row) => (
-            <div key={row.id} className={`card admin-feedback-item${row.status === 'done' ? ' done' : ''}`}>
+            <div key={row.id} className="card admin-feedback-item">
               <div className="admin-feedback-head">
                 <span className={`chip${row.status === 'done' ? ' chip-ok' : ''}`}>
                   {row.status === 'done' ? t(lang, 'statusDone') : t(lang, 'statusPending')}

@@ -141,6 +141,6 @@ describe('v2.0.16 resolved feedback sinks and greys out', () => {
     const items = [...container.querySelectorAll('.admin-feedback-item')]
     expect(items[0]?.textContent).toContain('待处理那条')
     expect(items[1]?.textContent).toContain('已处理那条')
-    expect(items[1]?.classList.contains('done')).toBe(true)
+    expect(items[1]?.classList.contains('done')).toBe(false)
   })
 })

@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.0.27',
+    date: '2026-08-09',
+    zh: '管理员反馈界面已处理条目不再变灰（仅置底，与用户端一致）；我的界面底部新增“版权所属：怏”与“联系作者（暂不填）”两行。',
+    en: 'Resolved feedback in the admin panel is no longer greyed out (still sinks to the bottom, matching the user side); the Settings page footer now shows copyright and contact-author rows.'
+  },
+  {
     version: '2.0.26',
     date: '2026-08-09',
     zh: '修复点击“立即更新”后无反应的问题（等待新 Service Worker 安装完成后接管再刷新，失败时明确提示）；编辑资料绑定/更换邮箱改为两步验证码流程：发送验证码到新邮箱 → 输入 6 位码校验一致即绑定成功。',
