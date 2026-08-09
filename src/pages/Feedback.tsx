@@ -17,7 +17,15 @@ export default function Feedback() {
   const [contact, setContact] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [cloudItems, setCloudItems] = useState<
-    Array<{ id: string; content: string; contact: string; type?: string; createdAt: string; status: string }>
+    Array<{
+      id: string
+      content: string
+      contact: string
+      type?: string
+      createdAt: string
+      status: string
+      reply?: string
+    }>
   >([])
 
   useEffect(() => {
@@ -25,7 +33,7 @@ export default function Feedback() {
     let alive = true
     void supabase!
       .from('feedback')
-      .select('id, data, status, updated_at')
+      .select('id, data, status, reply, updated_at')
       .order('updated_at', { ascending: false })
       .limit(20)
       .then(({ data }) => {
@@ -37,7 +45,8 @@ export default function Feedback() {
             contact: String((row.data as { contact?: unknown })?.contact ?? ''),
             type: String((row.data as { type?: unknown })?.type ?? ''),
             createdAt: String(row.updated_at ?? ''),
-            status: String(row.status ?? 'pending')
+            status: String(row.status ?? 'pending'),
+            reply: typeof row.reply === 'string' && row.reply ? row.reply : undefined
           }))
         )
       })
@@ -157,6 +166,12 @@ export default function Feedback() {
                 </span>
                 <span className="muted small">{formatClock(item.createdAt)}</span>
               </div>
+              {item.reply ? (
+                <div className="feedback-reply">
+                  <strong>💬 {t(lang, 'feedbackReply')}</strong>
+                  <p>{item.reply}</p>
+                </div>
+              ) : null}
             </div>
           ))
         )}

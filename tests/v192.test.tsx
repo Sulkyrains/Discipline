@@ -101,22 +101,22 @@ describe('v1.9.2 home view-all alignment', () => {
 describe('v1.9.2 dock settings label', () => {
   beforeEach(resetStores)
 
-  it('labels the dock settings entry as 设置', () => {
+  it('labels the dock settings entry as 我的', () => {
     const { container } = render(
       <MemoryRouter>
         <BottomNav />
       </MemoryRouter>
     )
     const link = container.querySelector<HTMLAnchorElement>('a[href="/settings"]')
-    expect(link?.textContent).toContain('设置')
+    expect(link?.textContent).toContain('我的')
   })
 
-  it('uses 设置 as the settings page title', () => {
+  it('uses 我的 as the settings page title', () => {
     render(
       <MemoryRouter>
         <Settings />
       </MemoryRouter>
     )
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('设置')
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('我的')
   })
 })

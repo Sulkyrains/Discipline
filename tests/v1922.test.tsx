@@ -101,6 +101,7 @@ describe('v1.9.22 course reminders request web notification permission', () => {
     )
     fireEvent.click(screen.getByText(/添加课程/))
     fireEvent.change(screen.getByPlaceholderText('高等数学'), { target: { value: '体育' } })
+    fireEvent.change(screen.getByLabelText('课前提醒'), { target: { value: '0' } })
     fireEvent.click(screen.getByText('保存课程'))
     expect(requestNotificationPermission).not.toHaveBeenCalled()
   })

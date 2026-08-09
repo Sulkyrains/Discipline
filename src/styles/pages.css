@@ -284,6 +284,20 @@
   color: var(--muted);
 }
 
+.feedback-reply {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  border-left: 3px solid var(--primary);
+  font-size: 13px;
+}
+
+.feedback-reply p {
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
 .checkin-met {
   color: var(--primary);
   font-weight: 700;

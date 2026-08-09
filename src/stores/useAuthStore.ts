@@ -344,8 +344,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const user = get().user
     if (!user || !supabase) return false
     const local = useAppStore.getState()
-    const push = await pushLocal(user.id, local)
-    const cloud = await pullRemote(user.id)
+    const [push, cloud] = await Promise.all([pushLocal(user.id, local), pullRemote(user.id)])
     if (cloud) {
       const merged = mergeCollections(local, cloud)
       useAppStore.getState().replaceAll(merged)

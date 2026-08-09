@@ -45,6 +45,7 @@ create table if not exists public.feedback (
 );
 
 alter table public.feedback add column if not exists status text not null default 'pending';
+alter table public.feedback add column if not exists reply text;
 
 create table if not exists public.achievements (
   id text primary key,

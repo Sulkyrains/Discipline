@@ -80,6 +80,7 @@ export default function Settings() {
   const [croppedFile, setCroppedFile] = useState<File | null>(null)
   const [croppedPreview, setCroppedPreview] = useState<string | null>(null)
   const [viewOriginal, setViewOriginal] = useState(false)
+  const [syncing, setSyncing] = useState(false)
   const updateStatus = useUpdateStore((s) => s.status)
   const updateChecking = updateStatus === 'checking'
   const updateRemote = useUpdateStore((s) => s.lastRemote)
@@ -214,7 +215,11 @@ export default function Settings() {
   }
 
   const syncNow = async () => {
+    if (syncing) return
+    setSyncing(true)
+    useToastStore.getState().push({ title: t(lang, 'syncing'), kind: 'info' })
     const ok = await mergeWithCloud()
+    setSyncing(false)
     if (!ok) useToastStore.getState().push({ title: t(lang, 'syncFailed'), kind: 'warn' })
   }
 
@@ -334,8 +339,8 @@ export default function Settings() {
             </div>
             <p className="muted small">{t(lang, 'loginModeDesc')}</p>
             <div className="settings-actions">
-              <button className="btn btn-primary btn-sm" onClick={() => void syncNow()}>
-                {t(lang, 'syncNow')}
+              <button className="btn btn-primary btn-sm" disabled={syncing} onClick={() => void syncNow()}>
+                {syncing ? t(lang, 'syncing') : t(lang, 'syncNow')}
               </button>
               <button className="btn btn-ghost btn-sm" onClick={() => void signOut()}>
                 {t(lang, 'logout')} · {t(lang, 'backGuest')}

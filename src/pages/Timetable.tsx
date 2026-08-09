@@ -60,6 +60,7 @@ let reminderPermissionAsked = false
 
 export default function Timetable() {
   const lang = useAppStore((s) => s.settings.language)
+  const settings = useAppStore((s) => s.settings)
   const semesterStart = useAppStore((s) => s.settings.semesterStart)
   const courses = useAppStore((s) => s.courses)
   const addCourse = useAppStore((s) => s.addCourse)
@@ -104,7 +105,7 @@ export default function Timetable() {
   }, [courses, form, editing])
 
   const openNew = () => {
-    setForm(emptyForm(day))
+    setForm({ ...emptyForm(day), reminderMinutes: settings.reminderMinutes })
     setErrors({})
     setEditing('new')
   }
@@ -455,17 +456,17 @@ export default function Timetable() {
           </label>
           <label className="field">
             <span>{t(lang, 'reminder')}</span>
-            <input
-              className="input"
-              type="number"
-              min={0}
-              max={60}
-              step={5}
+            <select
+              className="select"
               value={form.reminderMinutes}
-              onChange={(e) =>
-                setForm({ ...form, reminderMinutes: Math.max(0, Math.min(60, Number(e.target.value) || 0)) })
-              }
-            />
+              onChange={(e) => setForm({ ...form, reminderMinutes: Number(e.target.value) })}
+            >
+              {[0, 5, 10, 15, 30].map((m) => (
+                <option key={m} value={m}>
+                  {m === 0 ? t(lang, 'none') : `${m} ${t(lang, 'minutesBefore')}`}
+                </option>
+              ))}
+            </select>
           </label>
           <div className="form-actions">
             {editing !== 'new' && editing ? (

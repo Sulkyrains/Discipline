@@ -59,6 +59,7 @@ export default function App() {
   const todos = useAppStore((s) => s.todos)
   const location = useLocation()
   const navigate = useNavigate()
+  const user = useAuthStore((s) => s.user)
   const focusActive = useFocusStore((s) => s.active)
   const appWhitelist = useAppStore((s) => s.appWhitelist)
   const lastDailySplashDate = useAppStore((s) => s.lastDailySplashDate)
@@ -103,6 +104,15 @@ export default function App() {
     const stale = s.todos.filter((td) => !td.completed && td.dueDate !== '' && td.dueDate < todayKey())
     if (stale.length > 0) setOverdueCount(stale.length)
   }, [entered])
+
+  useEffect(() => {
+    if (!user) return
+    // Warm up the lazy routes so the first visit to these pages after login is fast.
+    void import('./pages/Stats')
+    void import('./pages/Settings')
+    void import('./pages/Study')
+    void import('./pages/StudyRoom')
+  }, [user])
 
   useEffect(() => {
     if (!entered) return

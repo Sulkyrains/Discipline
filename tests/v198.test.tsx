@@ -104,12 +104,12 @@ describe('v1.9.8 course time inputs', () => {
     fireEvent.change(screen.getByPlaceholderText('高等数学'), { target: { value: '线性代数' } })
     dragWheel('开始时间', 1, 5)
     dragWheel('结束时间', 2, -10)
-    fireEvent.change(screen.getByLabelText('课前提醒'), { target: { value: '45' } })
+    fireEvent.change(screen.getByLabelText('课前提醒'), { target: { value: '30' } })
     fireEvent.click(screen.getByText('保存课程'))
     const course = useAppStore.getState().courses[0]
     expect(course.startMinute).toBe(545)
     expect(course.endMinute).toBe(620)
-    expect(course.reminderMinutes).toBe(45)
+    expect(course.reminderMinutes).toBe(30)
   })
 
   it('rejects an end time before the start time', () => {
