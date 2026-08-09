@@ -1,96 +1,48 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import type { RealtimeChannel } from '@supabase/supabase-js'
 import { t } from '../lib/i18n'
-import { isSupabaseConfigured, supabase } from '../lib/supabase'
-import {
-  deleteStudyRoom,
-  getStudyRoom,
-  type MemberStatus,
-  type RoomMember,
-  type StudyRoom
-} from '../lib/studyRoom'
+import { isSupabaseConfigured } from '../lib/supabase'
+import { isRemovableMember, type MemberStatus } from '../lib/studyRoom'
 import { useAppStore } from '../stores/useAppStore'
 import { useAuthStore } from '../stores/useAuthStore'
-import { useFocusStore } from '../stores/useFocusStore'
+import { useStudyRoomStore } from '../stores/useStudyRoomStore'
 import { useToastStore } from '../stores/useToastStore'
 import EmptyState from '../components/EmptyState'
+
+const KICK_AFTER_MINUTES = 3
 
 export default function StudyRoomPage() {
   const { id = '' } = useParams()
   const lang = useAppStore((s) => s.settings.language)
   const user = useAuthStore((s) => s.user)
   const navigate = useNavigate()
-  const timer = useFocusStore((s) => s.timer)
-  const [room, setRoom] = useState<StudyRoom | null>(null)
-  const [members, setMembers] = useState<RoomMember[]>([])
+  const room = useStudyRoomStore((s) => s.room)
+  const members = useStudyRoomStore((s) => s.members)
+  const joinedAt = useStudyRoomStore((s) => s.joinedAt)
+  const join = useStudyRoomStore((s) => s.join)
+  const leave = useStudyRoomStore((s) => s.leave)
+  const disband = useStudyRoomStore((s) => s.disband)
+  const kick = useStudyRoomStore((s) => s.kick)
+  const [notFound, setNotFound] = useState(false)
   const [busy, setBusy] = useState(false)
-  const channelRef = useRef<RealtimeChannel | null>(null)
 
   const enabled = isSupabaseConfigured()
-  const status: MemberStatus =
-    timer.phase === 'focus' && timer.status === 'running'
-      ? 'focus'
-      : timer.phase !== 'focus' && timer.status === 'running'
-        ? 'break'
-        : 'idle'
-  const displayName = user ? (user.email.split('@')[0] || '我') : '我'
 
   useEffect(() => {
-    if (!enabled || !user || !id) return
+    if (!enabled || !user || !id || joinedAt > 0) return
     let alive = true
-    void getStudyRoom(id).then((r) => {
-      if (alive) setRoom(r)
+    void join(id).then((ok) => {
+      if (alive && !ok) setNotFound(true)
     })
-    const channel = supabase!.channel(`room:${id}`, { config: { presence: { key: user.id } } })
-    channel
-      .on('presence', { event: 'sync' }, () => {
-        const state = channel.presenceState() as Record<string, Array<Record<string, unknown>>>
-        const seen = new Set<string>()
-        const list: RoomMember[] = []
-        for (const arr of Object.values(state)) {
-          for (const p of arr) {
-            const uid = String(p.user_id ?? '')
-            if (!uid || seen.has(uid)) continue
-            seen.add(uid)
-            list.push({
-              userId: uid,
-              name: String(p.name ?? '…'),
-              status: (p.status as MemberStatus) ?? 'idle'
-            })
-          }
-        }
-        list.sort((a, b) =>
-          a.userId === user.id ? -1 : b.userId === user.id ? 1 : a.name.localeCompare(b.name)
-        )
-        if (alive) setMembers(list)
-      })
-      .on('presence', { event: 'join' }, () => undefined)
-      .on('presence', { event: 'leave' }, () => undefined)
-    void channel.subscribe(async (state) => {
-      if (state === 'SUBSCRIBED') {
-        await channel.track({ user_id: user.id, name: displayName, status })
-      }
-    })
-    channelRef.current = channel
     return () => {
       alive = false
-      void channel.unsubscribe()
-      channelRef.current = null
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, user?.id, id])
-
-  useEffect(() => {
-    const ch = channelRef.current
-    if (!ch || !user) return
-    void ch.track({ user_id: user.id, name: displayName, status })
-  }, [status, user, displayName])
+  }, [enabled, user?.id, id, joinedAt, join])
 
   if (!enabled) {
     return (
       <div className="page page-study">
-        <EmptyState emoji="🔌" text={t(lang, 'studyNotEnabled')} />
+        <EmptyState emoji="🔲" text={t(lang, 'studyNotEnabled')} />
       </div>
     )
   }
@@ -108,10 +60,31 @@ export default function StudyRoomPage() {
     )
   }
 
-  if (!room) {
+  if (notFound || (joinedAt > 0 && room && room.id !== id)) {
     return (
       <div className="page page-study">
         <EmptyState emoji="🚪" text={t(lang, 'studyJoinFail')} />
+        {joinedAt > 0 ? (
+          <div className="study-actions">
+            <button
+              className="btn btn-ghost"
+              onClick={() => {
+                leave()
+                navigate('/study')
+              }}
+            >
+              {t(lang, 'studyLeave')}
+            </button>
+          </div>
+        ) : null}
+      </div>
+    )
+  }
+
+  if (!room) {
+    return (
+      <div className="page page-study">
+        <EmptyState emoji="⏳" text={t(lang, 'loading')} />
       </div>
     )
   }
@@ -125,24 +98,22 @@ export default function StudyRoomPage() {
     }
   }
 
+  const statusKey = (s: MemberStatus) =>
+    s === 'focus' ? 'studyStatusFocus' : s === 'break' ? 'studyStatusBreak' : 'studyStatusIdle'
+
   const onLeave = () => {
-    void channelRef.current?.unsubscribe()
-    channelRef.current = null
+    if (room.owner_id === user.id && members.length <= 1) disband()
+    else leave()
     navigate('/study')
   }
 
-  const onDelete = async () => {
+  const onDisband = async () => {
     if (busy) return
     setBusy(true)
-    await deleteStudyRoom(room.id)
-    void channelRef.current?.unsubscribe()
-    channelRef.current = null
+    disband()
     setBusy(false)
     navigate('/study')
   }
-
-  const statusKey = (s: MemberStatus) =>
-    s === 'focus' ? 'studyStatusFocus' : s === 'break' ? 'studyStatusBreak' : 'studyStatusIdle'
 
   return (
     <div className="page page-study">
@@ -150,7 +121,10 @@ export default function StudyRoomPage() {
         <div>
           <h1 className="page-title">🎧 {room.name}</h1>
           <p className="muted">
-            {t(lang, 'studyMembers', { n: members.length })} · {room.code}
+            {t(lang, 'studyMembers', { n: members.length })} 路 {room.code}
+            <span className="chip chip-tag" style={{ marginLeft: 6 }}>
+              {room.is_public ? t(lang, 'studyPublic') : t(lang, 'studyPrivate')}
+            </span>
           </p>
         </div>
       </header>
@@ -160,7 +134,7 @@ export default function StudyRoomPage() {
           {t(lang, 'studyCopyCode')}
         </button>
         {room.owner_id === user.id ? (
-          <button className="btn btn-danger btn-sm" disabled={busy} onClick={() => void onDelete()}>
+          <button className="btn btn-danger btn-sm" disabled={busy} onClick={() => void onDisband()}>
             {t(lang, 'studyDelete')}
           </button>
         ) : null}
@@ -172,16 +146,40 @@ export default function StudyRoomPage() {
       <h2 className="section-title">{t(lang, 'studyMembers', { n: members.length })}</h2>
       <div className="study-member-list">
         {members.length === 0 ? (
-          <EmptyState emoji="🧘" text={t(lang, 'studyEmptyRooms')} />
+          <EmptyState emoji="👥" text={t(lang, 'studyEmptyRooms')} />
         ) : (
           members.map((m) => (
             <div key={m.userId} className={`card study-member-row${m.userId === user.id ? ' self' : ''}`}>
-              <span className="study-member-avatar">{m.name.slice(0, 1).toUpperCase()}</span>
+              <span className="study-member-avatar">
+                {m.avatarUrl ? (
+                  <img src={m.avatarUrl} alt="" />
+                ) : m.avatarEmoji ? (
+                  <span className="avatar-emoji">{m.avatarEmoji}</span>
+                ) : (
+                  m.name.slice(0, 1).toUpperCase()
+                )}
+              </span>
               <span className="study-member-name">
                 {m.name}
-                {m.userId === user.id ? ' · 我' : ''}
+                {m.userId === room.owner_id ? (
+                  <span className="chip chip-ok" style={{ marginLeft: 6 }}>
+                    {t(lang, 'studyOwner')}
+                  </span>
+                ) : null}
               </span>
               <span className={`chip chip-status-${m.status}`}>{t(lang, statusKey(m.status))}</span>
+              {m.status === 'focus' && m.focusSeconds > 0 ? (
+                <span className="muted small">
+                  {t(lang, 'studyFocusMinutes', { n: Math.max(1, Math.floor(m.focusSeconds / 60)) })}
+                </span>
+              ) : null}
+              {room.owner_id === user.id &&
+              m.userId !== user.id &&
+              isRemovableMember(m, KICK_AFTER_MINUTES) ? (
+                <button className="btn btn-danger btn-sm" onClick={() => kick(m.userId)}>
+                  {t(lang, 'studyKick')}
+                </button>
+              ) : null}
             </div>
           ))
         )}

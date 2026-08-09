@@ -148,10 +148,11 @@ create index if not exists idx_feedback_owner on public.feedback (owner_id);
 
 -- Discipline v2: 线上自习室
 create table if not exists public.study_rooms (
-  id uuid primary key,
+  id text primary key,
   code text not null unique,
   name text not null,
   owner_id uuid not null references auth.users (id) on delete cascade,
+  is_public boolean not null default false,
   max_members int not null default 20,
   created_at timestamptz not null default now()
 );
@@ -166,6 +167,9 @@ create policy "study_rooms owner insert" on public.study_rooms
 
 create policy "study_rooms owner delete" on public.study_rooms
   for delete using (auth.uid() = owner_id);
+
+create policy "study_rooms owner update" on public.study_rooms
+  for update using (auth.uid() = owner_id) with check (auth.uid() = owner_id);
 
 create index if not exists idx_study_rooms_code on public.study_rooms (code);
 

@@ -5,6 +5,7 @@ import { isSupabaseConfigured } from '../lib/supabase'
 import { createStudyRoom, joinStudyRoomByCode, listStudyRooms, type StudyRoom } from '../lib/studyRoom'
 import { useAppStore } from '../stores/useAppStore'
 import { useAuthStore } from '../stores/useAuthStore'
+import { useStudyRoomStore } from '../stores/useStudyRoomStore'
 import { useToastStore } from '../stores/useToastStore'
 import EmptyState from '../components/EmptyState'
 
@@ -12,9 +13,11 @@ export default function Study() {
   const lang = useAppStore((s) => s.settings.language)
   const user = useAuthStore((s) => s.user)
   const navigate = useNavigate()
+  const joinRoom = useStudyRoomStore((s) => s.join)
   const [rooms, setRooms] = useState<StudyRoom[]>([])
   const [name, setName] = useState('')
   const [code, setCode] = useState('')
+  const [isPublic, setIsPublic] = useState(true)
   const [busy, setBusy] = useState(false)
 
   const enabled = isSupabaseConfigured()
@@ -54,9 +57,10 @@ export default function Study() {
   const onCreate = async () => {
     if (!name.trim() || busy) return
     setBusy(true)
-    const room = await createStudyRoom(name.trim(), user.id)
+    const room = await createStudyRoom(name.trim(), user.id, isPublic)
     setBusy(false)
     if (room) {
+      await joinRoom(room.id)
       useToastStore.getState().push({ title: t(lang, 'studyCreateOk'), kind: 'success' })
       navigate(`/study/${room.id}`)
     } else {
@@ -70,6 +74,7 @@ export default function Study() {
     const room = await joinStudyRoomByCode(code)
     setBusy(false)
     if (room) {
+      await joinRoom(room.id)
       useToastStore.getState().push({ title: t(lang, 'studyJoinOk'), kind: 'success' })
       navigate(`/study/${room.id}`)
     } else {
@@ -100,6 +105,28 @@ export default function Study() {
           <button className="btn btn-primary" disabled={busy || !name.trim()} onClick={() => void onCreate()}>
             + {t(lang, 'studyCreate')}
           </button>
+        </div>
+        <div className="field study-visibility">
+          <span>{t(lang, 'studyVisibility')}</span>
+          <div className="seg" role="group" aria-label={t(lang, 'studyVisibility')}>
+            <button
+              type="button"
+              className={`seg-item${isPublic ? ' active' : ''}`}
+              onClick={() => setIsPublic(true)}
+            >
+              {t(lang, 'studyPublic')}
+            </button>
+            <button
+              type="button"
+              className={`seg-item${!isPublic ? ' active' : ''}`}
+              onClick={() => setIsPublic(false)}
+            >
+              {t(lang, 'studyPrivate')}
+            </button>
+          </div>
+          <span className="muted small">
+            {isPublic ? t(lang, 'studyPublicHint') : t(lang, 'studyPrivateHint')}
+          </span>
         </div>
         <div className="form-row">
           <label className="field">

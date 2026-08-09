@@ -36,6 +36,7 @@ import IslandHost from './components/IslandHost'
 import MergeDialog from './components/MergeDialog'
 import SoundPill from './components/SoundPill'
 import ConfirmDialog from './components/ConfirmDialog'
+import StudyRoomBar from './components/StudyRoomBar'
 import Splash from './pages/Splash'
 import Home from './pages/Home'
 import Timetable from './pages/Timetable'
@@ -368,6 +369,7 @@ export default function App() {
         <Splash onChoose={() => setEntered(true)} />
       ) : (
         <>
+          <StudyRoomBar />
           <ErrorBoundary>
             <Suspense fallback={<RouteFallback />}>
               <Routes>

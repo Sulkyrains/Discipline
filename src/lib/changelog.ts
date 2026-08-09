@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.1.1',
+    date: '2026-08-10',
+    zh: '线上自习室 11 项优化：成员头像/昵称与账号同步；成员列表标注房主；房间分公开/私密（公开大厅直进、私密凭邀请码）；界面布局对齐防溢出；仅房主可解散；专注中可进入自习室；加入后切换页面不退出并常驻顶部状态条；房主离开自动移交给最早加入的成员（房主独自离开时房间自动解散）；房间内显示各成员专注状态与时长；房主可移除加入满 3 分钟仍空闲的成员；成员状态保持空闲/专注/休息三态。需执行一次性 SQL（study_rooms 增加 is_public、id 改为 text、新增房主 update 策略）。',
+    en: '11 study-room upgrades: avatars/names sync with the account; owner badge on members; public/private rooms (public joinable from the lobby, private by invite code); aligned overflow-safe layout; only the owner can dissolve; the study room is reachable during focus; staying in a room persists across page switches with a top status bar; the owner hands over to the earliest-joined member on leaving (or the room dissolves when the owner leaves alone); per-member focus status and duration; owners can remove members idle for 3+ minutes after joining; statuses stay idle/focus/break. A one-time SQL is required (is_public column, id to text, owner update policy).'
+  },
+  {
     version: '2.0.58',
     date: '2026-08-10',
     zh: '自本版本起改为全自动更新：检测到新版本后自动安装并刷新，无需手动点击；专注进行中会等专注结束后再自动更新，避免打断计时；首页与设置里的更新按钮保留为兜底。',

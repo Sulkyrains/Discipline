@@ -6,7 +6,11 @@ const WHITELIST = ['/focus', '/todos', '/timetable']
 export default function FocusGuard() {
   const active = useFocusStore((s) => s.active)
   const location = useLocation()
-  if (active && !WHITELIST.includes(location.pathname)) {
+  const allowed =
+    WHITELIST.includes(location.pathname) ||
+    location.pathname === '/study' ||
+    location.pathname.startsWith('/study/')
+  if (active && !allowed) {
     return <Navigate to="/focus" replace />
   }
   return <Outlet />
