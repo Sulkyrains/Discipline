@@ -4,6 +4,7 @@ import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { formatClock } from '../lib/format'
 import {
   addFeedbackMessage,
+  lastFeedbackSeen,
   markFeedbackSeen,
   threadFromRow,
   type FeedbackMessage
@@ -47,10 +48,22 @@ export default function Feedback() {
   const user = useAuthStore((s) => s.user)
   const [type, setType] = useState<'problem' | 'bug' | 'idea' | 'other'>('problem')
   const [content, setContent] = useState('')
+  const [contact, setContact] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [cloudItems, setCloudItems] = useState<CloudItem[]>([])
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({})
   const [replying, setReplying] = useState<string | null>(null)
+  const lastSeen = user ? lastFeedbackSeen(user.id) : 0
+  const cloudSorted = [...cloudItems].sort((a, b) => {
+    const doneA = a.status === 'done' ? 1 : 0
+    const doneB = b.status === 'done' ? 1 : 0
+    if (doneA !== doneB) return doneA - doneB
+    const readA = Date.parse(a.createdAt) <= lastSeen ? 1 : 0
+    const readB = Date.parse(b.createdAt) <= lastSeen ? 1 : 0
+    if (readA !== readB) return readA - readB
+    return b.createdAt.localeCompare(a.createdAt)
+  })
+  const isRead = (item: CloudItem) => Date.parse(item.createdAt) <= lastSeen
 
   useEffect(() => {
     if (!user || !isSupabaseConfigured()) return
@@ -99,7 +112,7 @@ export default function Feedback() {
     if (!content.trim() || submitting) return
     setSubmitting(true)
     let ok = true
-    const payload = { content: content.trim(), type }
+    const payload = { content: content.trim(), contact: contact.trim(), type }
     if (user && supabase) {
       const id = crypto.randomUUID()
       const { error } = await supabase.from('feedback').insert({
@@ -142,6 +155,7 @@ export default function Feedback() {
     if (ok) {
       useToastStore.getState().push({ title: t(lang, 'submitOk'), kind: 'success' })
       setContent('')
+      setContact('')
     } else {
       useToastStore.getState().push({ title: t(lang, 'submitFail'), kind: 'warn' })
     }
@@ -180,7 +194,7 @@ export default function Feedback() {
       <header className="page-head">
         <div>
           <h1 className="page-title">{t(lang, 'feedback')}</h1>
-          <p className="muted">{user ? user.nickname ?? user.email : t(lang, 'guest')}</p>
+          <p className="muted">{t(lang, 'feedbackDesc')}</p>
         </div>
       </header>
 
@@ -209,6 +223,10 @@ export default function Feedback() {
             placeholder={t(lang, 'contentPh')}
             onChange={(e) => setContent(e.target.value)}
           />
+        </label>
+        <label className="field">
+          <span>{t(lang, 'contact')} · {t(lang, 'optional')}</span>
+          <input className="input" value={contact} placeholder={t(lang, 'contactPh')} onChange={(e) => setContact(e.target.value)} />
         </label>
         <button className="btn btn-primary" type="submit" disabled={submitting || !content.trim()}>
           {submitting ? t(lang, 'submitting') : t(lang, 'submit')}
@@ -242,10 +260,10 @@ export default function Feedback() {
         ) : cloudItems.length === 0 ? (
           <EmptyState emoji="💬" text={t(lang, 'emptyFeedback')} />
         ) : (
-          cloudItems.map((item) => {
+          cloudSorted.map((item) => {
             const thread = threadFromRow({ messages: item.messages, reply: item.reply, status: item.status })
             return (
-              <div key={item.id} className="card feedback-item">
+              <div key={item.id} className={`card feedback-item${item.status === 'done' ? ' done' : ''}${isRead(item) ? ' read' : ''}`}>
                 <p>{item.content}</p>
                 <div className="feedback-meta">
                   {item.type ? (
@@ -256,6 +274,9 @@ export default function Feedback() {
                   <span className={`chip${item.status === 'done' ? ' chip-ok' : ''}`}>
                     {item.status === 'done' ? t(lang, 'statusDone') : t(lang, 'statusPending')}
                   </span>
+                  {item.status === 'done' && !isRead(item) ? (
+                    <span className="chip">● {t(lang, 'feedbackNewReply')}</span>
+                  ) : null}
                   <span className="muted small">{formatClock(item.createdAt)}</span>
                 </div>
                 <Thread thread={thread} />

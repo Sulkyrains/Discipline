@@ -2186,6 +2186,10 @@ input[type='range'] {
   margin-bottom: 10px;
 }
 
+.feedback-item.done.read {
+  opacity: 0.55;
+}
+
 .feedback-item p {
   font-size: 14px;
   line-height: 1.5;

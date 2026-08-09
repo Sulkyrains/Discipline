@@ -687,7 +687,11 @@ export default function Settings() {
           </label>
           <label className="field">
             <span>{t(lang, 'email')}</span>
-            <span className="muted small">{t(lang, 'currentEmail')}：{user?.email}</span>
+            <span className="muted small">
+              {user && isDerivedEmail(user.email)
+                ? `⚠️ ${t(lang, 'emailNotBound')}`
+                : `${t(lang, 'currentEmail')}：${user?.email}`}
+            </span>
             <input
               className="input"
               type="email"
