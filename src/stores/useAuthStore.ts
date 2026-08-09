@@ -34,6 +34,7 @@ interface AuthState {
   signOut: () => Promise<void>
   setPendingMerge: (v: boolean) => void
   mergeWithCloud: () => Promise<boolean>
+  refreshUser: () => Promise<void>
 }
 
 function handleUser(user: UserInfo | null): void {
@@ -44,6 +45,16 @@ function handleUser(user: UserInfo | null): void {
   } else {
     useAuthStore.setState({ user: null, loading: false, pendingMerge: false })
   }
+}
+
+function sameUser(a: UserInfo, b: UserInfo): boolean {
+  return (
+    a.id === b.id &&
+    a.email === b.email &&
+    a.nickname === b.nickname &&
+    a.avatarUrl === b.avatarUrl &&
+    a.avatarEmoji === b.avatarEmoji
+  )
 }
 
 function userInfoFromAuth(u: { id: string; email?: string | null; user_metadata?: unknown }): UserInfo {
@@ -90,6 +101,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         handleUser(null)
       }
     })
+    // Keep nickname/avatar in sync across devices: poll the server session and
+    // refresh whenever a tab on another device changes the profile.
+    const sync = () => void useAuthStore.getState().refreshUser()
+    window.setInterval(sync, 45 * 1000)
+    document.addEventListener('visibilitychange', sync)
+  },
+
+  refreshUser: async () => {
+    const current = get().user
+    if (!current || !supabase) return
+    try {
+      const { data } = await supabase.auth.getUser()
+      const u = data.user
+      if (!u) return
+      const fresh = userInfoFromAuth(u)
+      if (!sameUser(current, fresh)) handleUser(fresh)
+    } catch {
+      /* ignore transient sync failures */
+    }
   },
 
   signIn: async (nicknameOrEmail, password) => {
@@ -185,7 +215,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { data, error } = await supabase.auth.signUp({
       email: authEmail,
       password,
-      options: { data: { nickname: normalized } }
+      options: { data: { nickname: normalized, display_name: normalized } }
     })
     if (error) {
       set({
@@ -221,7 +251,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return false
     }
     set({ loading: true, error: null })
-    const { error } = await supabase.auth.updateUser({ data: { nickname: normalized } })
+    const { error } = await supabase.auth.updateUser({
+      data: { nickname: normalized, display_name: normalized }
+    })
     if (error) {
       set({ loading: false, error: 'auth' })
       return false

@@ -3,6 +3,7 @@ import { supabase } from './supabase'
 export interface AdminFeedbackRow {
   id: string
   ownerId: string
+  nickname?: string
   content: string
   contact: string
   type?: string
@@ -47,7 +48,7 @@ export async function listAllFeedback(): Promise<AdminFeedbackRow[]> {
     hasReply = false
   }
   if (error || !data) return []
-  return (data as Array<Record<string, unknown>>).map((row) => ({
+  const rows: AdminFeedbackRow[] = (data as Array<Record<string, unknown>>).map((row) => ({
     id: String(row.id),
     ownerId: String(row.owner_id ?? ''),
     content: String((row.data as { content?: unknown } | null)?.content ?? ''),
@@ -58,6 +59,25 @@ export async function listAllFeedback(): Promise<AdminFeedbackRow[]> {
       hasReply && typeof row.reply === 'string' && row.reply ? (row.reply as string) : undefined,
     updatedAt: String(row.updated_at ?? '')
   }))
+  const ownerIds = [...new Set(rows.map((r) => r.ownerId).filter(Boolean))]
+  if (ownerIds.length > 0) {
+    try {
+      const { data: profiles, error: pErr } = await db
+        .from('profiles')
+        .select('id, nickname')
+        .in('id', ownerIds)
+      if (!pErr && profiles) {
+        const map = new Map(profiles.map((p) => [String(p.id), String(p.nickname ?? '')]))
+        for (const r of rows) {
+          const nick = map.get(r.ownerId)
+          if (nick) r.nickname = nick
+        }
+      }
+    } catch {
+      /* profiles may be inaccessible; nicknames are optional */
+    }
+  }
+  return rows
 }
 
 export async function updateFeedbackReply(

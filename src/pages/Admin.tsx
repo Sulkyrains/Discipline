@@ -23,7 +23,17 @@ export default function Admin() {
     void isAdmin(user.id).then((ok) => {
       if (!alive) return
       setAuthorized(ok)
-      if (ok) void listAllFeedback().then((r) => alive && setRows(r))
+      if (ok) {
+        void listAllFeedback().then((r) => {
+          if (!alive) return
+          const sorted = [...r].sort(
+            (a, b) =>
+              (a.status === 'done' ? 1 : 0) - (b.status === 'done' ? 1 : 0) ||
+              b.updatedAt.localeCompare(a.updatedAt)
+          )
+          setRows(sorted)
+        })
+      }
     })
     return () => {
       alive = false
@@ -85,7 +95,7 @@ export default function Admin() {
       ) : (
         <div className="admin-feedback-list">
           {rows.map((row) => (
-            <div key={row.id} className="card admin-feedback-item">
+            <div key={row.id} className={`card admin-feedback-item${row.status === 'done' ? ' done' : ''}`}>
               <div className="admin-feedback-head">
                 <span className={`chip${row.status === 'done' ? ' chip-ok' : ''}`}>
                   {row.status === 'done' ? t(lang, 'statusDone') : t(lang, 'statusPending')}
@@ -96,6 +106,7 @@ export default function Admin() {
                   </span>
                 ) : null}
                 {!row.ownerId ? <span className="chip">{t(lang, 'guest')}</span> : null}
+                {row.ownerId && row.nickname ? <span className="chip chip-tag">👤 {row.nickname}</span> : null}
                 <span className="muted small">{formatClock(row.updatedAt)}</span>
               </div>
               <p className="admin-feedback-content">{row.content}</p>

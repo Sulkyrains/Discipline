@@ -155,6 +155,9 @@ create policy "feedback admins read all" on public.feedback
 create policy "feedback admins update all" on public.feedback
   for update using (exists (select 1 from public.admins a where a.user_id = auth.uid()));
 
+create policy "profiles admins read" on public.profiles
+  for select using (exists (select 1 from public.admins a where a.user_id = auth.uid()));
+
 -- Discipline v2.0.4: 昵称映射与头像
 alter table public.profiles add column if not exists auth_email text;
 

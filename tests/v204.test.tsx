@@ -96,7 +96,12 @@ describe('v2.0.4 signup with optional email', () => {
     const ok = await useAuthStore.getState().signUp('小明', '123456', 'real@x.com')
     expect(ok).toBe(true)
     expect(mockSignUp).toHaveBeenCalledWith(
-      expect.objectContaining({ email: 'real@x.com', options: { data: { nickname: '小明' } } })
+      expect.objectContaining({
+        email: 'real@x.com',
+        options: expect.objectContaining({
+          data: expect.objectContaining({ nickname: '小明', display_name: '小明' })
+        })
+      })
     )
     expect(useAuthStore.getState().user?.email).toBe('real@x.com')
   })

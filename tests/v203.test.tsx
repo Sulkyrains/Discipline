@@ -95,7 +95,9 @@ describe('v2.0.3 nickname identity', () => {
     expect(mockSignUp).toHaveBeenCalledWith(
       expect.objectContaining({
         email: await nicknameToEmail('小明'),
-        options: { data: { nickname: '小明' } }
+        options: expect.objectContaining({
+          data: expect.objectContaining({ nickname: '小明', display_name: '小明' })
+        })
       })
     )
     expect(useAuthStore.getState().user?.nickname).toBe('小明')

@@ -2007,6 +2007,10 @@ input[type='range'] {
   padding: 14px 16px;
 }
 
+.admin-feedback-item.done {
+  opacity: 0.55;
+}
+
 .admin-feedback-head {
   display: flex;
   align-items: center;
