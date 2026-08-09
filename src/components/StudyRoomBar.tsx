@@ -42,6 +42,9 @@ export default function StudyRoomBar() {
       <span className="study-room-bar-name">🎧 {room.name}</span>
       <span className="chip chip-tag">{t(lang, 'studyMembers', { n: members.length })}</span>
       <span className={`chip chip-status-${myStatus ?? 'idle'}`}>{t(lang, statusKey(myStatus))}</span>
+      <button className="btn btn-primary btn-sm" onClick={() => navigate(`/study/${room.id}`)}>
+        {t(lang, 'studyBackToRoom')}
+      </button>
       <button className="btn btn-ghost btn-sm" onClick={onLeave}>
         {t(lang, 'studyLeave')}
       </button>

@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.1.2',
+    date: '2026-08-10',
+    zh: '自习室优化：顶部状态条新增“回到房间”按钮；每位用户最多同时加入或创建一个房间（新增 study_memberships 表做唯一约束，跨标签页/跨设备同样生效）；修复成员数量后分隔符乱码。需执行一次性 SQL（创建 study_memberships 表与策略）。',
+    en: 'Study-room polish: the top bar now has a “Back to room” button; each user can join or create at most one room at a time (a study_memberships table enforces this across tabs/devices); fixed the garbled separator after the member count. A one-time SQL creates the memberships table and its policy.'
+  },
+  {
     version: '2.1.1',
     date: '2026-08-10',
     zh: '线上自习室 11 项优化：成员头像/昵称与账号同步；成员列表标注房主；房间分公开/私密（公开大厅直进、私密凭邀请码）；界面布局对齐防溢出；仅房主可解散；专注中可进入自习室；加入后切换页面不退出并常驻顶部状态条；房主离开自动移交给最早加入的成员（房主独自离开时房间自动解散）；房间内显示各成员专注状态与时长；房主可移除加入满 3 分钟仍空闲的成员；成员状态保持空闲/专注/休息三态。需执行一次性 SQL（study_rooms 增加 is_public、id 改为 text、新增房主 update 策略）。',

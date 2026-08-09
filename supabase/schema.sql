@@ -173,6 +173,18 @@ create policy "study_rooms owner update" on public.study_rooms
 
 create index if not exists idx_study_rooms_code on public.study_rooms (code);
 
+-- Discipline v2.1.2: 每位用户最多同时加入/创建一个房间
+create table if not exists public.study_memberships (
+  user_id uuid primary key references auth.users (id) on delete cascade,
+  room_id text not null references public.study_rooms (id) on delete cascade,
+  joined_at timestamptz not null default now()
+);
+
+alter table public.study_memberships enable row level security;
+
+create policy "memberships own row" on public.study_memberships
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
 -- Discipline v2.0.12: 反馈管理后台
 create table if not exists public.admins (
   user_id uuid primary key references auth.users (id) on delete cascade,

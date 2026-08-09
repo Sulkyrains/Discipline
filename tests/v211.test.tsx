@@ -3,10 +3,13 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import FocusGuard from '../src/components/FocusGuard'
 import {
+  clearMembership,
   createStudyRoom,
+  getMyMembership,
   isRemovableMember,
   listStudyRooms,
   pickSuccessor,
+  setMembership,
   type RoomMember
 } from '../src/lib/studyRoom'
 import { useFocusStore } from '../src/stores/useFocusStore'
@@ -24,6 +27,8 @@ const roomRow = {
 const mockFrom = vi.fn()
 const insertCalls: Array<{ table: string; rows: unknown[] }> = []
 const eqCalls: Array<{ table: string; args: unknown[] }> = []
+const membershipUpserts: Array<{ row: unknown; opts: unknown }> = []
+const membershipSelects: Array<{ args: unknown[] }> = []
 
 vi.mock('../src/lib/supabase', () => ({
   isSupabaseConfigured: () => true,
@@ -48,6 +53,20 @@ function studyChain() {
   }
 }
 
+function membershipChain() {
+  return {
+    select: (...args: unknown[]) => {
+      membershipSelects.push({ args })
+      return { eq: vi.fn(() => ({ maybeSingle: vi.fn(async () => ({ data: null, error: null })) })) }
+    },
+    upsert: (row: unknown, opts: unknown) => {
+      membershipUpserts.push({ row, opts })
+      return Promise.resolve({ error: null })
+    },
+    delete: () => ({ eq: vi.fn(async () => ({ error: null })) })
+  }
+}
+
 function member(id: string, joinedAt: number, status: RoomMember['status'], focusSeconds = 0): RoomMember {
   return { userId: id, name: id, status, focusSeconds, joinedAt }
 }
@@ -55,7 +74,11 @@ function member(id: string, joinedAt: number, status: RoomMember['status'], focu
 beforeEach(() => {
   insertCalls.length = 0
   eqCalls.length = 0
-  mockFrom.mockImplementation(() => studyChain())
+  membershipUpserts.length = 0
+  membershipSelects.length = 0
+  mockFrom.mockImplementation((table: string) =>
+    table === 'study_memberships' ? membershipChain() : studyChain()
+  )
   useFocusStore.setState({ active: false })
 })
 
@@ -87,6 +110,17 @@ describe('v2.1.1 study room helpers', () => {
     const rooms = await listStudyRooms()
     expect(rooms).toHaveLength(1)
     expect(eqCalls.some((c) => c.args[0] === 'is_public' && c.args[1] === true)).toBe(true)
+  })
+
+  it('stores one membership per user', async () => {
+    expect(await setMembership('u1', 'r1')).toBe(true)
+    expect(membershipUpserts[0]).toMatchObject({
+      row: { user_id: 'u1', room_id: 'r1' },
+      opts: { onConflict: 'user_id' }
+    })
+    await getMyMembership('u1')
+    expect(membershipSelects.length).toBe(1)
+    await clearMembership('u1')
   })
 })
 

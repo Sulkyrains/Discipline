@@ -3,9 +3,12 @@ import type { RealtimeChannel } from '@supabase/supabase-js'
 import { t } from '../lib/i18n'
 import { supabase } from '../lib/supabase'
 import {
+  clearMembership,
   deleteStudyRoom,
+  getMyMembership,
   getStudyRoom,
   pickSuccessor,
+  setMembership,
   updateStudyRoomOwner,
   type MemberStatus,
   type RoomMember,
@@ -21,7 +24,7 @@ interface StudyRoomState {
   members: RoomMember[]
   joinedAt: number
   kickedAt: number
-  join: (roomId: string) => Promise<boolean>
+  join: (roomId: string) => Promise<'joined' | 'other' | 'notfound' | 'error'>
   leave: () => void
   disband: () => void
   kick: (userId: string) => void
@@ -105,12 +108,16 @@ export const useStudyRoomStore = create<StudyRoomState>((set, get) => ({
   kickedAt: 0,
 
   join: async (roomId) => {
-    if (!supabase) return false
+    if (!supabase) return 'error'
     const user = useAuthStore.getState().user
-    if (!user) return false
-    if (channel) return true // already in a room
+    if (!user) return 'error'
+    if (channel) return 'joined' // already in a room on this client
+    // A user may only be in one room at a time (enforced via memberships).
+    const membership = await getMyMembership(user.id)
+    if (membership && membership.room_id !== roomId) return 'other'
     const room = await getStudyRoom(roomId)
-    if (!room) return false
+    if (!room) return 'notfound'
+    await setMembership(user.id, roomId)
     const joinedAt = Date.now()
     set({ room, members: [], joinedAt, kickedAt: 0 })
 
@@ -179,10 +186,12 @@ export const useStudyRoomStore = create<StudyRoomState>((set, get) => ({
     trackPresence()
     statusTimer = window.setInterval(() => trackPresence(), 15_000)
     focusUnsub = useFocusStore.subscribe(() => trackPresence())
-    return true
+    return 'joined'
   },
 
   leave: () => {
+    const user = useAuthStore.getState().user
+    if (user) void clearMembership(user.id)
     cleanupChannel()
     set({ room: null, members: [], joinedAt: 0, kickedAt: 0 })
   },

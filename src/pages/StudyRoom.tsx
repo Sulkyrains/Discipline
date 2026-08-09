@@ -24,6 +24,7 @@ export default function StudyRoomPage() {
   const disband = useStudyRoomStore((s) => s.disband)
   const kick = useStudyRoomStore((s) => s.kick)
   const [notFound, setNotFound] = useState(false)
+  const [inOtherRoom, setInOtherRoom] = useState(false)
   const [busy, setBusy] = useState(false)
 
   const enabled = isSupabaseConfigured()
@@ -31,8 +32,10 @@ export default function StudyRoomPage() {
   useEffect(() => {
     if (!enabled || !user || !id || joinedAt > 0) return
     let alive = true
-    void join(id).then((ok) => {
-      if (alive && !ok) setNotFound(true)
+    void join(id).then((r) => {
+      if (!alive) return
+      if (r === 'notfound') setNotFound(true)
+      else if (r === 'other') setInOtherRoom(true)
     })
     return () => {
       alive = false
@@ -54,6 +57,25 @@ export default function StudyRoomPage() {
         <div className="study-actions">
           <button className="btn btn-primary" onClick={() => navigate('/login')}>
             {t(lang, 'goLogin')}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (inOtherRoom) {
+    return (
+      <div className="page page-study">
+        <EmptyState emoji="🚪" text={t(lang, 'studyInAnotherRoom')} />
+        <div className="study-actions">
+          <button
+            className="btn btn-ghost"
+            onClick={() => {
+              leave()
+              navigate('/study')
+            }}
+          >
+            {t(lang, 'studyLeave')}
           </button>
         </div>
       </div>
@@ -121,7 +143,7 @@ export default function StudyRoomPage() {
         <div>
           <h1 className="page-title">🎧 {room.name}</h1>
           <p className="muted">
-            {t(lang, 'studyMembers', { n: members.length })} 路 {room.code}
+            {t(lang, 'studyMembers', { n: members.length })} · {room.code}
             <span className="chip chip-tag" style={{ marginLeft: 6 }}>
               {room.is_public ? t(lang, 'studyPublic') : t(lang, 'studyPrivate')}
             </span>

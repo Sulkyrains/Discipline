@@ -2,7 +2,13 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { t } from '../lib/i18n'
 import { isSupabaseConfigured } from '../lib/supabase'
-import { createStudyRoom, joinStudyRoomByCode, listStudyRooms, type StudyRoom } from '../lib/studyRoom'
+import {
+  createStudyRoom,
+  getMyMembership,
+  joinStudyRoomByCode,
+  listStudyRooms,
+  type StudyRoom
+} from '../lib/studyRoom'
 import { useAppStore } from '../stores/useAppStore'
 import { useAuthStore } from '../stores/useAuthStore'
 import { useStudyRoomStore } from '../stores/useStudyRoomStore'
@@ -56,11 +62,20 @@ export default function Study() {
 
   const onCreate = async () => {
     if (!name.trim() || busy) return
+    const membership = await getMyMembership(user.id)
+    if (membership) {
+      useToastStore.getState().push({ title: t(lang, 'studyInAnotherRoom'), kind: 'warn' })
+      return
+    }
     setBusy(true)
     const room = await createStudyRoom(name.trim(), user.id, isPublic)
     setBusy(false)
     if (room) {
-      await joinRoom(room.id)
+      const status = await joinRoom(room.id)
+      if (status === 'other') {
+        useToastStore.getState().push({ title: t(lang, 'studyInAnotherRoom'), kind: 'warn' })
+        return
+      }
       useToastStore.getState().push({ title: t(lang, 'studyCreateOk'), kind: 'success' })
       navigate(`/study/${room.id}`)
     } else {
@@ -74,7 +89,11 @@ export default function Study() {
     const room = await joinStudyRoomByCode(code)
     setBusy(false)
     if (room) {
-      await joinRoom(room.id)
+      const status = await joinRoom(room.id)
+      if (status === 'other') {
+        useToastStore.getState().push({ title: t(lang, 'studyInAnotherRoom'), kind: 'warn' })
+        return
+      }
       useToastStore.getState().push({ title: t(lang, 'studyJoinOk'), kind: 'success' })
       navigate(`/study/${room.id}`)
     } else {

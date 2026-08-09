@@ -95,6 +95,30 @@ export async function updateStudyRoomOwner(id: string, ownerId: string): Promise
   return !error
 }
 
+export async function getMyMembership(userId: string): Promise<{ room_id: string } | null> {
+  if (!supabase) return null
+  const { data, error } = await supabase
+    .from('study_memberships')
+    .select('room_id')
+    .eq('user_id', userId)
+    .maybeSingle()
+  if (error || !data) return null
+  return data as { room_id: string }
+}
+
+export async function setMembership(userId: string, roomId: string): Promise<boolean> {
+  if (!supabase) return false
+  const { error } = await supabase
+    .from('study_memberships')
+    .upsert({ user_id: userId, room_id: roomId }, { onConflict: 'user_id' })
+  return !error
+}
+
+export async function clearMembership(userId: string): Promise<void> {
+  if (!supabase) return
+  await supabase.from('study_memberships').delete().eq('user_id', userId)
+}
+
 /** Returns the earliest-joined member (owner successor candidate). */
 export function pickSuccessor(members: RoomMember[]): RoomMember | null {
   if (members.length === 0) return null
