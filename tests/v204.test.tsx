@@ -194,7 +194,10 @@ describe('v2.0.4 signin routing and recovery actions', () => {
     useAuthStore.setState({ user: { id: 'u1', email: 'real@x.com', nickname: '小明' } })
     mockResetEmail.mockResolvedValue({ error: null })
     expect(await useAuthStore.getState().sendResetEmail()).toBe(true)
-    expect(mockResetEmail).toHaveBeenCalledWith('real@x.com')
+    expect(mockResetEmail).toHaveBeenCalledWith(
+      'real@x.com',
+      expect.objectContaining({ redirectTo: expect.stringMatching(/^https?:/) })
+    )
   })
 
   it('falls back to the profile-bound email for the reset email', async () => {
@@ -202,7 +205,44 @@ describe('v2.0.4 signin routing and recovery actions', () => {
     mockRpc.mockResolvedValue({ data: 'real@x.com', error: null })
     mockResetEmail.mockResolvedValue({ error: null })
     expect(await useAuthStore.getState().sendResetEmail()).toBe(true)
-    expect(mockResetEmail).toHaveBeenCalledWith('real@x.com')
+    expect(mockResetEmail).toHaveBeenCalledWith(
+      'real@x.com',
+      expect.objectContaining({ redirectTo: expect.stringMatching(/^https?:/) })
+    )
+  })
+
+  it('rejects changePassword when the old password is wrong', async () => {
+    useAuthStore.setState({ user: { id: 'u1', email: 'real@x.com', nickname: '小明' } })
+    mockSignIn.mockResolvedValue({ data: { user: null }, error: { message: 'invalid' } })
+    expect(await useAuthStore.getState().changePassword('wrong', 'newpass1')).toBe(false)
+    expect(useAuthStore.getState().error).toBe('oldPasswordIncorrect')
+    expect(mockUpdateUser).not.toHaveBeenCalled()
+  })
+
+  it('changes the password after verifying the old one', async () => {
+    useAuthStore.setState({ user: { id: 'u1', email: 'real@x.com', nickname: '小明' } })
+    mockSignIn.mockResolvedValue({ data: { user: { id: 'u1' } }, error: null })
+    mockUpdateUser.mockResolvedValue({ error: null })
+    expect(await useAuthStore.getState().changePassword('old1', 'newpass1')).toBe(true)
+    expect(mockSignIn).toHaveBeenCalledWith({ email: 'real@x.com', password: 'old1' })
+    expect(mockUpdateUser).toHaveBeenCalledWith({ password: 'newpass1' })
+  })
+
+  it('marks the recovery flow when the URL contains a recovery token', async () => {
+    const originalLocation = window.location
+    Object.defineProperty(window, 'location', {
+      value: {
+        search: '?type=recovery&access_token=abc',
+        hash: '',
+        origin: 'http://localhost:3000',
+        pathname: '/'
+      },
+      configurable: true
+    })
+    useAuthStore.setState({ recovery: false })
+    useAuthStore.getState().init()
+    expect(useAuthStore.getState().recovery).toBe(true)
+    Object.defineProperty(window, 'location', { value: originalLocation, configurable: true })
   })
 
   it('updates the password and clears the recovery flag', async () => {

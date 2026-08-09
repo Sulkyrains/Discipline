@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { t } from '../lib/i18n'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
-import { formatClock } from '../lib/format'
+import { formatDateTime } from '../lib/format'
 import {
   addFeedbackMessage,
   lastFeedbackSeen,
@@ -35,7 +35,7 @@ function Thread({ thread }: { thread: FeedbackMessage[] }) {
         <div key={i} className={`feedback-bubble ${m.role === 'dev' ? 'dev' : 'user'}`}>
           <span className="feedback-bubble-role">{m.role === 'dev' ? '开发者' : '我'}</span>
           <p>{m.text}</p>
-          {m.at ? <span className="muted small">{formatClock(m.at)}</span> : null}
+          {m.at ? <span className="muted small">{formatDateTime(m.at)}</span> : null}
         </div>
       ))}
     </div>
@@ -277,7 +277,7 @@ export default function Feedback() {
                     </span>
                   ) : null}
                   <span className="chip">{t(lang, 'statusPending')}</span>
-                  <span className="muted small">{formatClock(item.createdAt)}</span>
+                  <span className="muted small">{formatDateTime(item.createdAt)}</span>
                   <button
                     type="button"
                     className="btn btn-danger btn-icon"
@@ -310,7 +310,7 @@ export default function Feedback() {
                   {item.status === 'done' && !isRead(item) ? (
                     <span className="chip">● {t(lang, 'feedbackNewReply')}</span>
                   ) : null}
-                  <span className="muted small">{formatClock(item.createdAt)}</span>
+                  <span className="muted small">{formatDateTime(item.createdAt)}</span>
                   <button
                     type="button"
                     className="btn btn-danger btn-icon"

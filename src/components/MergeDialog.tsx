@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { t } from '../lib/i18n'
 import { useAppStore } from '../stores/useAppStore'
 import { useAuthStore } from '../stores/useAuthStore'
+import { useToastStore } from '../stores/useToastStore'
 import ConfirmDialog from './ConfirmDialog'
 
 export default function MergeDialog() {
@@ -9,16 +11,29 @@ export default function MergeDialog() {
   const setPendingMerge = useAuthStore((s) => s.setPendingMerge)
   const lang = useAppStore((s) => s.settings.language)
   const count = useAppStore((s) => s.countLocalRecords())
+  const [merging, setMerging] = useState(false)
 
   if (!pendingMerge) return null
+
+  const confirm = async () => {
+    if (merging) return
+    setMerging(true)
+    const ok = await mergeWithCloud()
+    setMerging(false)
+    if (!ok) {
+      useToastStore.getState().push({ title: t(lang, 'mergeFailed'), kind: 'warn' })
+    }
+  }
+
   return (
     <ConfirmDialog
       open
       title={t(lang, 'mergeTitle')}
       body={t(lang, 'mergeBody', { n: count })}
-      confirmText={t(lang, 'mergeAction')}
+      confirmText={merging ? t(lang, 'merging') : t(lang, 'mergeAction')}
       cancelText={t(lang, 'mergeLater')}
-      onConfirm={() => void mergeWithCloud()}
+      disabled={merging}
+      onConfirm={() => void confirm()}
       onCancel={() => setPendingMerge(false)}
     />
   )

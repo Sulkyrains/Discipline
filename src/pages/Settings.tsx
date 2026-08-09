@@ -70,6 +70,7 @@ export default function Settings() {
   const confirmPhoneReset = useAuthStore((s) => s.confirmPhoneReset)
   const uploadAvatar = useAuthStore((s) => s.uploadAvatar)
   const sendResetEmail = useAuthStore((s) => s.sendResetEmail)
+  const changePassword = useAuthStore((s) => s.changePassword)
   const mergeWithCloud = useAuthStore((s) => s.mergeWithCloud)
   const navigate = useNavigate()
   const [permState, setPermState] = useState<'unknown' | 'granted' | 'denied'>('unknown')
@@ -94,6 +95,10 @@ export default function Settings() {
   const [phoneResetCode, setPhoneResetCode] = useState('')
   const [phoneResetPassword, setPhoneResetPassword] = useState('')
   const [phoneResetBusy, setPhoneResetBusy] = useState(false)
+  const [oldPassword, setOldPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [newPassword2, setNewPassword2] = useState('')
+  const [changePwBusy, setChangePwBusy] = useState(false)
   const [updating, setUpdating] = useState(false)
   const [editProfile, setEditProfile] = useState(false)
   const [admin, setAdmin] = useState(false)
@@ -132,7 +137,9 @@ export default function Settings() {
                   ? t(lang, 'phoneConfig')
                   : authError === 'passwordTooShort'
                     ? t(lang, 'passwordTooShort')
-                    : ''
+                    : authError === 'oldPasswordIncorrect'
+                      ? t(lang, 'oldPasswordIncorrect')
+                      : ''
     : ''
 
   const onEditAvatarPick = (e: ChangeEvent<HTMLInputElement>) => {
@@ -165,6 +172,9 @@ export default function Settings() {
     setPhoneResetStep('idle')
     setPhoneResetCode('')
     setPhoneResetPassword('')
+    setOldPassword('')
+    setNewPassword('')
+    setNewPassword2('')
     setCroppedPreview(null)
   }
 
@@ -275,6 +285,19 @@ export default function Settings() {
       title: ok ? t(lang, 'resetSent') : t(lang, 'resetFail'),
       kind: ok ? 'success' : 'warn'
     })
+  }
+
+  const changePw = async () => {
+    if (changePwBusy || newPassword.length < 6 || newPassword !== newPassword2) return
+    setChangePwBusy(true)
+    const ok = await changePassword(oldPassword, newPassword)
+    setChangePwBusy(false)
+    if (ok) {
+      useToastStore.getState().push({ title: t(lang, 'passwordChanged'), kind: 'success' })
+      setOldPassword('')
+      setNewPassword('')
+      setNewPassword2('')
+    }
   }
 
   const startImport = (kind: 'noise' | 'music') => {
@@ -412,6 +435,7 @@ export default function Settings() {
               <div className="account-head-main">
                 <strong>{user.nickname ?? user.email}</strong>
                 <span className="muted small">{emailBound ? user.email : t(lang, 'emailNotBound')}</span>
+                {admin ? <span className="chip chip-ok">🛡 {t(lang, 'adminBadge')}</span> : null}
                 {user.phone ? (
                   <span className="muted small">
                     {t(lang, 'phoneBound')}：{user.phone}
@@ -1002,6 +1026,48 @@ export default function Settings() {
           ) : (
             <p className="muted small">⚠️ {t(lang, 'phoneNotBound')}</p>
           )}
+          <p className="muted small">🔒 {t(lang, 'changePassword')}</p>
+          <label className="field">
+            <span>{t(lang, 'oldPassword')}</span>
+            <input
+              className="input"
+              type="password"
+              value={oldPassword}
+              autoComplete="current-password"
+              onChange={(e) => setOldPassword(e.target.value)}
+            />
+          </label>
+          <label className="field">
+            <span>{t(lang, 'password')}</span>
+            <input
+              className="input"
+              type="password"
+              value={newPassword}
+              autoComplete="new-password"
+              onChange={(e) => setNewPassword(e.target.value)}
+            />
+          </label>
+          <label className="field">
+            <span>{t(lang, 'confirmPassword')}</span>
+            <input
+              className="input"
+              type="password"
+              value={newPassword2}
+              autoComplete="new-password"
+              onChange={(e) => setNewPassword2(e.target.value)}
+            />
+          </label>
+          {newPassword2 !== '' && newPassword !== newPassword2 ? (
+            <p className="form-error">{t(lang, 'passwordMismatch')}</p>
+          ) : null}
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            disabled={changePwBusy || newPassword.length < 6 || newPassword !== newPassword2}
+            onClick={() => void changePw()}
+          >
+            {changePwBusy ? t(lang, 'binding') : t(lang, 'changePassword')}
+          </button>
           {authErrorText ? <p className="form-error">{authErrorText}</p> : null}
           <div className="form-actions">
             <button className="btn btn-ghost" onClick={() => setEditProfile(false)}>

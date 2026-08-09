@@ -34,6 +34,7 @@ interface AuthState {
   confirmPhoneReset: (code: string, newPassword: string) => Promise<boolean>
   uploadAvatar: (file: File) => Promise<boolean>
   setAvatarEmoji: (emoji: string) => Promise<boolean>
+  changePassword: (oldPassword: string, newPassword: string) => Promise<boolean>
   sendResetEmail: () => Promise<boolean>
   updatePassword: (newPassword: string) => Promise<boolean>
   recovery: boolean
@@ -140,6 +141,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   init: () => {
     if (!supabase) return
+    // Fallback: if the page was opened through a password-recovery link
+    // (tokens in the query or hash), treat it as a recovery session even if
+    // the PASSWORD_RECOVERY event was missed.
+    try {
+      const raw = window.location.search + window.location.hash
+      if (/[?&#]type=recovery/.test(raw) || /[?&#]access_token=/.test(raw)) {
+        set({ recovery: true })
+      }
+    } catch {
+      // ignore
+    }
     void supabase.auth.getSession().then(({ data }) => {
       const u = data.session?.user
       handleUser(u ? userInfoFromAuth(u) : null)
@@ -554,7 +566,33 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (mapped && !isDerivedEmail(mapped)) target = mapped
       else return false
     }
-    const { error } = await supabase.auth.resetPasswordForEmail(target)
+    const redirectTo = `${window.location.origin}${window.location.pathname}`
+    const { error } = await supabase.auth.resetPasswordForEmail(target, { redirectTo })
+    return !error
+  },
+
+  changePassword: async (oldPassword, newPassword) => {
+    const user = get().user
+    if (!user || !supabase) {
+      set({ error: 'config' })
+      return false
+    }
+    if (newPassword.length < 6) {
+      set({ error: 'passwordTooShort' })
+      return false
+    }
+    set({ loading: true, error: null })
+    // Verify the current password first.
+    const verify = await supabase.auth.signInWithPassword({
+      email: user.email,
+      password: oldPassword
+    })
+    if (verify.error || !verify.data?.user) {
+      set({ loading: false, error: 'oldPasswordIncorrect' })
+      return false
+    }
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    set({ loading: false, error: error ? 'auth' : null })
     return !error
   },
 

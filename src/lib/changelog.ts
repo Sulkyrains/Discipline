@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.0.38',
+    date: '2026-08-09',
+    zh: '修复邮件重置密码：点击邮件链接返回站点后自动弹出重置密码框；编辑资料新增“旧密码+新密码”手动改密；更新日志补全至 v1.0.0；“我的”页新增管理员身份标识；待办提醒配置与课程一致；修复“合并到云端”点击无反馈；反馈时间精确到年月日。',
+    en: 'Fixed email password reset (the reset dialog now pops automatically after returning from the email link); added manual password change (current + new password) in edit profile; changelog backfilled to v1.0.0; admin badge on the Me page; todo reminder config matches courses; fixed “Merge to cloud” giving no feedback; feedback timestamps now show full date and time.'
+  },
+  {
     version: '2.0.37',
     date: '2026-08-09',
     zh: '修复“立即更新”点击后仍停留在旧版本的根本问题：首次加载时初始 Service Worker 接管页面会被误判为“新版本已接管”，导致点击更新后直接刷新旧页面、从不安装新版本。现在只有页面已有旧 SW 控制或加载 10 秒后发生的接管才走快速路径；否则会完整等待新 Service Worker 安装并激活（含约 8MB 音频预缓存，最长约 30 秒）后再刷新，一次点击即可切到新版本。',
@@ -209,6 +215,204 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-08-08',
     zh: '线上自习室、登录系统实装、反馈完善。',
     en: 'Online study rooms, login system, feedback improvements.'
+  },
+  {
+    version: '1.9.24',
+    date: '2026-08-08',
+    zh: '移除底部导航长按拖动，排序/增删统一在“设置 → 导航栏管理”。',
+    en: 'Removed dock long-press drag; dock managed from settings only.'
+  },
+  {
+    version: '1.9.23',
+    date: '2026-08-08',
+    zh: '横屏专注全屏（底色随主题变换）、签到/打卡双状态日历、自定义音源导入；修复手机端底部导航拖拽与图标复原。',
+    en: 'Landscape focus fullscreen, dual-state check-in calendar, custom audio import; dock drag reliability fixes.'
+  },
+  {
+    version: '1.9.22',
+    date: '2026-08-08',
+    zh: '轮盘时间选择、左滑/长按删除、课程提醒实装、专注全屏、纯音乐专区。',
+    en: 'Time wheel picker, swipe/long-press delete, course reminders, focus fullscreen, calm music.'
+  },
+  {
+    version: '1.9.21',
+    date: '2026-08-08',
+    zh: '站点标题与 PWA 名称统一为 Discipline。',
+    en: 'Browser title and PWA name changed to Discipline.'
+  },
+  {
+    version: '1.9.20',
+    date: '2026-08-08',
+    zh: '修复自动刷新循环：单一 Service Worker 注册、被动检测更新、更新仅手动应用。',
+    en: 'No auto-refresh loops: single SW registration, passive update detection, updates only by explicit refresh.'
+  },
+  {
+    version: '1.9.19',
+    date: '2026-08-07',
+    zh: '迁移 Cloudflare Pages 托管（hash 路由 + 404 回退 + 相对资源路径），Service Worker 接管后刷新。',
+    en: 'Cloudflare Pages hosting (hash routing, 404 fallback, relative assets); reload on service worker takeover.'
+  },
+  {
+    version: '1.9.18',
+    date: '2026-08-07',
+    zh: '完整自动更新系统：自动检测、状态展示、更新完成提示。',
+    en: 'Complete auto-update system with status and update-complete toast.'
+  },
+  {
+    version: '1.9.17',
+    date: '2026-08-07',
+    zh: '设置中检查更新：发现旧版本自动更新到最新。',
+    en: 'Auto-update to latest when the settings check finds an old version.'
+  },
+  {
+    version: '1.9.16',
+    date: '2026-08-07',
+    zh: '手动签到（去除自动签到）、“今日打卡”更名“专注打卡”、导航栏管理折叠、源码混淆压缩、Gitee 托管适配。',
+    en: 'Manual daily sign-in, focus check-in label, collapsible nav manager, terser obfuscation, Gitee Pages prep.'
+  },
+  {
+    version: '1.9.15',
+    date: '2026-08-07',
+    zh: '休息设置移至休息界面、每日开屏（每日一句+今日签到）、新人引导。',
+    en: 'Break settings on break screens, daily splash with quote+sign-in, first-run onboarding.'
+  },
+  {
+    version: '1.9.14',
+    date: '2026-08-07',
+    zh: '休息可跳过（不暂停）、专注/休息结束自动跳转专注页并提醒（静音/震动/音效可选）、交互音量可调。',
+    en: 'Breaks skip without pause, auto-jump to focus on completion with sound/vibrate/silent reminder, ui sound volume.'
+  },
+  {
+    version: '1.9.13',
+    date: '2026-08-07',
+    zh: '一行快捷时长、8 种自然白噪音、7 种交互音效、专注页休息设置（移除设置页专注栏）。',
+    en: 'One-row duration presets, 8 natural sounds, 7 ui sounds, focus-page break settings.'
+  },
+  {
+    version: '1.9.12',
+    date: '2026-08-07',
+    zh: '快捷时长纯数字、隐藏成就、默认专注时长 15 分钟。',
+    en: 'Plain-number duration presets, hidden achievements, 15min default focus.'
+  },
+  {
+    version: '1.9.11',
+    date: '2026-08-07',
+    zh: '专注任务下拉显示时间/标签、优先级可空、无任务弹窗、时长 10–300 分钟、排序可记忆、自动配色、白名单收起、多途径打卡、成就扩充。',
+    en: 'Task info in focus picker, optional priority, no-task prompt, 10-300min, sortable courses/todos, auto color, whitelist collapse, multi-path check-in, achievements expansion.'
+  },
+  {
+    version: '1.9.10',
+    date: '2026-08-07',
+    zh: '白名单管理行一键删除、黑白时间渐变主题。',
+    en: 'One-tap whitelist delete on the manage row, neutral white/black time-gradient theme.'
+  },
+  {
+    version: '1.9.9',
+    date: '2026-08-07',
+    zh: '课程备注、待办颜色（同名同色规则）、待办标签与快捷标签。',
+    en: 'Course notes, todo colors with same-title rules, todo tags with quick tags.'
+  },
+  {
+    version: '1.9.8',
+    date: '2026-08-07',
+    zh: '分钟级时间输入与提醒、自动/灰/柔粉主题、应用列表白名单选择、专注结束可脱离。',
+    en: 'Minute-level time inputs and reminders, new themes, app-list whitelist picker, focus complete detach.'
+  },
+  {
+    version: '1.9.7',
+    date: '2026-08-07',
+    zh: '专注应用白名单（安卓无障碍强锁）、专注中切换任务/查看课表、统计图表优先。',
+    en: 'Focus app whitelist (+Android accessibility lock), task switching and timetable during focus, chart-first stats.'
+  },
+  {
+    version: '1.9.6',
+    date: '2026-08-07',
+    zh: '修复 GitHub Pages 深链 404：hash 路由与 404 跳转保留路由。',
+    en: 'No more 404 on GitHub Pages deep links (hash routing + path-preserving redirect).'
+  },
+  {
+    version: '1.9.5',
+    date: '2026-08-07',
+    zh: '中国风默认主题、9 月开学默认、首页星期显示、导航/签到/更新细节优化。',
+    en: 'China default theme, Sep 1 semester start, weekday on home, dock/sign-in/update refinements.'
+  },
+  {
+    version: '1.6.0',
+    date: '2026-08-07',
+    zh: 'UI 点击音效开关、一键待办日期筛选、逾期待办自动清理提示。',
+    en: 'UI click sounds, one-tap todo date filters, overdue auto-cleanup with keep prompt.'
+  },
+  {
+    version: '1.5.0',
+    date: '2026-08-07',
+    zh: '批量添加课程（多星期）与待办（每行一条），今日/明天快捷日期。',
+    en: 'Batch add courses across weekdays and batch add todos with today/tomorrow quick dates.'
+  },
+  {
+    version: '1.4.1',
+    date: '2026-08-07',
+    zh: '修复日历格溢出（固定高度）并显示当日专注分钟数。',
+    en: 'Calendar cells no longer overflow; today shows focus minutes vs the check-in target.'
+  },
+  {
+    version: '1.4.0',
+    date: '2026-08-07',
+    zh: '开屏固定语句、30 句每日一句、打卡日历（单日专注≥15 分钟）替换成就入口、首页实时时钟。',
+    en: 'Splash quote, 30 daily quotes, check-in calendar (>=15min/day) replacing achievements link, live clock on home.'
+  },
+  {
+    version: '1.3.2',
+    date: '2026-08-07',
+    zh: '自定义专注时长（下限 15 分钟）；每次进入站点显示游客/登录模式选择。',
+    en: 'Custom focus duration (>=15min); guest/login mode picker on every site entry.'
+  },
+  {
+    version: '1.3.1',
+    date: '2026-08-07',
+    zh: '专注计时器全局化：跨页面切换仍持续计时，仅暂停/放弃停止。',
+    en: 'Focus timer lives in a global store and keeps counting across page switches.'
+  },
+  {
+    version: '1.3.0',
+    date: '2026-08-07',
+    zh: '路由级代码分割（主包 622KB→244KB）、dvh/color-mix 回退、专注锁定导航、弹层 ESC 与无障碍、单一版本源、交互测试。',
+    en: 'Route-level code splitting, dvh/color-mix fallbacks, focus-locked dock, sheet ESC + a11y, single-source version, interaction tests.'
+  },
+  {
+    version: '1.2.3',
+    date: '2026-08-07',
+    zh: '定位弹层无法居中的根因（页面入场动画产生包含块），仅动画透明度，弹窗恢复视口居中。',
+    en: 'Root cause fix for sheet centering: animate opacity only so modals center in the real viewport.'
+  },
+  {
+    version: '1.2.2',
+    date: '2026-08-07',
+    zh: '进一步修复弹层居中（vh 回退+整层滚动+宽度回退）并一次性刷新缓存，让旧 PWA 客户端收到修复。',
+    en: 'Bulletproof centered sheet and one-time cache-busting reload for stale PWA clients.'
+  },
+  {
+    version: '1.2.1',
+    date: '2026-08-07',
+    zh: '修复弹层居中：紧凑居中弹窗、独立滚动与 vh 回退。',
+    en: 'Harden sheet centering with independent body scroll and vh fallback.'
+  },
+  {
+    version: '1.2.0',
+    date: '2026-08-07',
+    zh: '统一下方导航（选中放大）、弹层居中优化、简化账号模式、首次进入模式选择。',
+    en: 'Unified dock with active enlarge, centered sheets, simplified account modes, first-launch mode picker.'
+  },
+  {
+    version: '1.1.0',
+    date: '2026-08-07',
+    zh: '底部导航加入待办入口、全局白噪音、课程冲突检测、25 个成就、账号模式切换与自动部署。',
+    en: 'Dock todos, global white noise, course conflict checks, 25 achievements, account mode switch and auto deploy.'
+  },
+  {
+    version: '1.0.0',
+    date: '2026-08-07',
+    zh: 'Discipline 首版：专注番茄钟、课程表、待办、统计、成就、主题与本地数据同步。',
+    en: 'Initial release: focus timer, timetable, todos, stats, achievements, themes and local data sync.'
   }
 ]
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { t } from '../lib/i18n'
-import { formatClock } from '../lib/format'
+import { formatDateTime } from '../lib/format'
 import {
   deleteFeedback,
   isAdmin,
@@ -154,7 +154,7 @@ export default function Admin() {
                 ) : null}
                 {!row.ownerId ? <span className="chip">{t(lang, 'guest')}</span> : null}
                 {row.ownerId && row.nickname ? <span className="chip chip-tag">👤 {row.nickname}</span> : null}
-                <span className="muted small">{formatClock(row.updatedAt)}</span>
+                <span className="muted small">{formatDateTime(row.updatedAt)}</span>
               </div>
               <p className="admin-feedback-content">{row.content}</p>
               <p className="muted small">{row.contact ? `📮 ${row.contact}` : t(lang, 'adminNoContact')}</p>
@@ -164,7 +164,7 @@ export default function Admin() {
                     <div key={i} className={`feedback-bubble ${m.role === 'dev' ? 'dev' : 'user'}`}>
                       <span className="feedback-bubble-role">{m.role === 'dev' ? '开发者' : '用户'}</span>
                       <p>{m.text}</p>
-                      {m.at ? <span className="muted small">{formatClock(m.at)}</span> : null}
+                      {m.at ? <span className="muted small">{formatDateTime(m.at)}</span> : null}
                     </div>
                   ))}
                 </div>

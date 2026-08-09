@@ -7,6 +7,7 @@ interface ConfirmDialogProps {
   confirmText?: string
   cancelText?: string
   danger?: boolean
+  disabled?: boolean
   onConfirm: () => void
   onCancel: () => void
 }
@@ -18,6 +19,7 @@ export default function ConfirmDialog({
   confirmText = '确认',
   cancelText = '取消',
   danger = false,
+  disabled = false,
   onConfirm,
   onCancel
 }: ConfirmDialogProps) {
@@ -43,10 +45,14 @@ export default function ConfirmDialog({
         <h3>{title}</h3>
         {body ? <p>{body}</p> : null}
         <div className="dialog-actions">
-          <button className="btn btn-ghost" onClick={onCancel}>
+          <button className="btn btn-ghost" disabled={disabled} onClick={onCancel}>
             {cancelText}
           </button>
-          <button className={`btn ${danger ? 'btn-danger' : 'btn-primary'}`} onClick={onConfirm}>
+          <button
+            className={`btn ${danger ? 'btn-danger' : 'btn-primary'}`}
+            disabled={disabled}
+            onClick={onConfirm}
+          >
             {confirmText}
           </button>
         </div>

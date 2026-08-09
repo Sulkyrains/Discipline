@@ -12,6 +12,9 @@ import EmptyState from '../components/EmptyState'
 import ConfirmDialog from '../components/ConfirmDialog'
 import TimeWheel from '../components/TimeWheel'
 import SwipeDelete from '../components/SwipeDelete'
+import { requestNotificationPermission } from '../lib/notifications'
+
+let reminderPermissionAsked = false
 
 type Filter = 'all' | 'done' | string
 
@@ -38,6 +41,7 @@ const emptyForm = (): TodoForm => ({
 
 export default function Todos() {
   const lang = useAppStore((s) => s.settings.language)
+  const reminderDefault = useAppStore((s) => s.settings.reminderMinutes)
   const todos = useAppStore((s) => s.todos)
   const addTodo = useAppStore((s) => s.addTodo)
   const updateTodo = useAppStore((s) => s.updateTodo)
@@ -99,7 +103,7 @@ export default function Todos() {
     })
 
   const openNew = () => {
-    setForm(emptyForm())
+    setForm({ ...emptyForm(), reminderMinutes: reminderDefault })
     setMode('single')
     setBatchText('')
     setBatchError(false)
@@ -125,6 +129,10 @@ export default function Todos() {
   }
 
   const save = () => {
+    if ((form.reminderMinutes ?? 0) > 0 && !reminderPermissionAsked) {
+      reminderPermissionAsked = true
+      void requestNotificationPermission()
+    }
     for (const tag of form.tags) addTodoQuickTag(tag)
     if (editing === 'new' && mode === 'batch') {
       const lines = batchText
@@ -523,20 +531,17 @@ export default function Todos() {
           ) : null}
           <label className="field">
             <span>{t(lang, 'reminderShort')}</span>
-            <input
-              className="input"
-              type="number"
-              min={0}
-              max={60}
-              step={5}
+            <select
+              className="select"
               value={form.reminderMinutes ?? 0}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  reminderMinutes: Math.max(0, Math.min(60, Number(e.target.value) || 0))
-                })
-              }
-            />
+              onChange={(e) => setForm({ ...form, reminderMinutes: Number(e.target.value) })}
+            >
+              {[0, 5, 10, 15, 30].map((m) => (
+                <option key={m} value={m}>
+                  {m === 0 ? t(lang, 'none') : `${m} ${t(lang, 'minutesBefore')}`}
+                </option>
+              ))}
+            </select>
           </label>
           <div className="field">
             <span>{t(lang, 'color')}</span>

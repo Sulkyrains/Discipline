@@ -228,6 +228,12 @@ export default function App() {
   }, [])
 
   useEffect(() => {
+    // A password-recovery session must pop the reset dialog immediately, even
+    // if the user has not passed the mode gate yet.
+    if (recovery) setEntered(true)
+  }, [recovery])
+
+  useEffect(() => {
     void syncFocusLockActive(focusActive)
   }, [focusActive])
 

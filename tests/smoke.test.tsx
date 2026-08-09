@@ -3,6 +3,8 @@ import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it } from 'vitest'
 import App from '../src/App'
 import { useAppStore } from '../src/stores/useAppStore'
+import { useAuthStore } from '../src/stores/useAuthStore'
+import { t } from '../src/lib/i18n'
 
 describe('app smoke', () => {
   beforeEach(() => {
@@ -39,5 +41,16 @@ describe('app smoke', () => {
       useAppStore.getState().setSettings({ theme: 'vibrant' })
     })
     expect(document.documentElement.dataset.theme).toBe('vibrant')
+  })
+
+  it('pops the password reset dialog immediately for a recovery session', () => {
+    useAuthStore.setState({ recovery: true })
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <App />
+      </MemoryRouter>
+    )
+    expect(screen.getByText(t('zh', 'resetTitle'))).toBeInTheDocument()
+    useAuthStore.setState({ recovery: false })
   })
 })
