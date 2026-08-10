@@ -61,8 +61,12 @@ public class FocusLockPlugin extends Plugin {
     Set<String> set = new HashSet<>();
     if (arr != null) {
       for (int i = 0; i < arr.length(); i++) {
-        String p = arr.getString(i);
-        if (p != null) set.add(p);
+        try {
+          String p = arr.getString(i);
+          if (p != null) set.add(p);
+        } catch (org.json.JSONException ignored) {
+          // skip malformed entries
+        }
       }
     }
     prefs().edit().putStringSet(KEY_WHITELIST, set).apply();

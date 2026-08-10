@@ -40,6 +40,16 @@ npm run build      # 产物输出到 dist/
 - 当前站点：https://your-discipline.pages.dev（正式域名）。
 - 旧域名 https://discipline-8cb.pages.dev 已停更，仅保留访问（供旧用户迁移）。
 
+## Android APK
+
+- 下载入口：网站“我的”页底部“Android 客户端 → 下载 APK”，或直接访问
+  https://your-discipline.pages.dev/apk/Discipline-v2.2.1.apk
+- 签名密钥保存在本机 `C:\Users\28683\.discipline-build\discipline-release.keystore`
+  （口令见同目录 `keystore-info.txt`），后续重新打包时用同一密钥签名以便覆盖安装。
+- 打包流程：`npm run build:gh-pages` → `npx cap sync android` → 在 `android/` 下
+  `gradlew assembleRelease`（需 JDK 17 + Android SDK，国内网络可加阿里云 Maven 镜像 init 脚本），
+  再用 build-tools 的 `zipalign` + `apksigner` 签名。
+
 ## v2.1 待办（延后）
 
 - APK 内强锁：完善 Android 无障碍服务与系统级前台应用拦截（当前保留 FocusLock 插件骨架与 Web 端白名单）。

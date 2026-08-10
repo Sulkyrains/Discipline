@@ -801,6 +801,16 @@ export default function Settings() {
           <span className="muted">{t(lang, 'contactAuthor')}</span>
           <span>2868377495</span>
         </div>
+        <div className="settings-row">
+          <span className="muted">{t(lang, 'downloadApk')}</span>
+          <a
+            className="btn btn-ghost btn-sm"
+            href="./apk/Discipline-v2.2.1.apk"
+            download="Discipline-v2.2.1.apk"
+          >
+            {t(lang, 'downloadApkAction')}
+          </a>
+        </div>
       </section>
 
       <Sheet

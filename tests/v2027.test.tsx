@@ -19,5 +19,7 @@ describe('v2.0.27 settings footer', () => {
     expect(screen.getByText('怏')).toBeInTheDocument()
     expect(screen.getByText('联系作者')).toBeInTheDocument()
     expect(screen.getByText('2868377495')).toBeInTheDocument()
+    expect(screen.getByText('Android 客户端')).toBeInTheDocument()
+    expect(screen.getByText('下载 APK')).toBeInTheDocument()
   })
 })

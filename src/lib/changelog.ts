@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.2.1',
+    date: '2026-08-10',
+    zh: '新增 Android APK 客户端下载入口（位于“我的”页底部），提供打包好的安卓安装包。',
+    en: 'Added an Android APK download entry at the bottom of the Me page with a prebuilt Android package.'
+  },
+  {
     version: '2.2.0',
     date: '2026-08-10',
     zh: '细节优化与体验调整。',
