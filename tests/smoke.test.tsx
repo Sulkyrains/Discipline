@@ -8,6 +8,7 @@ import { t } from '../src/lib/i18n'
 
 describe('app smoke', () => {
   beforeEach(() => {
+    localStorage.removeItem('discipline-entered')
     useAppStore.setState({
       settings: useAppStore.getState().settings,
       courses: [],

@@ -8,6 +8,7 @@ import Focus from '../src/pages/Focus'
 import Settings from '../src/pages/Settings'
 
 function resetStores() {
+  localStorage.removeItem('discipline-entered')
   useAppStore.setState({
     settings: { ...defaultSettings(), language: 'zh' },
     courses: [],

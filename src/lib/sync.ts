@@ -22,12 +22,13 @@ export function mergeById<T extends { id: string; updatedAt?: string }>(
 
 export function mergeCollections(local: AppData, cloud: Partial<AppData>): AppData {
   return {
-    // The focus timer display mode is a per-device preference: always keep the
-    // local choice (defaults to countdown) so a value stored on another device
-    // cannot override this device's default.
+    // The focus timer display mode and the theme are per-device preferences:
+    // always keep the local choice so values stored on another device (e.g. an
+    // old 'china' default) cannot override this device's selection during sync.
     settings: {
       ...(cloud.settings ?? local.settings),
-      timerMode: local.settings.timerMode
+      timerMode: local.settings.timerMode,
+      theme: local.settings.theme
     },
     courses: mergeById(local.courses, cloud.courses ?? []),
     todos: mergeById(local.todos, cloud.todos ?? []),
@@ -48,6 +49,7 @@ export async function pushLocal(userId: string, data: AppData): Promise<PushResu
   const errors: string[] = []
   const settingsToPush: Settings = { ...data.settings }
   delete (settingsToPush as Partial<Settings>).timerMode
+  delete (settingsToPush as Partial<Settings>).theme
   const run = async (label: string, p: PromiseLike<{ error: unknown }>) => {
     try {
       const { error } = await Promise.resolve(p)

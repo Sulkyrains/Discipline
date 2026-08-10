@@ -108,4 +108,16 @@ describe('sync merging', () => {
     const merged = mergeCollections(local, cloud)
     expect(merged.settings.timerMode).toBe('countdown')
   })
+
+  it('keeps the local theme when cloud settings arrive', () => {
+    const local: AppData = {
+      ...base,
+      settings: { ...base.settings, theme: 'forest-light' }
+    }
+    const cloud: Partial<AppData> = {
+      settings: { ...base.settings, theme: 'china' }
+    }
+    const merged = mergeCollections(local, cloud)
+    expect(merged.settings.theme).toBe('forest-light')
+  })
 })

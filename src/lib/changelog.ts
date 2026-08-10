@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.2.3',
+    date: '2026-08-10',
+    zh: '修复切换主题后自动跳回中国风、以及随时间渐变主题过段时间恢复原色的 bug（主题改为仅本机偏好，不再被云端同步覆盖）；记住登录与模式选择，下次打开直接进入应用（APK 同样生效）；专注页新增“成长花园”：专注中每 5 秒生一个小苗，3 苗合成小树、3 小树合成大树，持续生长（本轮实时 + 本地累计）；网站与 Android APK 改为同版本同步发布。',
+    en: 'Fixed theme switching reverting to China style and the time-gradient theme returning to its base colors (theme is now a per-device preference that cloud sync cannot override); login and mode choice are remembered so the next launch goes straight in (works in the APK too); the focus page now shows a “focus garden” that grows one seedling every 5 seconds, combining 3 seedlings into a small tree and 3 small trees into a big tree (live per-round plus local lifetime totals); the website and Android APK are now released together with the same version.'
+  },
+  {
     version: '2.2.2',
     date: '2026-08-10',
     zh: '升级 Android 客户端安全措施：禁止应用数据备份、强制 HTTPS（禁止明文流量）、WebView 关闭文件/内容访问与混合内容、收紧 FileProvider 路径、应用内同样启用内容安全策略（CSP）。',

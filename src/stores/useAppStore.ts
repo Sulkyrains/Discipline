@@ -54,7 +54,9 @@ interface AppStoreState extends AppData {
   customSounds: CustomSound[]
   lastDailySplashDate: string
   hasOnboarded: boolean
+  gardenTotal: number
   setSettings: (partial: Partial<Settings>) => void
+  addGardenUnits: (n: number) => void
   setKeepOverdue: (v: boolean) => void
   setDockOrder: (paths: string[]) => void
   addWhitelistApp: (app: WhitelistApp) => void
@@ -128,8 +130,10 @@ export const useAppStore = create<AppStoreState>()(
       customSounds: [],
       lastDailySplashDate: '',
       hasOnboarded: false,
+      gardenTotal: 0,
 
       setSettings: (partial) => set({ settings: { ...get().settings, ...partial } }),
+      addGardenUnits: (n) => set({ gardenTotal: get().gardenTotal + Math.max(0, Math.floor(n)) }),
 
       setKeepOverdue: (v) => set({ keepOverdue: v }),
 
@@ -308,7 +312,8 @@ export const useAppStore = create<AppStoreState>()(
           todoQuickTags: [...DEFAULT_QUICK_TAGS],
           customSounds: [],
           lastDailySplashDate: '',
-          hasOnboarded: false
+          hasOnboarded: false,
+          gardenTotal: 0
         })
       }
     }),
@@ -330,13 +335,18 @@ export const useAppStore = create<AppStoreState>()(
         todoQuickTags: s.todoQuickTags,
         customSounds: s.customSounds,
         lastDailySplashDate: s.lastDailySplashDate,
-        hasOnboarded: s.hasOnboarded
+        hasOnboarded: s.hasOnboarded,
+        gardenTotal: s.gardenTotal
       }),
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<AppStoreState>
         return {
           ...current,
           ...p,
+          gardenTotal:
+            typeof (p as { gardenTotal?: unknown }).gardenTotal === 'number'
+              ? (p as { gardenTotal: number }).gardenTotal
+              : 0,
           settings: { ...defaultSettings(), ...p.settings },
           dockOrder: normalizeDockOrder(p.dockOrder),
           todos: (p.todos ?? current.todos).map((t) => ({

@@ -77,7 +77,13 @@ export default function App() {
   const lastDailySplashDate = useAppStore((s) => s.lastDailySplashDate)
   const hasOnboarded = useAppStore((s) => s.hasOnboarded)
   const firedRef = useRef<Set<string>>(new Set())
-  const [entered, setEntered] = useState(false)
+  const [entered, setEntered] = useState(() => {
+    try {
+      return localStorage.getItem('discipline-entered') === '1'
+    } catch {
+      return false
+    }
+  })
   const [overdueCount, setOverdueCount] = useState<number | null>(null)
 
   useEffect(() => {
@@ -234,6 +240,12 @@ export default function App() {
     if (recovery) setEntered(true)
   }, [recovery])
 
+  // A restored login session enters the app directly (also used by the APK:
+  // localStorage persists in the WebView, so the next launch goes straight in).
+  useEffect(() => {
+    if (user && !entered) setEntered(true)
+  }, [user, entered])
+
   useEffect(() => {
     void syncFocusLockActive(focusActive)
   }, [focusActive])
@@ -367,7 +379,16 @@ export default function App() {
     <div className="app-shell">
       <ScrollToTop />
       {!entered ? (
-        <Splash onChoose={() => setEntered(true)} />
+        <Splash
+          onChoose={() => {
+            setEntered(true)
+            try {
+              localStorage.setItem('discipline-entered', '1')
+            } catch {
+              /* ignore */
+            }
+          }}
+        />
       ) : (
         <>
           <StudyRoomBar />

@@ -15,6 +15,17 @@
    ```
 3. 验证：https://your-discipline.pages.dev/version.json 返回最新版本号。
 
+## 网站 + APK 同步发布（v2.2.3 起）
+每次发版网站与 Android APK 同版本同步更新：
+1. 升版本：`src/version.ts` 与 `package.json` 改为新版本；`android/app/build.gradle` 的
+   `versionCode +1`、`versionName` 改为同版本；changelog 追加条目。
+2. 构建 Web：`npm run build:gh-pages`。
+3. 构建并签名 APK（自动完成 sync/gradle/zipalign/apksigner/复制到 dist/apk/）：
+   `node scripts/build-apk.mjs <版本号>`（密钥信息默认读自
+   `C:\Users\28683\.discipline-build\keystore-info.txt`，可用环境变量覆盖）。
+4. 一次性部署网站与 APK：`wrangler pages deploy dist --project-name=your-discipline --branch=main`。
+5. 验证：`version.json=新版本`、`/apk/Discipline-v<版本>.apk` 可下载且 SHA-256 与本机一致。
+
 ## 安全加固（v2.1.8）
 - 站点安全头（CSP / nosniff / frame / referrer / permissions / HSTS）由 `public/_headers` 下发，随构建部署自动生效；CSP 允许列表仅含当前 Supabase 项目域（`mdopqwkcaqioxgasqowd.supabase.co`），迁移项目时需同步更新。
 - Supabase 侧需在 SQL Editor 执行一次新版 `supabase/schema.sql`（幂等）：新增 `nickname_lookup_attempts` 限流表（并启用 RLS，仅 security definer 函数可访问，防止匿名绕过限流）、重写 `get_auth_email_by_nickname`（每昵称 10 分钟 ≤10 次）、`avatars` 桶恢复为仅本人目录可写的可靠策略（客户端校验 image/* 与 10MB，服务端不做 metadata 校验以避免版本差异导致上传失败）。

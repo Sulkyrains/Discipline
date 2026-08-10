@@ -13,6 +13,7 @@ import { useFocusStore } from '../src/stores/useFocusStore'
 import { useSoundStore } from '../src/stores/useSoundStore'
 
 function resetStores() {
+  localStorage.removeItem('discipline-entered')
   useAppStore.setState({
     settings: { ...useAppStore.getState().settings, language: 'zh' },
     courses: [],

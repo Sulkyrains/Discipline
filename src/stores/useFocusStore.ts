@@ -30,6 +30,7 @@ interface FocusStore {
   phase: TimerPhase
   taskId: string | null
   startedAt: string | null
+  garden: number
   fsMode: 'off' | 'system' | 'inapp'
   lockedOrientation: boolean
   start: () => void
@@ -51,6 +52,7 @@ interface FocusStore {
 let interval: ReturnType<typeof setInterval> | null = null
 let lastTick = 0
 let acc = 0
+let gardenAcc = 0
 const handlers = new Set<EventHandler>()
 
 function stopInterval(): void {
@@ -59,12 +61,14 @@ function stopInterval(): void {
     interval = null
   }
   acc = 0
+  gardenAcc = 0
 }
 
 function startInterval(): void {
   if (interval) return
   lastTick = Date.now()
   acc = 0
+  gardenAcc = 0
   interval = setInterval(() => {
     const now = Date.now()
     acc += (now - lastTick) / 1000
@@ -74,6 +78,19 @@ function startInterval(): void {
     acc -= whole
     const st = useFocusStore.getState()
     const { state, event } = tickTimer(st.timer, whole, useAppStore.getState().settings)
+    // Focus garden: one seedling per 5 focused seconds (paused/breaks do not grow).
+    if (state.phase === 'focus' && state.status === 'running') {
+      gardenAcc += whole
+      let grown = 0
+      while (gardenAcc >= 5) {
+        gardenAcc -= 5
+        grown += 1
+      }
+      if (grown > 0) {
+        useFocusStore.setState({ garden: st.garden + grown })
+        useAppStore.getState().addGardenUnits(grown)
+      }
+    }
     useFocusStore.setState({
       timer: state,
       active: isFocusActive(state),
@@ -120,6 +137,7 @@ export const useFocusStore = create<FocusStore>((set, get) => ({
   phase: 'focus',
   taskId: null,
   startedAt: null,
+  garden: 0,
   fsMode: 'off',
   lockedOrientation: false,
 
@@ -128,7 +146,8 @@ export const useFocusStore = create<FocusStore>((set, get) => ({
     const next = startTimer(s.timer)
     if (next.status !== 'running') return
     const startedAt = s.timer.phase === 'focus' && s.timer.status === 'idle' ? nowISO() : s.startedAt
-    set({ ...withTimer(next), startedAt })
+    const garden = s.timer.phase === 'focus' && s.timer.status === 'idle' ? 0 : s.garden
+    set({ ...withTimer(next), startedAt, garden })
     startInterval()
   },
 

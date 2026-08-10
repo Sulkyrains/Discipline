@@ -6,6 +6,7 @@ import { dateKey, minuteToHHMM, todayKey } from '../lib/format'
 import { MUSIC, SOUNDS, customTrackDef } from '../lib/audio'
 import { COMMON_APPS } from '../lib/appWhitelist'
 import { listInstalledApps } from '../lib/focusLock'
+import { gardenBreakdown } from '../lib/garden'
 import { playUiSound } from '../lib/uiSound'
 import { useAppStore } from '../stores/useAppStore'
 import { useFocusStore } from '../stores/useFocusStore'
@@ -38,6 +39,8 @@ export default function Focus() {
   const removeWhitelistApp = useAppStore((s) => s.removeWhitelistApp)
   const toggleTodo = useAppStore((s) => s.toggleTodo)
   const timer = useFocusStore((s) => s.timer)
+  const garden = useFocusStore((s) => s.garden)
+  const gardenTotal = useAppStore((s) => s.gardenTotal)
   const taskId = useFocusStore((s) => s.taskId)
   const setTaskId = useFocusStore((s) => s.setTaskId)
   const registerEventHandler = useFocusStore((s) => s.registerEventHandler)
@@ -281,6 +284,33 @@ export default function Focus() {
           {active && settings.showFocusClock ? <span className="timer-clock">{clock}</span> : null}
         </ProgressRing>
       </div>
+
+      {timer.phase === 'focus' && timer.status === 'running' ? (
+        <div className="card garden-card">
+          <div className="garden-head">
+            <h3 className="section-title">{t(lang, 'focusGarden')}</h3>
+            <span className="muted small">
+              {t(lang, 'gardenRound', { n: garden })} · {t(lang, 'gardenTotal', { n: gardenTotal })}
+            </span>
+          </div>
+          <div className="garden-scene">
+            {(() => {
+              const g = gardenBreakdown(garden)
+              const plants: React.ReactNode[] = []
+              for (let i = 0; i < g.bigTrees; i++) {
+                plants.push(<span key={`b${i}`} className="garden-plant garden-big-tree" />)
+              }
+              for (let i = 0; i < g.smallTrees; i++) {
+                plants.push(<span key={`s${i}`} className="garden-plant garden-small-tree" />)
+              }
+              for (let i = 0; i < g.seedlings; i++) {
+                plants.push(<span key={`p${i}`} className="garden-plant garden-seedling" />)
+              }
+              return plants
+            })()}
+          </div>
+        </div>
+      ) : null}
 
       <div className="timer-controls">
         {timer.status === 'running' && timer.phase === 'focus' ? (

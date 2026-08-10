@@ -162,6 +162,7 @@ describe('v2.1.7 timer mode stays local', () => {
     const result = await pushLocal('u1', { ...base, settings: { ...base.settings, timerMode: 'countup' } })
     expect(result.ok).toBe(true)
     expect((settingsPayloads[0] as { data: Partial<Settings> }).data.timerMode).toBeUndefined()
+    expect((settingsPayloads[0] as { data: Partial<Settings> }).data.theme).toBeUndefined()
   })
 })
 
