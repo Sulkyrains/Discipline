@@ -4,8 +4,8 @@ import { t } from '../lib/i18n'
 import { isFocusActive, minutesToSeconds, type TimerPhase } from '../lib/timer'
 import { dateKey, minuteToHHMM, todayKey } from '../lib/format'
 import { MUSIC, SOUNDS, customTrackDef } from '../lib/audio'
-import { COMMON_APPS } from '../lib/appWhitelist'
-import { listInstalledApps } from '../lib/focusLock'
+import { listInstalledApps, lockServiceEnabled, openAccessibilitySettings } from '../lib/focusLock'
+import { isNative } from '../lib/notifications'
 import { gardenBreakdown } from '../lib/garden'
 import { playUiSound } from '../lib/uiSound'
 import { useAppStore } from '../stores/useAppStore'
@@ -56,6 +56,7 @@ export default function Focus() {
   const [installedApps, setInstalledApps] = useState<WhitelistApp[]>([])
   const [deleteMode, setDeleteMode] = useState(false)
   const [wlCollapsed, setWlCollapsed] = useState(true)
+  const [lockEnabled, setLockEnabled] = useState(false)
   const [confirmBind, setConfirmBind] = useState(false)
   const [taskPickerOpen, setTaskPickerOpen] = useState(false)
   const [clockNow, setClockNow] = useState(() => new Date())
@@ -91,6 +92,11 @@ export default function Focus() {
     if (!active) return
     const iv = window.setInterval(() => setClockNow(new Date()), 1000)
     return () => window.clearInterval(iv)
+  }, [active])
+
+  useEffect(() => {
+    if (!isNative()) return
+    void lockServiceEnabled().then(setLockEnabled)
   }, [active])
 
   const onStart = (e: ReactMouseEvent) => {
@@ -218,7 +224,7 @@ export default function Focus() {
   const openPicker = async () => {
     playUiSound('soft', uiVol)
     const apps = await listInstalledApps()
-    setInstalledApps(apps.length > 0 ? apps.map((a) => ({ id: a.id, name: a.name, system: false })) : COMMON_APPS)
+    setInstalledApps(apps.map((a) => ({ id: a.id, name: a.name, system: false })))
     setPickerOpen(true)
   }
 
@@ -485,6 +491,20 @@ export default function Focus() {
           <h3 className="section-title">{t(lang, 'whitelistTitle')}</h3>
           {active ? <span className="chip chip-lock">{t(lang, 'whitelistLocked')}</span> : null}
         </div>
+        {!isNative() ? (
+          <p className="muted small">{t(lang, 'lockWebOnly')}</p>
+        ) : !lockEnabled ? (
+          <div className="lock-service-hint">
+            <span className="muted small">{t(lang, 'lockServiceHint')}</span>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={() => void openAccessibilitySettings()}
+            >
+              {t(lang, 'lockServiceOpen')}
+            </button>
+          </div>
+        ) : null}
         {appWhitelist.length === 0 ? (
           <p className="muted small">{t(lang, 'emptyWhitelist')}</p>
         ) : (

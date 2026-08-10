@@ -56,9 +56,10 @@ vi.mock('../src/lib/admin', () => ({
   }
 }))
 
-vi.mock('../src/lib/notifications', () => ({
-  requestNotificationPermission: () => mockReqPerm()
-}))
+vi.mock('../src/lib/notifications', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('../src/lib/notifications')>()
+  return { ...mod, requestNotificationPermission: () => mockReqPerm() }
+})
 
 vi.mock('../src/lib/sync', () => ({
   pushLocal: (...args: unknown[]) => mockPushLocal(...args),

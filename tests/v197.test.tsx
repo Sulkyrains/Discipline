@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { DEFAULT_SYSTEM_APPS, defaultWhitelist } from '../src/lib/appWhitelist'
+import { defaultWhitelist } from '../src/lib/appWhitelist'
 import { taskFocusMinutes } from '../src/lib/stats'
 import { todayKey } from '../src/lib/format'
 import Focus from '../src/pages/Focus'
@@ -11,6 +11,14 @@ import Timetable from '../src/pages/Timetable'
 import { defaultSettings, useAppStore } from '../src/stores/useAppStore'
 import { useFocusStore } from '../src/stores/useFocusStore'
 import type { Course, FocusSession, Todo } from '../src/types'
+
+vi.mock('../src/lib/focusLock', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('../src/lib/focusLock')>()
+  return {
+    ...mod,
+    listInstalledApps: vi.fn(async () => [{ id: 'com.tencent.mm', name: '微信' }])
+  }
+})
 
 function resetStores() {
   useAppStore.setState({
@@ -82,14 +90,14 @@ function course(id: string, name: string): Course {
 describe('v1.9.7 app whitelist', () => {
   beforeEach(resetStores)
 
-  it('seeds system apps and supports add/remove', () => {
-    expect(useAppStore.getState().appWhitelist.length).toBe(DEFAULT_SYSTEM_APPS.length)
+  it('starts with an empty whitelist and supports add/remove', () => {
+    expect(useAppStore.getState().appWhitelist.length).toBe(0)
     useAppStore.getState().addWhitelistApp({ id: 'com.example.app', name: '示例应用', system: false })
-    expect(useAppStore.getState().appWhitelist).toHaveLength(DEFAULT_SYSTEM_APPS.length + 1)
+    expect(useAppStore.getState().appWhitelist).toHaveLength(1)
     useAppStore.getState().addWhitelistApp({ id: 'com.example.app', name: '重复', system: false })
-    expect(useAppStore.getState().appWhitelist).toHaveLength(DEFAULT_SYSTEM_APPS.length + 1)
+    expect(useAppStore.getState().appWhitelist).toHaveLength(1)
     useAppStore.getState().removeWhitelistApp('com.example.app')
-    expect(useAppStore.getState().appWhitelist).toHaveLength(DEFAULT_SYSTEM_APPS.length)
+    expect(useAppStore.getState().appWhitelist).toHaveLength(0)
   })
 
   it('lets the user add an app from the app picker when idle', async () => {

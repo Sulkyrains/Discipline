@@ -57,6 +57,9 @@ describe('v1.9.10 whitelist management row', () => {
   })
 
   it('toggles one-tap delete mode and removes apps', () => {
+    for (let i = 0; i < 7; i++) {
+      useAppStore.getState().addWhitelistApp({ id: `com.app${i}`, name: `应用${i}`, system: false })
+    }
     render(
       <MemoryRouter>
         <Focus />

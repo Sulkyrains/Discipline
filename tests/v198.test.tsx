@@ -212,6 +212,9 @@ describe('v1.9.8 whitelist picker and focus detach', () => {
   beforeEach(resetStores)
 
   it('hides package names in the whitelist rows', () => {
+    for (let i = 0; i < 7; i++) {
+      useAppStore.getState().addWhitelistApp({ id: `com.app${i}`, name: `应用${i}`, system: false })
+    }
     useAppStore.getState().addWhitelistApp({ id: 'com.tencent.mm', name: '微信', system: false })
     render(<MemoryRouter><Focus /></MemoryRouter>)
     fireEvent.click(screen.getByText(/展开全部/))

@@ -12,7 +12,7 @@ import EmptyState from '../components/EmptyState'
 import ConfirmDialog from '../components/ConfirmDialog'
 import TimeWheel from '../components/TimeWheel'
 import SwipeDelete from '../components/SwipeDelete'
-import { requestNotificationPermission } from '../lib/notifications'
+import { requestExactAlarms, requestNotificationPermission } from '../lib/notifications'
 
 let reminderPermissionAsked = false
 
@@ -132,6 +132,7 @@ export default function Todos() {
     if ((form.reminderMinutes ?? 0) > 0 && !reminderPermissionAsked) {
       reminderPermissionAsked = true
       void requestNotificationPermission()
+      void requestExactAlarms()
     }
     for (const tag of form.tags) addTodoQuickTag(tag)
     if (editing === 'new' && mode === 'batch') {

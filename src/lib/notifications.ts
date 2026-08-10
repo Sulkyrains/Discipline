@@ -143,3 +143,64 @@ export async function scheduleClassReminders(
     /* ignore scheduling errors */
   }
 }
+
+/**
+ * Native todo reminders: schedules LocalNotifications for todos with a due
+ * time and reminder offset within the next 24h (cancels previous todo
+ * notifications first).
+ */
+export async function scheduleTodoReminders(todos: Todo[], now = new Date()): Promise<void> {
+  if (!isNative()) return
+  try {
+    const pending = await LocalNotifications.getPending()
+    const ours = pending.notifications.filter((n) => n.extra?.kind === 'todo')
+    if (ours.length > 0) {
+      await LocalNotifications.cancel({ notifications: ours })
+    }
+    const candidates = todos
+      .filter((td) => !td.completed)
+      .map((td) => ({ td, at: todoReminderAt(td) }))
+      .filter((c): c is { td: Todo; at: Date } => c.at !== null)
+      .filter((c) => c.at.getTime() > now.getTime() && c.at.getTime() <= now.getTime() + 86400000)
+    for (const c of candidates) {
+      await LocalNotifications.schedule({
+        notifications: [
+          {
+            id: hashString('todo-' + c.td.id),
+            title: '待办提醒',
+            body: c.td.title,
+            smallIcon: 'ic_stat_icon',
+            schedule: { at: c.at },
+            extra: { kind: 'todo', todoId: c.td.id }
+          }
+        ]
+      })
+    }
+  } catch {
+    /* ignore scheduling errors */
+  }
+}
+
+/** Whether precise (exact-alarm) notifications are enabled on Android 12+. */
+export async function exactAlarmGranted(): Promise<boolean> {
+  if (!isNative()) return true
+  try {
+    const s = await LocalNotifications.checkExactNotificationSetting()
+    return s.exact_alarm === 'granted'
+  } catch {
+    return true
+  }
+}
+
+/** Opens the exact-alarm settings when precise reminders are not granted. */
+export async function requestExactAlarms(): Promise<void> {
+  if (!isNative()) return
+  try {
+    const s = await LocalNotifications.checkExactNotificationSetting()
+    if (s.exact_alarm !== 'granted') {
+      await LocalNotifications.changeExactNotificationSetting()
+    }
+  } catch {
+    /* ignore */
+  }
+}

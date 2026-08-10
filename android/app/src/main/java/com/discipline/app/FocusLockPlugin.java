@@ -1,9 +1,13 @@
 package com.discipline.app;
 
+import android.accessibilityservice.AccessibilityServiceInfo;
+import android.view.accessibility.AccessibilityManager;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.content.Intent;
+import android.provider.Settings;
 
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
@@ -71,6 +75,41 @@ public class FocusLockPlugin extends Plugin {
     }
     prefs().edit().putStringSet(KEY_WHITELIST, set).apply();
     call.resolve();
+  }
+
+  @PluginMethod
+  public void isEnabled(PluginCall call) {
+    AccessibilityManager am =
+        (AccessibilityManager) getContext().getSystemService(Context.ACCESSIBILITY_SERVICE);
+    boolean enabled = false;
+    if (am != null && am.isEnabled()) {
+      for (AccessibilityServiceInfo info :
+          am.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK)) {
+        if (info.getResolveInfo() != null
+            && info.getResolveInfo().serviceInfo != null
+            && getContext()
+                .getPackageName()
+                .equals(info.getResolveInfo().serviceInfo.packageName)) {
+          enabled = true;
+          break;
+        }
+      }
+    }
+    JSObject result = new JSObject();
+    result.put("enabled", enabled);
+    call.resolve(result);
+  }
+
+  @PluginMethod
+  public void openAccessibilitySettings(PluginCall call) {
+    try {
+      Intent intent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
+      intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+      getContext().startActivity(intent);
+      call.resolve();
+    } catch (Exception e) {
+      call.reject(e.getMessage());
+    }
   }
 
   public static boolean isActive(Context context) {

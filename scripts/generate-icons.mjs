@@ -7,18 +7,23 @@ const here = dirname(fileURLToPath(import.meta.url))
 const outDir = join(here, '..', 'public', 'icons')
 mkdirSync(outDir, { recursive: true })
 
-// Brand palette (clock + sprouting seedling on a dark rounded tile).
-const BG = { r: 11, g: 15, b: 20 }
-const C1 = { r: 124, g: 156, b: 245 }
-const C2 = { r: 94, g: 234, b: 212 }
-const STEM_C = { r: 124, g: 154, b: 104 }
-const LEAF1 = { r: 126, g: 203, b: 154 }
-const LEAF2 = { r: 90, g: 171, b: 125 }
-const LEAF3 = { r: 143, g: 214, b: 165 }
+// Brand palette (clock + sprouting seedling on a light blue→green gradient).
+const BG_TOP = { r: 233, g: 244, b: 255 }
+const BG_BOTTOM = { r: 228, g: 246, b: 236 }
+const C1 = { r: 74, g: 127, b: 219 }
+const C2 = { r: 47, g: 160, b: 107 }
+const STEM_C = { r: 47, g: 143, b: 91 }
+const LEAF1 = { r: 63, g: 160, b: 107 }
+const LEAF2 = { r: 47, g: 143, b: 91 }
+const LEAF3 = { r: 104, g: 196, b: 150 }
 const SOIL = { r: 138, g: 106, b: 74 }
 
 function lerp(a, b, t) {
   return { r: a.r + (b.r - a.r) * t, g: a.g + (b.g - a.g) * t, b: a.b + (b.b - a.b) * t }
+}
+
+function lightBg(v) {
+  return lerp(BG_TOP, BG_BOTTOM, Math.max(0, Math.min(1, v)))
 }
 
 function distToSegment(px, py, x1, y1, x2, y2) {
@@ -127,9 +132,10 @@ function drawIcon(size, { maskable = false, foreground = false } = {}) {
       } else if (foreground) {
         png.data[i + 3] = 0
       } else {
-        png.data[i] = BG.r
-        png.data[i + 1] = BG.g
-        png.data[i + 2] = BG.b
+        const c = lightBg(v)
+        png.data[i] = c.r
+        png.data[i + 1] = c.g
+        png.data[i + 2] = c.b
         png.data[i + 3] = 255
       }
     }

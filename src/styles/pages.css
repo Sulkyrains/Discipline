@@ -806,6 +806,18 @@
   margin: 0;
 }
 
+.lock-service-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-s);
+  background: rgba(233, 196, 106, 0.12);
+}
+
 .chip-lock {
   background: color-mix(in srgb, var(--warn) 16%, transparent);
   color: var(--warn);

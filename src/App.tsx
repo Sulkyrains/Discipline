@@ -5,6 +5,7 @@ import {
   isNative,
   notify,
   scheduleClassReminders,
+  scheduleTodoReminders,
   todoReminderAt,
   upcomingClassReminders
 } from './lib/notifications'
@@ -315,6 +316,7 @@ export default function App() {
   useEffect(() => {
     if (isNative()) {
       void scheduleClassReminders(courses, settings.semesterStart, settings.reminderMinutes)
+      void scheduleTodoReminders(todos)
       return
     }
     const lang = useAppStore.getState().settings.language

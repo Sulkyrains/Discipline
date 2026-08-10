@@ -15,6 +15,7 @@ import { dateKey, nowISO, todayKey, uid } from '../lib/format'
 import { computeSignIns, computeStats } from '../lib/stats'
 import { evaluateAchievements, type AchievementDef } from '../lib/achievements'
 import { DEFAULT_DOCK, migrateTimerModeDefault, normalizeDockOrder } from '../lib/migration'
+import type { SyncExtra } from '../lib/sync'
 import { defaultWhitelist } from '../lib/appWhitelist'
 import { clearAllCustomAudio } from '../lib/customAudio'
 
@@ -55,8 +56,10 @@ interface AppStoreState extends AppData {
   lastDailySplashDate: string
   hasOnboarded: boolean
   gardenTotal: number
+  extraVersion: number
   setSettings: (partial: Partial<Settings>) => void
   addGardenUnits: (n: number) => void
+  bumpExtra: () => void
   setKeepOverdue: (v: boolean) => void
   setDockOrder: (paths: string[]) => void
   addWhitelistApp: (app: WhitelistApp) => void
@@ -92,7 +95,7 @@ interface AppStoreState extends AppData {
   ) => { session: FocusSession; unlocked: AchievementDef[] }
   addFeedback: (content: string, contact: string, type?: string) => void
   setMergedFor: (userId: string | null) => void
-  replaceAll: (data: AppData) => void
+  replaceAll: (data: AppData & { extra?: SyncExtra }) => void
   countLocalRecords: () => number
   clearLocalData: () => void
 }
@@ -131,29 +134,51 @@ export const useAppStore = create<AppStoreState>()(
       lastDailySplashDate: '',
       hasOnboarded: false,
       gardenTotal: 0,
+      extraVersion: 0,
 
       setSettings: (partial) => set({ settings: { ...get().settings, ...partial } }),
-      addGardenUnits: (n) => set({ gardenTotal: get().gardenTotal + Math.max(0, Math.floor(n)) }),
+      addGardenUnits: (n) => {
+        const units = Math.max(0, Math.floor(n))
+        if (units <= 0) return
+        set({ gardenTotal: get().gardenTotal + units })
+        get().bumpExtra()
+      },
+      bumpExtra: () => set({ extraVersion: get().extraVersion + 1 }),
 
-      setKeepOverdue: (v) => set({ keepOverdue: v }),
+      setKeepOverdue: (v) => {
+        set({ keepOverdue: v })
+        get().bumpExtra()
+      },
 
-      setDockOrder: (paths) => set({ dockOrder: normalizeDockOrder(paths) }),
+      setDockOrder: (paths) => {
+        set({ dockOrder: normalizeDockOrder(paths) })
+        get().bumpExtra()
+      },
 
-      addWhitelistApp: (app) =>
-        set({
-          appWhitelist: get().appWhitelist.some((a) => a.id === app.id)
-            ? get().appWhitelist
-            : [...get().appWhitelist, app]
-        }),
+      addWhitelistApp: (app) => {
+        const s = get()
+        const next = s.appWhitelist.some((a) => a.id === app.id)
+          ? s.appWhitelist
+          : [...s.appWhitelist, app]
+        if (next !== s.appWhitelist) {
+          set({ appWhitelist: next })
+          s.bumpExtra()
+        }
+      },
 
-      removeWhitelistApp: (id) => set({ appWhitelist: get().appWhitelist.filter((a) => a.id !== id) }),
+      removeWhitelistApp: (id) => {
+        set({ appWhitelist: get().appWhitelist.filter((a) => a.id !== id) })
+        get().bumpExtra()
+      },
 
-      addTodoQuickTag: (tag) =>
-        set({
-          todoQuickTags: get().todoQuickTags.includes(tag)
-            ? get().todoQuickTags
-            : [...get().todoQuickTags, tag]
-        }),
+      addTodoQuickTag: (tag) => {
+        const s = get()
+        const next = s.todoQuickTags.includes(tag) ? s.todoQuickTags : [...s.todoQuickTags, tag]
+        if (next !== s.todoQuickTags) {
+          set({ todoQuickTags: next })
+          s.bumpExtra()
+        }
+      },
 
       markDailySplashSeen: () => set({ lastDailySplashDate: todayKey() }),
 
@@ -163,10 +188,14 @@ export const useAppStore = create<AppStoreState>()(
         const today = todayKey()
         if (get().signIns.includes(today)) return false
         set({ signIns: [...get().signIns, today] })
+        get().bumpExtra()
         return true
       },
 
-      recordAbandon: () => set({ abandonDates: [...get().abandonDates, nowISO()] }),
+      recordAbandon: () => {
+        set({ abandonDates: [...get().abandonDates, nowISO()] })
+        get().bumpExtra()
+      },
 
       addCustomSound: ({ name, kind, size }) => {
         const id = `custom:${uid()}`
@@ -287,7 +316,29 @@ export const useAppStore = create<AppStoreState>()(
 
       setMergedFor: (userId) => set({ mergedFor: userId }),
 
-      replaceAll: (data) => set({ ...data }),
+      replaceAll: (data) => {
+        const extra = (data as { extra?: SyncExtra }).extra
+        set({
+          settings: data.settings,
+          courses: data.courses,
+          todos: data.todos,
+          sessions: data.sessions,
+          unlocked: data.unlocked,
+          feedback: data.feedback,
+          ...(extra
+            ? {
+                signIns: extra.signIns,
+                abandonDates: extra.abandonDates,
+                dockOrder: normalizeDockOrder(extra.dockOrder),
+                appWhitelist: extra.appWhitelist,
+                todoQuickTags: extra.todoQuickTags,
+                gardenTotal: extra.gardenTotal,
+                keepOverdue: extra.keepOverdue,
+                extraVersion: Math.max(get().extraVersion, extra.version)
+              }
+            : {})
+        })
+      },
 
       countLocalRecords: () => {
         const s = get()
@@ -313,7 +364,8 @@ export const useAppStore = create<AppStoreState>()(
           customSounds: [],
           lastDailySplashDate: '',
           hasOnboarded: false,
-          gardenTotal: 0
+          gardenTotal: 0,
+          extraVersion: 0
         })
       }
     }),
@@ -336,7 +388,8 @@ export const useAppStore = create<AppStoreState>()(
         customSounds: s.customSounds,
         lastDailySplashDate: s.lastDailySplashDate,
         hasOnboarded: s.hasOnboarded,
-        gardenTotal: s.gardenTotal
+        gardenTotal: s.gardenTotal,
+        extraVersion: s.extraVersion
       }),
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<AppStoreState>
@@ -346,6 +399,10 @@ export const useAppStore = create<AppStoreState>()(
           gardenTotal:
             typeof (p as { gardenTotal?: unknown }).gardenTotal === 'number'
               ? (p as { gardenTotal: number }).gardenTotal
+              : 0,
+          extraVersion:
+            typeof (p as { extraVersion?: unknown }).extraVersion === 'number'
+              ? (p as { extraVersion: number }).extraVersion
               : 0,
           settings: { ...defaultSettings(), ...p.settings },
           dockOrder: normalizeDockOrder(p.dockOrder),

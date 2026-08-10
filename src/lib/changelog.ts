@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.2.6',
+    date: '2026-08-10',
+    zh: '同一账号多端全量同步：打卡、放弃日期、白名单、花园累计、底部栏排序、待办标签、保留逾期等本地数据均入云（自定义音频除外）；应用内强锁实装：白名单改为从手机真实安装应用中选择（无预制列表），专注时拦截非白名单应用并自动拉回本应用，提供辅助功能开启引导；课程与待办提醒实装：APK 端待办原生调度提醒并支持精确闹钟引导；应用图标重绘为浅蓝→浅绿渐变风格。',
+    en: 'Full cross-device sync for the same account: check-ins, abandoned dates, whitelist, garden totals, dock order, todo tags and the keep-overdue flag now sync to the cloud (custom audio excluded); in-app focus lock is now implemented: the whitelist is picked from the user’s real installed apps (no preset lists), non-whitelisted apps are blocked and the app is pulled back to the front during focus, with accessibility-setup guidance; course and todo reminders are implemented (native todo scheduling plus exact-alarm guidance in the APK); the app icon is redrawn with a light blue-to-green gradient.'
+  },
+  {
     version: '2.2.5',
     date: '2026-08-10',
     zh: 'APK 新增应用内自动更新（检测新版本→后台下载→系统安装确认）；成长花园更名“专注森林”并升级场景（天空/远山/草地、更精细的植物插画与摇摆动画）；修复 APK 顶部状态栏黑框（状态栏颜色与图标样式随主题同步）；应用图标重绘为“时钟+幼苗”并同步 Web 与安卓全尺寸图标。',

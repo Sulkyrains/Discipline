@@ -4,9 +4,56 @@ import type {
   FeedbackItem,
   FocusSession,
   Settings,
-  Todo
+  Todo,
+  WhitelistApp
 } from '../types'
 import { supabase } from './supabase'
+
+/**
+ * Extra per-user data synced inside the settings row's JSONB (no schema
+ * change): check-ins, abandon dates, dock order, app whitelist, quick tags,
+ * garden total and overdue flag. `version` is a per-device mutation counter;
+ * the higher version wins for scalar/config fields, while date-like sets are
+ * always unioned.
+ */
+export interface SyncExtra {
+  signIns: string[]
+  abandonDates: string[]
+  dockOrder: string[]
+  appWhitelist: WhitelistApp[]
+  todoQuickTags: string[]
+  gardenTotal: number
+  keepOverdue: boolean
+  version: number
+}
+
+export interface SyncedAppData extends AppData {
+  extra: SyncExtra
+}
+
+interface ExtraSource {
+  signIns?: string[]
+  abandonDates?: string[]
+  dockOrder?: string[]
+  appWhitelist?: WhitelistApp[]
+  todoQuickTags?: string[]
+  gardenTotal?: number
+  keepOverdue?: boolean
+  extraVersion?: number
+}
+
+export function localExtra(local: Partial<ExtraSource>): SyncExtra {
+  return {
+    signIns: local.signIns ?? [],
+    abandonDates: local.abandonDates ?? [],
+    dockOrder: local.dockOrder ?? [],
+    appWhitelist: local.appWhitelist ?? [],
+    todoQuickTags: local.todoQuickTags ?? [],
+    gardenTotal: local.gardenTotal ?? 0,
+    keepOverdue: local.keepOverdue ?? false,
+    version: local.extraVersion ?? 0
+  }
+}
 
 export function mergeById<T extends { id: string; updatedAt?: string }>(
   local: T[],
@@ -20,7 +67,23 @@ export function mergeById<T extends { id: string; updatedAt?: string }>(
   return [...map.values()]
 }
 
-export function mergeCollections(local: AppData, cloud: Partial<AppData>): AppData {
+export function mergeCollections(
+  local: AppData & Partial<ExtraSource>,
+  cloud: Partial<AppData> & { extra?: SyncExtra }
+): SyncedAppData {
+  const localEx = localExtra(local)
+  const cloudEx = cloud.extra
+  const useCloud = (cloudEx?.version ?? 0) > localEx.version
+  const extra: SyncExtra = {
+    signIns: [...new Set([...localEx.signIns, ...(cloudEx?.signIns ?? [])])],
+    abandonDates: [...new Set([...localEx.abandonDates, ...(cloudEx?.abandonDates ?? [])])],
+    dockOrder: useCloud ? (cloudEx?.dockOrder ?? localEx.dockOrder) : localEx.dockOrder,
+    appWhitelist: useCloud ? (cloudEx?.appWhitelist ?? localEx.appWhitelist) : localEx.appWhitelist,
+    todoQuickTags: useCloud ? (cloudEx?.todoQuickTags ?? localEx.todoQuickTags) : localEx.todoQuickTags,
+    gardenTotal: useCloud ? (cloudEx?.gardenTotal ?? localEx.gardenTotal) : localEx.gardenTotal,
+    keepOverdue: useCloud ? (cloudEx?.keepOverdue ?? localEx.keepOverdue) : localEx.keepOverdue,
+    version: Math.max(localEx.version, cloudEx?.version ?? 0)
+  }
   return {
     // The focus timer display mode and the theme are per-device preferences:
     // always keep the local choice so values stored on another device (e.g. an
@@ -34,7 +97,8 @@ export function mergeCollections(local: AppData, cloud: Partial<AppData>): AppDa
     todos: mergeById(local.todos, cloud.todos ?? []),
     sessions: mergeById(local.sessions, cloud.sessions ?? []),
     unlocked: [...new Set([...local.unlocked, ...(cloud.unlocked ?? [])])],
-    feedback: mergeById(local.feedback, cloud.feedback ?? [])
+    feedback: mergeById(local.feedback, cloud.feedback ?? []),
+    extra
   }
 }
 
@@ -43,13 +107,17 @@ export interface PushResult {
   message?: string
 }
 
-export async function pushLocal(userId: string, data: AppData): Promise<PushResult> {
+export async function pushLocal(
+  userId: string,
+  data: AppData & Partial<ExtraSource> & { extra?: SyncExtra }
+): Promise<PushResult> {
   if (!supabase) return { ok: false, message: 'not-configured' }
   const db = supabase
   const errors: string[] = []
   const settingsToPush: Settings = { ...data.settings }
   delete (settingsToPush as Partial<Settings>).timerMode
   delete (settingsToPush as Partial<Settings>).theme
+  const extra = data.extra ?? localExtra(data)
   const run = async (label: string, p: PromiseLike<{ error: unknown }>) => {
     try {
       const { error } = await Promise.resolve(p)
@@ -85,9 +153,14 @@ export async function pushLocal(userId: string, data: AppData): Promise<PushResu
     'settings',
     db
       .from('settings')
-      .upsert({ owner_id: userId, data: settingsToPush, updated_at: new Date().toISOString() }, {
-        onConflict: 'owner_id'
-      })
+      .upsert(
+        {
+          owner_id: userId,
+          data: { ...settingsToPush, extra },
+          updated_at: new Date().toISOString()
+        },
+        { onConflict: 'owner_id' }
+      )
   )
   for (const c of collections) {
     if (c.rows.length > 0) {
@@ -132,7 +205,9 @@ export async function pushLocal(userId: string, data: AppData): Promise<PushResu
   return { ok: true, message: errors.length > 0 ? errors.join('；') : undefined }
 }
 
-export async function pullRemote(userId: string): Promise<Partial<AppData> | null> {
+export async function pullRemote(
+  userId: string
+): Promise<(Partial<AppData> & { extra?: SyncExtra }) | null> {
   if (!supabase) return null
   try {
     const [settingsRes, coursesRes, todosRes, sessionsRes, achRes, feedbackRes] = await Promise.all([
@@ -163,8 +238,13 @@ export async function pullRemote(userId: string): Promise<Partial<AppData> | nul
           }) as FeedbackItem)
         : []
 
+    const settingsRow = settingsRes.data?.data as
+      | (Settings & { extra?: SyncExtra })
+      | undefined
+    const { extra, ...settingsOnly } = settingsRow ?? {}
     return {
-      settings: (settingsRes.data?.data as Settings) ?? undefined,
+      settings: settingsRow ? (settingsOnly as Settings) : undefined,
+      extra,
       courses: extract<Course>(coursesRes.data),
       todos: extract<Todo>(todosRes.data),
       sessions: extract<FocusSession>(sessionsRes.data),

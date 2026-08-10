@@ -63,17 +63,17 @@ describe('v2.2.5 apk in-app auto update', () => {
   })
 
   it('downloads and installs a newer version after confirmation', async () => {
-    stubRemote('2.2.6')
+    stubRemote('2.2.7')
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     await checkApkUpdate()
     expect(plugin.download).toHaveBeenCalledWith({
-      url: `${APP_HOME}/apk/Discipline-v2.2.6.apk`
+      url: `${APP_HOME}/apk/Discipline-v2.2.7.apk`
     })
     expect(plugin.install).toHaveBeenCalled()
   })
 
   it('does not download when the user declines', async () => {
-    stubRemote('2.2.6')
+    stubRemote('2.2.7')
     vi.spyOn(window, 'confirm').mockReturnValue(false)
     await checkApkUpdate()
     expect(plugin.download).not.toHaveBeenCalled()
@@ -81,7 +81,7 @@ describe('v2.2.5 apk in-app auto update', () => {
 
   it('defers while focus is running', async () => {
     useFocusStore.setState({ active: true })
-    stubRemote('2.2.6')
+    stubRemote('2.2.7')
     await checkApkUpdate()
     expect(plugin.download).not.toHaveBeenCalled()
   })
@@ -127,7 +127,8 @@ describe('v2.2.5 status bar + garden naming + icon', () => {
     const svg = readFileSync(join(process.cwd(), 'public', 'favicon.svg'), 'utf8')
     expect(svg).toContain('<circle cx="32" cy="32" r="19.5"')
     expect(svg).toContain('<line x1="32" y1="7.5"')
-    expect(svg).toContain('fill="#7ecb9a"')
+    expect(svg).toContain('fill="#3FA06B"')
     expect(svg).toContain('fill="#8a6a4a"')
+    expect(svg).toContain('stop-color="#E9F4FF"')
   })
 })

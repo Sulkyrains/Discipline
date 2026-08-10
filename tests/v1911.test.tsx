@@ -199,10 +199,13 @@ describe('v1.9.11 whitelist collapse', () => {
   beforeEach(resetStores)
 
   it('collapses over six apps and expands on demand', () => {
+    for (let i = 0; i < 7; i++) {
+      useAppStore.getState().addWhitelistApp({ id: `com.app${i}`, name: `应用${i}`, system: false })
+    }
     const { container } = render(<MemoryRouter><Focus /></MemoryRouter>)
     expect(container.querySelectorAll('.whitelist-row').length).toBe(6)
     fireEvent.click(screen.getByText(/展开全部/))
-    expect(container.querySelectorAll('.whitelist-row').length).toBe(defaultWhitelist().length)
+    expect(container.querySelectorAll('.whitelist-row').length).toBe(7)
     expect(screen.getByText('收起')).toBeInTheDocument()
   })
 })
