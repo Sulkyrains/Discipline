@@ -12,6 +12,7 @@ import { render } from '@testing-library/react'
 const { native, plugin } = vi.hoisted(() => ({
   native: { value: false },
   plugin: {
+    checkVersion: vi.fn<any>(),
     download: vi.fn(async () => ({ path: '/x.apk' })),
     install: vi.fn(async () => undefined)
   }
@@ -41,8 +42,12 @@ describe('v2.2.5 apk in-app auto update', () => {
   beforeEach(() => {
     native.value = true
     __resetApkUpdateForTests()
+    plugin.checkVersion.mockClear()
     plugin.download.mockClear()
     plugin.install.mockClear()
+    plugin.checkVersion.mockImplementation(async () => {
+      throw new Error('not mocked')
+    })
     useFocusStore.setState({ active: false })
   })
   afterEach(() => {
@@ -63,17 +68,17 @@ describe('v2.2.5 apk in-app auto update', () => {
   })
 
   it('downloads and installs a newer version after confirmation', async () => {
-    stubRemote('2.2.9')
+    stubRemote('2.2.10')
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     expect(await checkApkUpdate()).toBe('updating')
     expect(plugin.download).toHaveBeenCalledWith({
-      url: `${APP_HOME}/apk/Discipline-v2.2.9.apk`
+      url: `${APP_HOME}/apk/Discipline-v2.2.10.apk`
     })
     expect(plugin.install).toHaveBeenCalled()
   })
 
   it('does not download when the user declines', async () => {
-    stubRemote('2.2.9')
+    stubRemote('2.2.10')
     vi.spyOn(window, 'confirm').mockReturnValue(false)
     expect(await checkApkUpdate()).toBe('current')
     expect(plugin.download).not.toHaveBeenCalled()
@@ -81,9 +86,18 @@ describe('v2.2.5 apk in-app auto update', () => {
 
   it('defers while focus is running', async () => {
     useFocusStore.setState({ active: true })
-    stubRemote('2.2.9')
+    stubRemote('2.2.10')
     expect(await checkApkUpdate()).toBe('current')
     expect(plugin.download).not.toHaveBeenCalled()
+  })
+
+  it('uses the native version check when available', async () => {
+    plugin.checkVersion.mockResolvedValue({ body: JSON.stringify({ version: '2.2.10' }) })
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    expect(await checkApkUpdate()).toBe('updating')
+    expect(plugin.download).toHaveBeenCalledWith({
+      url: `${APP_HOME}/apk/Discipline-v2.2.10.apk`
+    })
   })
 
   it('allows the update source in the in-app CSP', () => {

@@ -43,7 +43,7 @@ npm run build      # 产物输出到 dist/
 ## Android APK
 
 - 下载入口：网站“我的”页底部“Android 客户端 → 下载 APK”，或直接访问
-  https://your-discipline.pages.dev/apk/Discipline-v2.2.8.apk
+  https://your-discipline.pages.dev/apk/Discipline-v2.2.9.apk
 - 签名密钥保存在本机 `C:\Users\28683\.discipline-build\discipline-release.keystore`
   （口令见同目录 `keystore-info.txt`），后续重新打包时用同一密钥签名以便覆盖安装。
 - 打包流程：`npm run build:gh-pages` → `npx cap sync android` → 在 `android/` 下

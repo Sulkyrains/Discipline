@@ -33,6 +33,41 @@ public class ApkUpdaterPlugin extends Plugin {
   }
 
   @PluginMethod
+  public void checkVersion(PluginCall call) {
+    String url = call.getString("url");
+    if (url == null || url.isEmpty()) {
+      call.reject("url required");
+      return;
+    }
+    new Thread(
+            () -> {
+              try {
+                HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+                conn.setConnectTimeout(15000);
+                conn.setReadTimeout(15000);
+                conn.setInstanceFollowRedirects(true);
+                conn.connect();
+                int code = conn.getResponseCode();
+                if (code < 200 || code >= 300) {
+                  call.reject("version check failed: " + code);
+                  return;
+                }
+                String body;
+                try (InputStream in = conn.getInputStream();
+                    java.util.Scanner s = new java.util.Scanner(in).useDelimiter("\\A")) {
+                  body = s.hasNext() ? s.next() : "";
+                }
+                JSObject result = new JSObject();
+                result.put("body", body);
+                call.resolve(result);
+              } catch (Exception e) {
+                call.reject(e.getMessage());
+              }
+            })
+        .start();
+  }
+
+  @PluginMethod
   public void download(PluginCall call) {
     String url = call.getString("url");
     if (url == null || url.isEmpty()) {

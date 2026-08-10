@@ -10,6 +10,7 @@ import { APP_VERSION } from '../version'
 export const APP_HOME = 'https://your-discipline.pages.dev'
 
 interface ApkUpdaterPlugin {
+  checkVersion(options: { url: string }): Promise<{ body: string }>
   download(options: { url: string }): Promise<{ path: string }>
   install(): Promise<void>
 }
@@ -21,8 +22,20 @@ let downloading = false
 let lastPromptVersion: string | null = null
 
 async function fetchRemoteVersion(): Promise<string | null> {
+  const url = `${APP_HOME}/version.json`
+  if (isNative()) {
+    // Native HTTP request: not subject to the WebView CSP, so the update
+    // check keeps working even if the in-app policy changes.
+    try {
+      const res = await ApkUpdater.checkVersion({ url })
+      const data = JSON.parse(res.body) as { version?: unknown }
+      return typeof data.version === 'string' && data.version ? data.version : null
+    } catch {
+      // fall back to the WebView fetch below
+    }
+  }
   try {
-    const res = await fetch(`${APP_HOME}/version.json`, { cache: 'no-store' })
+    const res = await fetch(url, { cache: 'no-store' })
     if (!res.ok) return null
     const data = (await res.json()) as { version?: unknown }
     return typeof data.version === 'string' && data.version ? data.version : null

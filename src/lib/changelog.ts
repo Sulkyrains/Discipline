@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.2.9',
+    date: '2026-08-10',
+    zh: 'APK 自动更新彻底绕开页面安全策略：版本检测改为原生网络请求（不再受 WebView CSP 影响），更新检测在任何情况下都能读取线上版本；修复说明：旧版安装包内置的安全策略无法追溯修改，需手动安装一次新版 APK 后，后续版本即可自动更新。',
+    en: 'APK auto-update now bypasses the page security policy entirely: the version check uses a native network request (immune to the WebView CSP), so update detection always reaches the live version; note that older APKs have the old CSP baked in and need one manual install of the new APK before future versions can auto-update.'
+  },
+  {
     version: '2.2.8',
     date: '2026-08-10',
     zh: '修复 APK 应用内自动更新不生效：页面安全策略（CSP）未放行更新源域名，导致应用内无法读取线上版本号；已放行并在“检查版本”按钮接入 APK 自动更新检测（安卓端点击立即检查会真正检测并提示更新）。',
