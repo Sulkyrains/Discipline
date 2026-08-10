@@ -96,7 +96,13 @@ export default function Focus() {
 
   useEffect(() => {
     if (!isNative()) return
-    void lockServiceEnabled().then(setLockEnabled)
+    const check = () => void lockServiceEnabled().then(setLockEnabled)
+    check()
+    const onVis = () => {
+      if (document.visibilityState === 'visible') check()
+    }
+    document.addEventListener('visibilitychange', onVis)
+    return () => document.removeEventListener('visibilitychange', onVis)
   }, [active])
 
   const onStart = (e: ReactMouseEvent) => {

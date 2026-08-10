@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.3.3',
+    date: '2026-08-10',
+    zh: '专注白名单辅助功能引导优化：从系统设置返回后自动刷新开启状态（开启即生效），引导文案更清晰；说明辅助功能权限需用户在系统设置中手动开启（系统不允许应用代开）。',
+    en: 'Focus whitelist accessibility guidance improved: the lock status auto-refreshes when returning from system settings (takes effect immediately) with clearer copy; accessibility must be enabled by the user in system settings (apps cannot request it programmatically).'
+  },
+  {
     version: '2.3.2',
     date: '2026-08-10',
     zh: '修复 APK 自动更新“插件未实现”：本地插件注册时机错误（在 Bridge 创建后才注册导致空操作），已改为在 super.onCreate 之前注册；修复后应用内更新可正常下载安装，专注白名单的真实应用列表也同步可用。',
