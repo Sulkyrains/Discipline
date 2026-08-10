@@ -805,8 +805,8 @@ export default function Settings() {
           <span className="muted">{t(lang, 'downloadApk')}</span>
           <a
             className="btn btn-ghost btn-sm"
-            href="./apk/Discipline-v2.2.3.apk"
-            download="Discipline-v2.2.3.apk"
+            href="./apk/Discipline-v2.2.4.apk"
+            download="Discipline-v2.2.4.apk"
           >
             {t(lang, 'downloadApkAction')}
           </a>

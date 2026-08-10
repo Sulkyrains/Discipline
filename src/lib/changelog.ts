@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.2.4',
+    date: '2026-08-10',
+    zh: '成长花园视觉升级：小苗/小树/大树改为精致插画（内嵌 SVG 多层树冠、树干、土丘与高光），配草地地面与生长动画，植物轻微错落；树冠固定自然绿色，不再随主题变成红色。',
+    en: 'Focus garden visual upgrade: seedlings, small trees and big trees are now refined inline-SVG illustrations (layered canopies, trunks, soil mounds and highlights) on a grass ground with a grow-in animation and slight organic offsets; canopies stay natural green instead of following the theme accent.'
+  },
+  {
     version: '2.2.3',
     date: '2026-08-10',
     zh: '修复切换主题后自动跳回中国风、以及随时间渐变主题过段时间恢复原色的 bug（主题改为仅本机偏好，不再被云端同步覆盖）；记住登录与模式选择，下次打开直接进入应用（APK 同样生效）；专注页新增“成长花园”：专注中每 5 秒生一个小苗，3 苗合成小树、3 小树合成大树，持续生长（本轮实时 + 本地累计）；网站与 Android APK 改为同版本同步发布。',

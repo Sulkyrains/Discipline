@@ -17,6 +17,7 @@ import ProgressRing from '../components/ProgressRing'
 import ConfirmDialog from '../components/ConfirmDialog'
 import Confetti from '../components/Confetti'
 import Sheet from '../components/Sheet'
+import GardenPlant from '../components/GardenPlant'
 
 function fmtSeconds(total: number): string {
   const m = Math.floor(total / 60)
@@ -297,14 +298,15 @@ export default function Focus() {
             {(() => {
               const g = gardenBreakdown(garden)
               const plants: React.ReactNode[] = []
+              let idx = 0
               for (let i = 0; i < g.bigTrees; i++) {
-                plants.push(<span key={`b${i}`} className="garden-plant garden-big-tree" />)
+                plants.push(<GardenPlant key={`b${i}`} type="big-tree" index={idx++} />)
               }
               for (let i = 0; i < g.smallTrees; i++) {
-                plants.push(<span key={`s${i}`} className="garden-plant garden-small-tree" />)
+                plants.push(<GardenPlant key={`s${i}`} type="small-tree" index={idx++} />)
               }
               for (let i = 0; i < g.seedlings; i++) {
-                plants.push(<span key={`p${i}`} className="garden-plant garden-seedling" />)
+                plants.push(<GardenPlant key={`p${i}`} type="seedling" index={idx++} />)
               }
               return plants
             })()}

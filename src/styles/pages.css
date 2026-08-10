@@ -1312,100 +1312,63 @@
 }
 
 .garden-scene {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  gap: 8px 10px;
-  min-height: 60px;
-  padding: 8px 4px 2px;
-  border-top: 1px solid var(--border);
+  gap: 6px 10px;
+  min-height: 96px;
+  padding: 12px 8px 8px;
+  overflow: hidden;
+}
+
+/* Grass ground the plants stand on. */
+.garden-scene::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 20px;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(94, 171, 125, 0.32), rgba(62, 143, 99, 0.16));
+  border-top: 1px solid rgba(62, 143, 99, 0.28);
 }
 
 .garden-plant {
-  position: relative;
-  display: inline-block;
+  display: inline-flex;
+  align-items: flex-end;
+  animation: gardenPop 0.4s ease-out both;
 }
 
-.garden-seedling {
-  width: 14px;
-  height: 20px;
+.garden-plant svg {
+  display: block;
 }
 
-.garden-seedling::before {
-  content: '';
-  position: absolute;
-  left: 3px;
-  top: 9px;
-  width: 8px;
-  height: 9px;
-  background: var(--success);
-  border-radius: 50% 50% 46% 46%;
+.garden-seedling svg {
+  width: 24px;
+  height: 32px;
 }
 
-.garden-seedling::after {
-  content: '';
-  position: absolute;
-  left: 6px;
-  bottom: 0;
-  width: 2px;
-  height: 9px;
-  background: var(--muted);
-  border-radius: 1px;
-}
-
-.garden-small-tree {
-  width: 22px;
-  height: 34px;
-}
-
-.garden-small-tree::before {
-  content: '';
-  position: absolute;
-  left: 4px;
-  top: 12px;
-  width: 14px;
-  height: 16px;
-  background: var(--primary);
-  border-radius: 50% 50% 44% 44%;
-}
-
-.garden-small-tree::after {
-  content: '';
-  position: absolute;
-  left: 9px;
-  bottom: 0;
-  width: 3px;
-  height: 13px;
-  background: var(--muted);
-  border-radius: 1px;
-}
-
-.garden-big-tree {
-  width: 34px;
+.garden-small-tree svg {
+  width: 40px;
   height: 52px;
 }
 
-.garden-big-tree::before {
-  content: '';
-  position: absolute;
-  left: 3px;
-  top: 20px;
-  width: 28px;
-  height: 28px;
-  background: var(--primary);
-  border-radius: 50% 50% 42% 42%;
-  box-shadow: inset -5px -5px 0 rgba(0, 0, 0, 0.07);
+.garden-big-tree svg {
+  width: 64px;
+  height: 84px;
 }
 
-.garden-big-tree::after {
-  content: '';
-  position: absolute;
-  left: 15px;
-  bottom: 0;
-  width: 5px;
-  height: 20px;
-  background: var(--muted);
-  border-radius: 2px;
+@keyframes gardenPop {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .timer-controls {

@@ -5,6 +5,7 @@ import { t } from '../src/lib/i18n'
 import { gardenBreakdown } from '../src/lib/garden'
 import App from '../src/App'
 import Focus from '../src/pages/Focus'
+import GardenPlant from '../src/components/GardenPlant'
 import { defaultSettings, useAppStore } from '../src/stores/useAppStore'
 import { useAuthStore } from '../src/stores/useAuthStore'
 import { useFocusStore } from '../src/stores/useFocusStore'
@@ -51,6 +52,17 @@ describe('v2.2.3 garden breakdown', () => {
     expect(gardenBreakdown(9)).toEqual({ seedlings: 0, smallTrees: 0, bigTrees: 1 })
     expect(gardenBreakdown(10)).toEqual({ seedlings: 1, smallTrees: 0, bigTrees: 1 })
     expect(gardenBreakdown(25)).toEqual({ seedlings: 1, smallTrees: 2, bigTrees: 2 })
+  })
+})
+
+describe('v2.2.4 garden plant illustrations', () => {
+  it('renders an svg for each plant type with its class', () => {
+    const a = render(<GardenPlant type="seedling" />)
+    expect(a.container.querySelector('.garden-seedling svg')).not.toBeNull()
+    const b = render(<GardenPlant type="small-tree" />)
+    expect(b.container.querySelector('.garden-small-tree svg')).not.toBeNull()
+    const c = render(<GardenPlant type="big-tree" />)
+    expect(c.container.querySelector('.garden-big-tree svg')).not.toBeNull()
   })
 })
 
@@ -150,6 +162,7 @@ describe('v2.2.3 focus garden UI', () => {
     expect(screen.getByText(/累计 7/)).toBeInTheDocument()
     // 5 units = 1 small tree + 2 seedlings
     expect(container.querySelectorAll('.garden-plant')).toHaveLength(3)
+    expect(container.querySelectorAll('.garden-plant svg')).toHaveLength(3)
     unmount()
     useFocusStore.setState({
       timer: { phase: 'focus', status: 'idle', remainingSeconds: 900, roundsCompleted: 0 },
