@@ -7,20 +7,17 @@ const here = dirname(fileURLToPath(import.meta.url))
 const outDir = join(here, '..', 'public', 'icons')
 mkdirSync(outDir, { recursive: true })
 
-// Brand palette: sunrise over mountains on a light blue→peach gradient.
-const BG_TOP = { r: 234, g: 243, b: 255 }
-const BG_BOTTOM = { r: 253, g: 235, b: 216 }
-const SUN_OUTER = { r: 247, g: 164, b: 91 }
-const SUN_INNER = { r: 249, g: 192, b: 124 }
-const MOUNT_BACK = { r: 74, g: 90, b: 120 }
-const MOUNT_FRONT = { r: 62, g: 76, b: 102 }
+// Brand palette: the home logo — gradient ring + orbit dot on a light tile.
+const BG = { r: 246, g: 248, b: 252 }
+const C1 = { r: 124, g: 156, b: 245 }
+const C2 = { r: 94, g: 234, b: 212 }
 
 function lerp(a, b, t) {
   return { r: a.r + (b.r - a.r) * t, g: a.g + (b.g - a.g) * t, b: a.b + (b.b - a.b) * t }
 }
 
 function lightBg(v) {
-  return lerp(BG_TOP, BG_BOTTOM, Math.max(0, Math.min(1, v)))
+  return BG
 }
 
 function distToSegment(px, py, x1, y1, x2, y2) {
@@ -45,20 +42,8 @@ function inEllipse(px, py, cx, cy, rx, ry, angleDeg) {
   return (lx * lx) / (rx * rx) + (ly * ly) / (ry * ry) <= 1
 }
 
-function inPoly(px, py, pts) {
-  let inside = false
-  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
-    const [xi, yi] = pts[i]
-    const [xj, yj] = pts[j]
-    if (yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) {
-      inside = !inside
-    }
-  }
-  return inside
-}
-
 /**
- * Sunrise-over-mountains design sampled at normalized coords (u,v). `scale` shrinks
+ * Home logo design (ring + orbit dot) sampled at normalized coords (u,v). `scale` shrinks
  * the artwork toward the center (adaptive-icon safe zone).
  */
 function sampleShape(u, v, scale) {
@@ -66,35 +51,23 @@ function sampleShape(u, v, scale) {
   const sy = v
   const S = (c) => 0.5 + (c - 0.5) * scale
 
-  // Rising sun (behind the mountains).
-  const sunX = S(0.5)
-  const sunY = S(0.42)
-  const sunDist = Math.hypot(sx - sunX, sy - sunY)
-  if (sunDist <= 0.17 * scale) {
-    return sunDist <= 0.1 * scale ? SUN_INNER : SUN_OUTER
+  // Ring.
+  const cx = S(0.5)
+  const cy = S(0.5312)
+  const dist = Math.hypot(sx - cx, sy - cy)
+  const ringR = 0.234 * scale
+  const ringHalf = 0.039 * scale
+  if (Math.abs(dist - ringR) <= ringHalf) {
+    const angle = (Math.atan2(sy - cy, sx - cx) + Math.PI) / (2 * Math.PI)
+    return lerp(C1, C2, angle)
   }
 
-  // Back mountain (taller, left peak) then front mountain (lower, right).
-  const back = [
-    [0, 0.85],
-    [0.34, 0.42],
-    [0.52, 0.6],
-    [0.68, 0.48],
-    [1, 0.8],
-    [1, 1],
-    [0, 1]
-  ].map(([x, y]) => [S(x), S(y)])
-  if (inPoly(sx, sy, back)) return MOUNT_BACK
-
-  const front = [
-    [0, 1],
-    [0.3, 0.68],
-    [0.47, 0.82],
-    [0.66, 0.7],
-    [1, 0.95],
-    [1, 1]
-  ].map(([x, y]) => [S(x), S(y)])
-  if (inPoly(sx, sy, front)) return MOUNT_FRONT
+  // Orbit dot at the top of the ring.
+  const dotX = S(0.5)
+  const dotY = S(0.2969)
+  if (Math.hypot(sx - dotX, sy - dotY) <= 0.0547 * scale) {
+    return lerp(C1, C2, 0.25)
+  }
 
   return null
 }
@@ -146,40 +119,16 @@ function drawIcon(size, { maskable = false, foreground = false } = {}) {
 
 function drawNotificationIcon(size = 96) {
   const png = new PNG({ width: size, height: size })
-  const inPoly = (px, py, pts) => {
-    let inside = false
-    for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
-      const [xi, yi] = pts[i]
-      const [xj, yj] = pts[j]
-      if (yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) inside = !inside
-    }
-    return inside
-  }
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
       const i = (size * y + x) * 4
       const u = (x + 0.5) / size
       const v = (y + 0.5) / size
-      // Monochrome silhouette: sun + mountains, no background.
-      const onSun = Math.hypot(u - 0.5, v - 0.42) <= 0.16
-      const onBack = inPoly(u, v, [
-        [0, 0.85],
-        [0.34, 0.42],
-        [0.52, 0.6],
-        [0.68, 0.48],
-        [1, 0.8],
-        [1, 1],
-        [0, 1]
-      ])
-      const onFront = inPoly(u, v, [
-        [0, 1],
-        [0.3, 0.68],
-        [0.47, 0.82],
-        [0.66, 0.7],
-        [1, 0.95],
-        [1, 1]
-      ])
-      if (onSun || onBack || onFront) {
+      // Monochrome silhouette: ring + dot only, no background.
+      const dist = Math.hypot(u - 0.5, v - 0.5312)
+      const onRing = Math.abs(dist - 0.234) <= 0.039
+      const onDot = Math.hypot(u - 0.5, v - 0.2969) <= 0.0547
+      if (onRing || onDot) {
         png.data[i] = 255
         png.data[i + 1] = 255
         png.data[i + 2] = 255

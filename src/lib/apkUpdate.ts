@@ -4,6 +4,7 @@ import { t } from './i18n'
 import { useAppStore } from '../stores/useAppStore'
 import { useFocusStore } from '../stores/useFocusStore'
 import { useToastStore } from '../stores/useToastStore'
+import { useApkUpdateStore } from '../stores/useApkUpdateStore'
 import { APP_VERSION } from '../version'
 
 /** Production site that hosts version.json and the release APK. */
@@ -61,20 +62,8 @@ export async function checkApkUpdate(): Promise<ApkUpdateResult> {
     const remote = await fetchRemoteVersion()
     if (!remote) return 'error'
     if (remote === APP_VERSION || remote === lastPromptVersion) return 'current'
-    const lang = useAppStore.getState().settings.language
-    const confirmDownload = window.confirm(t(lang, 'apkUpdateFound', { version: remote }))
-    if (!confirmDownload) {
-      lastPromptVersion = remote
-      return 'current'
-    }
-    downloading = true
-    useToastStore.getState().push({ title: t(lang, 'apkDownloading'), kind: 'info' })
-    await ApkUpdater.download({ url: `${APP_HOME}/apk/Discipline-v${remote}.apk` })
-    useToastStore.getState().push({ title: t(lang, 'apkDownloaded'), kind: 'success' })
-    if (window.confirm(t(lang, 'apkInstallPrompt', { version: remote }))) {
-      await ApkUpdater.install()
-    }
-    lastPromptVersion = remote
+    // Show the in-app update dialog; the user confirms/cancels there.
+    useApkUpdateStore.getState().setPending(remote)
     return 'updating'
   } catch {
     // transient network/download failure; retried on the next check
@@ -83,6 +72,59 @@ export async function checkApkUpdate(): Promise<ApkUpdateResult> {
     checking = false
     downloading = false
   }
+}
+
+/** Confirmed from the in-app dialog: download the new APK. */
+export async function confirmApkDownload(): Promise<void> {
+  const st = useApkUpdateStore.getState()
+  const remote = st.pendingVersion
+  if (!remote || downloading) return
+  downloading = true
+  const lang = useAppStore.getState().settings.language
+  useToastStore.getState().push({ title: t(lang, 'apkDownloading'), kind: 'info' })
+  try {
+    await ApkUpdater.download({ url: `${APP_HOME}/apk/Discipline-v${remote}.apk` })
+    useToastStore.getState().push({ title: t(lang, 'apkDownloaded'), kind: 'success' })
+    st.setPhase('install')
+  } catch (e) {
+    const reason = e instanceof Error ? e.message : String(e)
+    console.error('[discipline] apk download failed:', reason)
+    useToastStore.getState().push({
+      title: t(lang, 'apkDownloadFailed'),
+      body: reason,
+      kind: 'warn'
+    })
+    st.reset()
+  } finally {
+    downloading = false
+  }
+}
+
+/** Confirmed from the in-app dialog: open the system installer. */
+export async function confirmApkInstall(): Promise<void> {
+  const st = useApkUpdateStore.getState()
+  const remote = st.pendingVersion
+  try {
+    await ApkUpdater.install()
+    if (remote) lastPromptVersion = remote
+  } catch (e) {
+    const reason = e instanceof Error ? e.message : String(e)
+    console.error('[discipline] apk install failed:', reason)
+    useToastStore.getState().push({
+      title: t(useAppStore.getState().settings.language, 'apkInstallFailed'),
+      body: reason,
+      kind: 'warn'
+    })
+  } finally {
+    st.reset()
+  }
+}
+
+/** User cancelled the update dialog. */
+export function cancelApkUpdate(): void {
+  const st = useApkUpdateStore.getState()
+  if (st.pendingVersion) lastPromptVersion = st.pendingVersion
+  st.reset()
 }
 
 /** Starts the periodic APK update watcher (native only). */

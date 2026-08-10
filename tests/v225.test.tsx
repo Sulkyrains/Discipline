@@ -4,8 +4,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { t } from '../src/lib/i18n'
 import { statusBarColors } from '../src/lib/statusBar'
 import { APP_VERSION } from '../src/version'
-import { checkApkUpdate, __resetApkUpdateForTests, APP_HOME } from '../src/lib/apkUpdate'
+import {
+  APP_HOME,
+  __resetApkUpdateForTests,
+  cancelApkUpdate,
+  checkApkUpdate,
+  confirmApkDownload,
+  confirmApkInstall
+} from '../src/lib/apkUpdate'
 import { useFocusStore } from '../src/stores/useFocusStore'
+import { useApkUpdateStore } from '../src/stores/useApkUpdateStore'
 import GardenPlant from '../src/components/GardenPlant'
 import { render } from '@testing-library/react'
 
@@ -48,6 +56,7 @@ describe('v2.2.5 apk in-app auto update', () => {
     plugin.checkVersion.mockImplementation(async () => {
       throw new Error('not mocked')
     })
+    useApkUpdateStore.getState().reset()
     useFocusStore.setState({ active: false })
   })
   afterEach(() => {
@@ -67,20 +76,27 @@ describe('v2.2.5 apk in-app auto update', () => {
     expect(plugin.download).not.toHaveBeenCalled()
   })
 
-  it('downloads and installs a newer version after confirmation', async () => {
+  it('shows the in-app dialog, then downloads and installs after confirmation', async () => {
     stubRemote('2.2.10')
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
     expect(await checkApkUpdate()).toBe('updating')
+    expect(useApkUpdateStore.getState().pendingVersion).toBe('2.2.10')
+    expect(useApkUpdateStore.getState().phase).toBe('download')
+    expect(plugin.download).not.toHaveBeenCalled()
+    await confirmApkDownload()
     expect(plugin.download).toHaveBeenCalledWith({
       url: `${APP_HOME}/apk/Discipline-v2.2.10.apk`
     })
+    expect(useApkUpdateStore.getState().phase).toBe('install')
+    await confirmApkInstall()
     expect(plugin.install).toHaveBeenCalled()
+    expect(useApkUpdateStore.getState().phase).toBe('idle')
   })
 
-  it('does not download when the user declines', async () => {
+  it('does not download when the user cancels the dialog', async () => {
     stubRemote('2.2.10')
-    vi.spyOn(window, 'confirm').mockReturnValue(false)
-    expect(await checkApkUpdate()).toBe('current')
+    expect(await checkApkUpdate()).toBe('updating')
+    cancelApkUpdate()
+    expect(useApkUpdateStore.getState().phase).toBe('idle')
     expect(plugin.download).not.toHaveBeenCalled()
   })
 
@@ -93,11 +109,20 @@ describe('v2.2.5 apk in-app auto update', () => {
 
   it('uses the native version check when available', async () => {
     plugin.checkVersion.mockResolvedValue({ body: JSON.stringify({ version: '2.2.10' }) })
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
     expect(await checkApkUpdate()).toBe('updating')
+    await confirmApkDownload()
     expect(plugin.download).toHaveBeenCalledWith({
       url: `${APP_HOME}/apk/Discipline-v2.2.10.apk`
     })
+  })
+
+  it('resets the dialog and reports failure when the download errors', async () => {
+    stubRemote('2.2.10')
+    plugin.download.mockRejectedValue(new Error('network down'))
+    expect(await checkApkUpdate()).toBe('updating')
+    await confirmApkDownload()
+    expect(useApkUpdateStore.getState().phase).toBe('idle')
+    expect(plugin.install).not.toHaveBeenCalled()
   })
 
   it('allows the update source in the in-app CSP', () => {
@@ -142,11 +167,11 @@ describe('v2.2.5 status bar + garden naming + icon', () => {
     expect(circles.length).toBeGreaterThanOrEqual(8)
   })
 
-  it('draws the sunrise-mountain favicon', () => {
+  it('draws the home logo ring favicon', () => {
     const svg = readFileSync(join(process.cwd(), 'public', 'favicon.svg'), 'utf8')
-    expect(svg).toContain('fill="#F7A45B"')
-    expect(svg).toContain('fill="#4A5A78"')
-    expect(svg).toContain('fill="#3E4C66"')
-    expect(svg).toContain('stop-color="#EAF3FF"')
+    expect(svg).toContain('stroke="url(#g)"')
+    expect(svg).toContain('fill="url(#g)"')
+    expect(svg).toContain('fill="#F6F8FC"')
+    expect(svg).toContain('stop-color="#7C9CF5"')
   })
 })

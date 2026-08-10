@@ -16,7 +16,12 @@ import { playUiSound } from './lib/uiSound'
 import { applyAutoTheme, clearAutoTheme } from './lib/autoTheme'
 import { StatusBar, Style as StatusBarStyle } from '@capacitor/status-bar'
 import { syncFocusLockActive, syncFocusLockWhitelist } from './lib/focusLock'
-import { startApkUpdateWatcher } from './lib/apkUpdate'
+import {
+  cancelApkUpdate,
+  confirmApkDownload,
+  confirmApkInstall,
+  startApkUpdateWatcher
+} from './lib/apkUpdate'
 import { statusBarColors } from './lib/statusBar'
 import { consumeAutoUpdated } from './lib/update'
 import { latestChangelog } from './lib/changelog'
@@ -29,6 +34,7 @@ import { useFocusStore } from './stores/useFocusStore'
 import { useSoundStore } from './stores/useSoundStore'
 import { useToastStore } from './stores/useToastStore'
 import { useFeedbackStore } from './stores/useFeedbackStore'
+import { useApkUpdateStore } from './stores/useApkUpdateStore'
 import BottomNav from './components/BottomNav'
 import DailySplash from './components/DailySplash'
 import FocusGuard from './components/FocusGuard'
@@ -77,6 +83,8 @@ export default function App() {
   const user = useAuthStore((s) => s.user)
   const recovery = useAuthStore((s) => s.recovery)
   const focusActive = useFocusStore((s) => s.active)
+  const apkVersion = useApkUpdateStore((s) => s.pendingVersion)
+  const apkPhase = useApkUpdateStore((s) => s.phase)
   const appWhitelist = useAppStore((s) => s.appWhitelist)
   const lastDailySplashDate = useAppStore((s) => s.lastDailySplashDate)
   const hasOnboarded = useAppStore((s) => s.hasOnboarded)
@@ -456,6 +464,28 @@ export default function App() {
           {recovery ? <RecoveryPassword /> : null}
           <IslandHost />
           <MergeDialog />
+          {apkVersion && apkPhase === 'download' ? (
+            <ConfirmDialog
+              open
+              title={t(settings.language, 'apkUpdateTitle')}
+              body={t(settings.language, 'apkUpdateFound', { version: apkVersion })}
+              confirmText={t(settings.language, 'apkConfirmDownload')}
+              cancelText={t(settings.language, 'cancel')}
+              onConfirm={() => void confirmApkDownload()}
+              onCancel={cancelApkUpdate}
+            />
+          ) : null}
+          {apkVersion && apkPhase === 'install' ? (
+            <ConfirmDialog
+              open
+              title={t(settings.language, 'apkInstallTitle')}
+              body={t(settings.language, 'apkInstallPrompt', { version: apkVersion })}
+              confirmText={t(settings.language, 'confirm')}
+              cancelText={t(settings.language, 'cancel')}
+              onConfirm={() => void confirmApkInstall()}
+              onCancel={cancelApkUpdate}
+            />
+          ) : null}
           <ConfirmDialog
             open={overdueCount !== null}
             title={t(settings.language, 'overdueCleanTitle')}

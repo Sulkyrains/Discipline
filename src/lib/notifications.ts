@@ -1,5 +1,7 @@
 import { Capacitor } from '@capacitor/core'
 import { LocalNotifications } from '@capacitor/local-notifications'
+import { t } from './i18n'
+import { useAppStore } from '../stores/useAppStore'
 import type { Course, Todo } from '../types'
 import { dateKey } from './format'
 import { courseInWeek, currentWeekNumber } from './timetable'
@@ -126,11 +128,12 @@ export async function scheduleClassReminders(
       await LocalNotifications.cancel({ notifications: ours })
     }
     for (const c of upcoming) {
+      const lang = useAppStore.getState().settings.language
       await LocalNotifications.schedule({
         notifications: [
           {
             id: hashString(c.key),
-            title: '课程提醒',
+            title: t(lang, 'classReminder'),
             body: `${c.course.name} · ${c.course.location}`,
             smallIcon: 'ic_stat_icon',
             schedule: { at: c.at },
@@ -163,11 +166,12 @@ export async function scheduleTodoReminders(todos: Todo[], now = new Date()): Pr
       .filter((c): c is { td: Todo; at: Date } => c.at !== null)
       .filter((c) => c.at.getTime() > now.getTime() && c.at.getTime() <= now.getTime() + 86400000)
     for (const c of candidates) {
+      const lang = useAppStore.getState().settings.language
       await LocalNotifications.schedule({
         notifications: [
           {
             id: hashString('todo-' + c.td.id),
-            title: '待办提醒',
+            title: t(lang, 'todoReminder'),
             body: c.td.title,
             smallIcon: 'ic_stat_icon',
             schedule: { at: c.at },

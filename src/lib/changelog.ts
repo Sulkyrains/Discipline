@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.3.0',
+    date: '2026-08-10',
+    zh: '应用图标改为与首页 Logo 一致的渐变圆环；APK 自动更新改为应用内弹窗（语言跟随应用语言，下载/安装失败会明确提示原因并可重试）；课程与待办的系统通知标题改为跟随应用语言。',
+    en: 'App icon now matches the home logo ring; APK auto-update uses an in-app dialog that follows the app language and shows clear failure reasons with retry; native course/todo notification titles now follow the app language.'
+  },
+  {
     version: '2.2.9',
     date: '2026-08-10',
     zh: 'APK 自动更新彻底绕开页面安全策略：版本检测改为原生网络请求（不再受 WebView CSP 影响），更新检测在任何情况下都能读取线上版本；修复说明：旧版安装包内置的安全策略无法追溯修改，需手动安装一次新版 APK 后，后续版本即可自动更新。',
