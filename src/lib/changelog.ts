@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.2.8',
+    date: '2026-08-10',
+    zh: '修复 APK 应用内自动更新不生效：页面安全策略（CSP）未放行更新源域名，导致应用内无法读取线上版本号；已放行并在“检查版本”按钮接入 APK 自动更新检测（安卓端点击立即检查会真正检测并提示更新）。',
+    en: 'Fixed APK in-app auto-update not firing: the in-app Content-Security-Policy did not allow the update host, so the app could not read the remote version; the host is now allowed and the “check for updates” button runs the real APK update check on Android.'
+  },
+  {
     version: '2.2.7',
     date: '2026-08-10',
     zh: '应用图标重绘为“日出山峰”（浅色渐变底，两座层叠山峰与升起的暖阳，不再是小苗+时钟）；统计页新增“专注森林”数据栏（非专注模式也可查看累计大树/小树/小苗数量），并移除“任务专注明细”下方重复的四个统计块；完成 APK 应用内自动更新验收（自动化检查 + 真机步骤）。',

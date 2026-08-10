@@ -52,38 +52,43 @@ describe('v2.2.5 apk in-app auto update', () => {
 
   it('skips entirely on the web', async () => {
     native.value = false
-    await checkApkUpdate()
+    expect(await checkApkUpdate()).toBe('current')
     expect(plugin.download).not.toHaveBeenCalled()
   })
 
   it('does nothing when the remote version matches', async () => {
     stubRemote(APP_VERSION)
-    await checkApkUpdate()
+    expect(await checkApkUpdate()).toBe('current')
     expect(plugin.download).not.toHaveBeenCalled()
   })
 
   it('downloads and installs a newer version after confirmation', async () => {
-    stubRemote('2.2.8')
+    stubRemote('2.2.9')
     vi.spyOn(window, 'confirm').mockReturnValue(true)
-    await checkApkUpdate()
+    expect(await checkApkUpdate()).toBe('updating')
     expect(plugin.download).toHaveBeenCalledWith({
-      url: `${APP_HOME}/apk/Discipline-v2.2.8.apk`
+      url: `${APP_HOME}/apk/Discipline-v2.2.9.apk`
     })
     expect(plugin.install).toHaveBeenCalled()
   })
 
   it('does not download when the user declines', async () => {
-    stubRemote('2.2.8')
+    stubRemote('2.2.9')
     vi.spyOn(window, 'confirm').mockReturnValue(false)
-    await checkApkUpdate()
+    expect(await checkApkUpdate()).toBe('current')
     expect(plugin.download).not.toHaveBeenCalled()
   })
 
   it('defers while focus is running', async () => {
     useFocusStore.setState({ active: true })
-    stubRemote('2.2.8')
-    await checkApkUpdate()
+    stubRemote('2.2.9')
+    expect(await checkApkUpdate()).toBe('current')
     expect(plugin.download).not.toHaveBeenCalled()
+  })
+
+  it('allows the update source in the in-app CSP', () => {
+    const html = readFileSync(join(process.cwd(), 'index.html'), 'utf8')
+    expect(html).toContain(`connect-src 'self' https://mdopqwkcaqioxgasqowd.supabase.co wss://mdopqwkcaqioxgasqowd.supabase.co ${APP_HOME}`)
   })
 })
 

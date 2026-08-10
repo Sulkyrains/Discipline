@@ -4,7 +4,8 @@ import { t, type I18nKey } from '../lib/i18n'
 import type { Settings as SettingsType, ThemeId, UiSoundId } from '../types'
 import { THEME_META, THEME_ORDER } from '../lib/theme'
 import { reorderDock } from '../lib/migration'
-import { requestNotificationPermission } from '../lib/notifications'
+import { isNative, requestNotificationPermission } from '../lib/notifications'
+import { checkApkUpdate } from '../lib/apkUpdate'
 import { useAppStore } from '../stores/useAppStore'
 import { useAuthStore } from '../stores/useAuthStore'
 import { useToastStore } from '../stores/useToastStore'
@@ -355,6 +356,17 @@ export default function Settings() {
   }
 
   const handleCheckUpdate = async () => {
+    if (isNative()) {
+      const result = await checkApkUpdate()
+      const title =
+        result === 'current'
+          ? t(lang, 'upToDate', { version: APP_VERSION })
+          : result === 'error'
+            ? t(lang, 'updateCheckFailed')
+            : t(lang, 'updateFound')
+      useToastStore.getState().push({ title, kind: result === 'current' ? 'success' : 'warn' })
+      return
+    }
     const result = await useUpdateStore.getState().checkNow()
     const title =
       result === 'outdated'
@@ -805,8 +817,8 @@ export default function Settings() {
           <span className="muted">{t(lang, 'downloadApk')}</span>
           <a
             className="btn btn-ghost btn-sm"
-            href="./apk/Discipline-v2.2.7.apk"
-            download="Discipline-v2.2.7.apk"
+            href="./apk/Discipline-v2.2.8.apk"
+            download="Discipline-v2.2.8.apk"
           >
             {t(lang, 'downloadApkAction')}
           </a>

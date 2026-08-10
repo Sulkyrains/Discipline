@@ -37,19 +37,22 @@ async function fetchRemoteVersion(): Promise<string | null> {
  * external files dir and opens the system installer. Silent on failure; the
  * next check retries. Never runs on the web.
  */
-export async function checkApkUpdate(): Promise<void> {
-  if (!isNative()) return
-  if (checking || downloading) return
-  if (useFocusStore.getState().active) return
+export type ApkUpdateResult = 'current' | 'updating' | 'error'
+
+export async function checkApkUpdate(): Promise<ApkUpdateResult> {
+  if (!isNative()) return 'current'
+  if (checking || downloading) return 'current'
+  if (useFocusStore.getState().active) return 'current'
   checking = true
   try {
     const remote = await fetchRemoteVersion()
-    if (!remote || remote === APP_VERSION || remote === lastPromptVersion) return
+    if (!remote) return 'error'
+    if (remote === APP_VERSION || remote === lastPromptVersion) return 'current'
     const lang = useAppStore.getState().settings.language
     const confirmDownload = window.confirm(t(lang, 'apkUpdateFound', { version: remote }))
     if (!confirmDownload) {
       lastPromptVersion = remote
-      return
+      return 'current'
     }
     downloading = true
     useToastStore.getState().push({ title: t(lang, 'apkDownloading'), kind: 'info' })
@@ -59,8 +62,10 @@ export async function checkApkUpdate(): Promise<void> {
       await ApkUpdater.install()
     }
     lastPromptVersion = remote
+    return 'updating'
   } catch {
     // transient network/download failure; retried on the next check
+    return 'error'
   } finally {
     checking = false
     downloading = false
