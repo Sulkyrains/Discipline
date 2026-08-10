@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.2.2',
+    date: '2026-08-10',
+    zh: '升级 Android 客户端安全措施：禁止应用数据备份、强制 HTTPS（禁止明文流量）、WebView 关闭文件/内容访问与混合内容、收紧 FileProvider 路径、应用内同样启用内容安全策略（CSP）。',
+    en: 'Android app security upgrade: app data backup disabled, cleartext traffic banned (HTTPS only), WebView file/content access and mixed content disabled, FileProvider paths tightened, and a Content-Security-Policy now also applies inside the app.'
+  },
+  {
     version: '2.2.1',
     date: '2026-08-10',
     zh: '新增 Android APK 客户端下载入口（位于“我的”页底部），提供打包好的安卓安装包。',
