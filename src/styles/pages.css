@@ -1317,21 +1317,35 @@
   flex-wrap: wrap;
   align-items: flex-end;
   gap: 6px 10px;
-  min-height: 96px;
-  padding: 12px 8px 8px;
+  min-height: 116px;
+  padding: 14px 10px 8px;
   overflow: hidden;
 }
 
-/* Grass ground the plants stand on. */
+/* Sky, sun glow and soft hills behind the plants. */
+.garden-scene::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(110px 54px at 76% 16%, rgba(255, 214, 122, 0.22), transparent 72%),
+    radial-gradient(170px 96px at 18% 34%, rgba(124, 156, 245, 0.1), transparent 76%),
+    linear-gradient(180deg, rgba(124, 156, 245, 0.08), transparent 62%);
+}
+
+/* Grass ground with subtle blades the plants stand on. */
 .garden-scene::after {
   content: '';
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
-  height: 20px;
+  height: 22px;
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(94, 171, 125, 0.32), rgba(62, 143, 99, 0.16));
+  background:
+    repeating-linear-gradient(90deg, rgba(94, 171, 125, 0.55) 0 2px, transparent 2px 14px),
+    linear-gradient(180deg, rgba(94, 171, 125, 0.34), rgba(62, 143, 99, 0.16));
   border-top: 1px solid rgba(62, 143, 99, 0.28);
 }
 
@@ -1341,23 +1355,32 @@
   animation: gardenPop 0.4s ease-out both;
 }
 
+.garden-sway {
+  display: inline-flex;
+  transform-origin: 50% 100%;
+}
+
+.garden-sway-tree {
+  animation: gardenSway 4.6s ease-in-out infinite;
+}
+
 .garden-plant svg {
   display: block;
 }
 
 .garden-seedling svg {
-  width: 24px;
-  height: 32px;
+  width: 28px;
+  height: 36px;
 }
 
 .garden-small-tree svg {
-  width: 40px;
-  height: 52px;
+  width: 46px;
+  height: 60px;
 }
 
 .garden-big-tree svg {
-  width: 64px;
-  height: 84px;
+  width: 72px;
+  height: 96px;
 }
 
 @keyframes gardenPop {
@@ -1368,6 +1391,16 @@
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes gardenSway {
+  0%,
+  100% {
+    transform: rotate(-1.6deg);
+  }
+  50% {
+    transform: rotate(1.6deg);
   }
 }
 

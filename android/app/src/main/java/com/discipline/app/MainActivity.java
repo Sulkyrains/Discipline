@@ -11,6 +11,7 @@ public class MainActivity extends BridgeActivity {
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     registerPlugin(FocusLockPlugin.class);
+    registerPlugin(ApkUpdaterPlugin.class);
     // WebView hardening: no file/content access, no mixed content, no
     // file-scheme script access. The app only talks to HTTPS endpoints.
     WebView webView = getBridge().getWebView();

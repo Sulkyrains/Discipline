@@ -13,7 +13,10 @@ import { todayKey } from './lib/format'
 import { computeSignIns } from './lib/stats'
 import { playUiSound } from './lib/uiSound'
 import { applyAutoTheme, clearAutoTheme } from './lib/autoTheme'
+import { StatusBar, Style as StatusBarStyle } from '@capacitor/status-bar'
 import { syncFocusLockActive, syncFocusLockWhitelist } from './lib/focusLock'
+import { startApkUpdateWatcher } from './lib/apkUpdate'
+import { statusBarColors } from './lib/statusBar'
 import { consumeAutoUpdated } from './lib/update'
 import { latestChangelog } from './lib/changelog'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
@@ -90,14 +93,32 @@ export default function App() {
     document.documentElement.dataset.theme = settings.theme
     if (settings.theme === 'auto') {
       applyAutoTheme(new Date())
-      const iv = window.setInterval(() => applyAutoTheme(new Date()), 60 * 1000)
+      syncStatusBar()
+      const iv = window.setInterval(() => {
+        applyAutoTheme(new Date())
+        syncStatusBar()
+      }, 60 * 1000)
       return () => window.clearInterval(iv)
     }
     clearAutoTheme()
     const meta = document.querySelector('meta[name="theme-color"]')
     if (meta) meta.setAttribute('content', THEME_META[settings.theme])
+    syncStatusBar()
     return undefined
   }, [settings.theme])
+
+  const syncStatusBar = () => {
+    if (!isNative()) return
+    const theme = useAppStore.getState().settings.theme
+    const el = document.documentElement
+    const computedBg = theme === 'auto' ? el.style.getPropertyValue('--bg').trim() : ''
+    const computedDark = theme === 'auto' ? el.style.colorScheme === 'dark' : undefined
+    const { bg, dark } = statusBarColors(theme, computedBg, computedDark)
+    void StatusBar.setBackgroundColor({ color: bg }).catch(() => undefined)
+    void StatusBar.setStyle({ style: dark ? StatusBarStyle.Dark : StatusBarStyle.Light }).catch(
+      () => undefined
+    )
+  }
 
   useEffect(() => {
     useSoundStore.setState({ volume: settings.whiteNoiseVolume })
@@ -232,6 +253,7 @@ export default function App() {
 
   useEffect(() => {
     useAuthStore.getState().init()
+    startApkUpdateWatcher()
   }, [])
 
   useEffect(() => {

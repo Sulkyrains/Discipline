@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.2.5',
+    date: '2026-08-10',
+    zh: 'APK 新增应用内自动更新（检测新版本→后台下载→系统安装确认）；成长花园更名“专注森林”并升级场景（天空/远山/草地、更精细的植物插画与摇摆动画）；修复 APK 顶部状态栏黑框（状态栏颜色与图标样式随主题同步）；应用图标重绘为“时钟+幼苗”并同步 Web 与安卓全尺寸图标。',
+    en: 'The APK now has in-app auto-update (detect → download → system install confirmation); the focus garden is renamed “Focus Forest” with a richer scene (sky, hills, grass, finer plant art and sway animation); the APK status bar black bar is fixed (status bar colors/icons follow the theme); the app icon is redrawn as a clock with a sprouting seedling across web and Android sizes.'
+  },
+  {
     version: '2.2.4',
     date: '2026-08-10',
     zh: '成长花园视觉升级：小苗/小树/大树改为精致插画（内嵌 SVG 多层树冠、树干、土丘与高光），配草地地面与生长动画，植物轻微错落；树冠固定自然绿色，不再随主题变成红色。',
