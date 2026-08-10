@@ -172,6 +172,7 @@ describe('v2.2.5 status bar + garden naming + icon', () => {
     expect(svg).toContain('stroke="url(#g)"')
     expect(svg).toContain('fill="url(#g)"')
     expect(svg).toContain('fill="#F6F8FC"')
-    expect(svg).toContain('stop-color="#7C9CF5"')
+    expect(svg).toContain('stop-color="#A63A32"')
+    expect(svg).toContain('stop-color="#C89B3C"')
   })
 })

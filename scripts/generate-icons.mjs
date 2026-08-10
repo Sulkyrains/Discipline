@@ -9,8 +9,8 @@ mkdirSync(outDir, { recursive: true })
 
 // Brand palette: the home logo — gradient ring + orbit dot on a light tile.
 const BG = { r: 246, g: 248, b: 252 }
-const C1 = { r: 124, g: 156, b: 245 }
-const C2 = { r: 94, g: 234, b: 212 }
+const C1 = { r: 166, g: 58, b: 50 }
+const C2 = { r: 200, g: 155, b: 60 }
 
 function lerp(a, b, t) {
   return { r: a.r + (b.r - a.r) * t, g: a.g + (b.g - a.g) * t, b: a.b + (b.b - a.b) * t }

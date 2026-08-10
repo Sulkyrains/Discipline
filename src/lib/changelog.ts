@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.3.1',
+    date: '2026-08-10',
+    zh: '应用图标圆环渐变改为与中国风主题首页圆环一致的橙黄渐变。',
+    en: 'The app icon ring gradient now matches the China-theme home logo ring (orange-yellow).'
+  },
+  {
     version: '2.3.0',
     date: '2026-08-10',
     zh: '应用图标改为与首页 Logo 一致的渐变圆环；APK 自动更新改为应用内弹窗（语言跟随应用语言，下载/安装失败会明确提示原因并可重试）；课程与待办的系统通知标题改为跟随应用语言。',
