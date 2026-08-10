@@ -7,16 +7,13 @@ const here = dirname(fileURLToPath(import.meta.url))
 const outDir = join(here, '..', 'public', 'icons')
 mkdirSync(outDir, { recursive: true })
 
-// Brand palette (clock + sprouting seedling on a light blue→green gradient).
-const BG_TOP = { r: 233, g: 244, b: 255 }
-const BG_BOTTOM = { r: 228, g: 246, b: 236 }
-const C1 = { r: 74, g: 127, b: 219 }
-const C2 = { r: 47, g: 160, b: 107 }
-const STEM_C = { r: 47, g: 143, b: 91 }
-const LEAF1 = { r: 63, g: 160, b: 107 }
-const LEAF2 = { r: 47, g: 143, b: 91 }
-const LEAF3 = { r: 104, g: 196, b: 150 }
-const SOIL = { r: 138, g: 106, b: 74 }
+// Brand palette: sunrise over mountains on a light blue→peach gradient.
+const BG_TOP = { r: 234, g: 243, b: 255 }
+const BG_BOTTOM = { r: 253, g: 235, b: 216 }
+const SUN_OUTER = { r: 247, g: 164, b: 91 }
+const SUN_INNER = { r: 249, g: 192, b: 124 }
+const MOUNT_BACK = { r: 74, g: 90, b: 120 }
+const MOUNT_FRONT = { r: 62, g: 76, b: 102 }
 
 function lerp(a, b, t) {
   return { r: a.r + (b.r - a.r) * t, g: a.g + (b.g - a.g) * t, b: a.b + (b.b - a.b) * t }
@@ -48,8 +45,20 @@ function inEllipse(px, py, cx, cy, rx, ry, angleDeg) {
   return (lx * lx) / (rx * rx) + (ly * ly) / (ry * ry) <= 1
 }
 
+function inPoly(px, py, pts) {
+  let inside = false
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    const [xi, yi] = pts[i]
+    const [xj, yj] = pts[j]
+    if (yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) {
+      inside = !inside
+    }
+  }
+  return inside
+}
+
 /**
- * Clock + seedling design sampled at normalized coords (u,v). `scale` shrinks
+ * Sunrise-over-mountains design sampled at normalized coords (u,v). `scale` shrinks
  * the artwork toward the center (adaptive-icon safe zone).
  */
 function sampleShape(u, v, scale) {
@@ -57,44 +66,36 @@ function sampleShape(u, v, scale) {
   const sy = v
   const S = (c) => 0.5 + (c - 0.5) * scale
 
-  // Clock ring.
-  const dx = sx - 0.5
-  const dy = sy - 0.5
-  const dist = Math.hypot(dx, dy)
-  const ringR = 0.3 * scale
-  const ringW = 0.062 * scale
-  if (Math.abs(dist - ringR) <= ringW / 2) {
-    const angle = (Math.atan2(dy, dx) + Math.PI) / (2 * Math.PI)
-    return lerp(C1, C2, angle)
+  // Rising sun (behind the mountains).
+  const sunX = S(0.5)
+  const sunY = S(0.42)
+  const sunDist = Math.hypot(sx - sunX, sy - sunY)
+  if (sunDist <= 0.17 * scale) {
+    return sunDist <= 0.1 * scale ? SUN_INNER : SUN_OUTER
   }
 
-  // Four clock ticks outside the ring.
-  const tickFrom = ringR + ringW / 2
-  const tickTo = tickFrom + 0.075 * scale
-  const tickW = 0.034 * scale
-  const ticks = [
-    [0.5, 0.5 - tickFrom, 0.5, 0.5 - tickTo],
-    [0.5 + tickFrom, 0.5, 0.5 + tickTo, 0.5],
-    [0.5, 0.5 + tickFrom, 0.5, 0.5 + tickTo],
-    [0.5 - tickFrom, 0.5, 0.5 - tickTo, 0.5]
-  ]
-  for (const [x1, y1, x2, y2] of ticks) {
-    if (distToSegment(sx, sy, x1, y1, x2, y2) <= tickW / 2) {
-      const angle = (Math.atan2(dy, dx) + Math.PI) / (2 * Math.PI)
-      return lerp(C1, C2, angle)
-    }
-  }
+  // Back mountain (taller, left peak) then front mountain (lower, right).
+  const back = [
+    [0, 0.85],
+    [0.34, 0.42],
+    [0.52, 0.6],
+    [0.68, 0.48],
+    [1, 0.8],
+    [1, 1],
+    [0, 1]
+  ].map(([x, y]) => [S(x), S(y)])
+  if (inPoly(sx, sy, back)) return MOUNT_BACK
 
-  // Soil mound at the base of the seedling.
-  if (inEllipse(sx, sy, S(0.5), S(0.6), 0.088 * scale, 0.032 * scale, 0)) return SOIL
-  // Seedling stem.
-  if (distToSegment(sx, sy, S(0.5), S(0.585), S(0.5), S(0.4)) <= (0.016 * scale) / 2) {
-    return STEM_C
-  }
-  // Leaves.
-  if (inEllipse(sx, sy, S(0.415), S(0.445), 0.062 * scale, 0.04 * scale, -28)) return LEAF1
-  if (inEllipse(sx, sy, S(0.59), S(0.385), 0.062 * scale, 0.04 * scale, 26)) return LEAF2
-  if (inEllipse(sx, sy, S(0.5), S(0.375), 0.036 * scale, 0.024 * scale, 8)) return LEAF3
+  const front = [
+    [0, 1],
+    [0.3, 0.68],
+    [0.47, 0.82],
+    [0.66, 0.7],
+    [1, 0.95],
+    [1, 1]
+  ].map(([x, y]) => [S(x), S(y)])
+  if (inPoly(sx, sy, front)) return MOUNT_FRONT
+
   return null
 }
 
@@ -145,21 +146,40 @@ function drawIcon(size, { maskable = false, foreground = false } = {}) {
 
 function drawNotificationIcon(size = 96) {
   const png = new PNG({ width: size, height: size })
+  const inPoly = (px, py, pts) => {
+    let inside = false
+    for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+      const [xi, yi] = pts[i]
+      const [xj, yj] = pts[j]
+      if (yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) inside = !inside
+    }
+    return inside
+  }
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
       const i = (size * y + x) * 4
       const u = (x + 0.5) / size
       const v = (y + 0.5) / size
-      // Monochrome silhouette: ring + seedling only, no soil/background.
-      const dx = u - 0.5
-      const dy = v - 0.5
-      const dist = Math.hypot(dx, dy)
-      const onRing = Math.abs(dist - 0.3) <= 0.04
-      const onStem = distToSegment(u, v, 0.5, 0.56, 0.5, 0.42) <= 0.012
-      const onLeaf =
-        inEllipse(u, v, 0.43, 0.44, 0.055, 0.034, -28) ||
-        inEllipse(u, v, 0.57, 0.4, 0.055, 0.034, 26)
-      if (onRing || onStem || onLeaf) {
+      // Monochrome silhouette: sun + mountains, no background.
+      const onSun = Math.hypot(u - 0.5, v - 0.42) <= 0.16
+      const onBack = inPoly(u, v, [
+        [0, 0.85],
+        [0.34, 0.42],
+        [0.52, 0.6],
+        [0.68, 0.48],
+        [1, 0.8],
+        [1, 1],
+        [0, 1]
+      ])
+      const onFront = inPoly(u, v, [
+        [0, 1],
+        [0.3, 0.68],
+        [0.47, 0.82],
+        [0.66, 0.7],
+        [1, 0.95],
+        [1, 1]
+      ])
+      if (onSun || onBack || onFront) {
         png.data[i] = 255
         png.data[i + 1] = 255
         png.data[i + 2] = 255

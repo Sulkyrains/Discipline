@@ -3,8 +3,10 @@ import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis
 import { t } from '../lib/i18n'
 import { formatDuration } from '../lib/format'
 import { computeStats, dailySeries, taskFocusMinutes } from '../lib/stats'
+import { gardenBreakdown } from '../lib/garden'
 import { useAppStore } from '../stores/useAppStore'
 import { Link } from 'react-router-dom'
+import GardenPlant from '../components/GardenPlant'
 
 const PALETTE = ['#7c9cf5', '#4fbf9f', '#eac06e', '#f4717f', '#6fc3f5', '#9d7bf5', '#f28ba8', '#3fc3b2', '#e8a23d']
 
@@ -12,6 +14,7 @@ export default function Stats() {
   const lang = useAppStore((s) => s.settings.language)
   const sessions = useAppStore((s) => s.sessions)
   const todos = useAppStore((s) => s.todos)
+  const gardenTotal = useAppStore((s) => s.gardenTotal)
   const [range, setRange] = useState<7 | 30>(7)
 
   const stats = useMemo(() => computeStats(sessions, todos), [sessions, todos])
@@ -26,6 +29,8 @@ export default function Stats() {
     return rows
   }, [taskStats, stats.totalMinutes, lang])
   const maxTaskMinutes = taskStats[0]?.minutes ?? 1
+  const garden = gardenBreakdown(gardenTotal)
+  const GARDEN_CAPS = { big: 6, small: 3, seedling: 3 }
   return (
     <div className="page page-stats">
       <header className="page-head">
@@ -183,26 +188,47 @@ export default function Stats() {
         )}
       </div>
 
-      <div className="stat-grid stat-grid-2">
-        <div className="card stat-tile">
-          <span className="stat-label">{t(lang, 'today')}</span>
-          <span className="stat-value">{stats.todayMinutes}min</span>
+      <div className="card garden-stats-card">
+        <div className="garden-stats-head">
+          <h3 className="section-title">{t(lang, 'gardenStatsTitle')}</h3>
+          <span className="muted small">{t(lang, 'gardenTotalUnits', { n: gardenTotal })}</span>
         </div>
-        <div className="card stat-tile">
-          <span className="stat-label">{t(lang, 'week')}</span>
-          <span className="stat-value">{stats.weekMinutes}min</span>
+        <div className="garden-stats-grid">
+          <span className="chip">{t(lang, 'gardenBigTrees', { n: garden.bigTrees })}</span>
+          <span className="chip">{t(lang, 'gardenSmallTrees', { n: garden.smallTrees })}</span>
+          <span className="chip">{t(lang, 'gardenSeedlings', { n: garden.seedlings })}</span>
         </div>
-        <div className="card stat-tile">
-          <span className="stat-label">{t(lang, 'month')}</span>
-          <span className="stat-value">{stats.monthMinutes}min</span>
-        </div>
-        <div className="card stat-tile">
-          <span className="stat-label">{t(lang, 'bestStreak')}</span>
-          <span className="stat-value">
-            {stats.bestStreak}
-            <small>d</small>
-          </span>
-        </div>
+        {gardenTotal > 0 ? (
+          <div className="garden-scene garden-stats-scene">
+            {(() => {
+              const plants: React.ReactNode[] = []
+              const showBig = Math.min(garden.bigTrees, GARDEN_CAPS.big)
+              const showSmall = Math.min(garden.smallTrees, GARDEN_CAPS.small)
+              const showSeed = Math.min(garden.seedlings, GARDEN_CAPS.seedling)
+              let idx = 0
+              for (let i = 0; i < showBig; i++) {
+                plants.push(<GardenPlant key={`b${i}`} type="big-tree" index={idx++} />)
+              }
+              for (let i = 0; i < showSmall; i++) {
+                plants.push(<GardenPlant key={`s${i}`} type="small-tree" index={idx++} />)
+              }
+              for (let i = 0; i < showSeed; i++) {
+                plants.push(<GardenPlant key={`p${i}`} type="seedling" index={idx++} />)
+              }
+              return plants
+            })()}
+            {garden.bigTrees + garden.smallTrees + garden.seedlings >
+            GARDEN_CAPS.big + GARDEN_CAPS.small + GARDEN_CAPS.seedling ? (
+              <span className="muted small garden-stats-more">
+                +
+                {garden.bigTrees +
+                  garden.smallTrees +
+                  garden.seedlings -
+                  (GARDEN_CAPS.big + GARDEN_CAPS.small + GARDEN_CAPS.seedling)}
+              </span>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </div>
   )

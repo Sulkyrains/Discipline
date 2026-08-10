@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.2.7',
+    date: '2026-08-10',
+    zh: '应用图标重绘为“日出山峰”（浅色渐变底，两座层叠山峰与升起的暖阳，不再是小苗+时钟）；统计页新增“专注森林”数据栏（非专注模式也可查看累计大树/小树/小苗数量），并移除“任务专注明细”下方重复的四个统计块；完成 APK 应用内自动更新验收（自动化检查 + 真机步骤）。',
+    en: 'App icon redrawn as sunrise over mountains (light gradient tile with layered peaks and a rising warm sun, no more seedling+clock); the Stats page gains a “Focus Forest” section (cumulative big/small trees and seedlings, viewable outside focus) and the four duplicated stat tiles below the task focus detail were removed; APK in-app auto-update acceptance completed (automated checks plus an on-device checklist).'
+  },
+  {
     version: '2.2.6',
     date: '2026-08-10',
     zh: '同一账号多端全量同步：打卡、放弃日期、白名单、花园累计、底部栏排序、待办标签、保留逾期等本地数据均入云（自定义音频除外）；应用内强锁实装：白名单改为从手机真实安装应用中选择（无预制列表），专注时拦截非白名单应用并自动拉回本应用，提供辅助功能开启引导；课程与待办提醒实装：APK 端待办原生调度提醒并支持精确闹钟引导；应用图标重绘为浅蓝→浅绿渐变风格。',
