@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it } from 'vitest'
@@ -68,5 +70,19 @@ describe('v2.2.7 stats garden section', () => {
     )
     expect(container.querySelector('.stat-grid.stat-grid-2')).toBeNull()
     expect(container.querySelectorAll('.stat-tile')).toHaveLength(4)
+  })
+})
+
+describe('v2.3.2 native plugin registration order', () => {
+  it('registers local plugins before the bridge is created', () => {
+    const java = readFileSync(
+      join(process.cwd(), 'android', 'app', 'src', 'main', 'java', 'com', 'discipline', 'app', 'MainActivity.java'),
+      'utf8'
+    )
+    const registerIndex = java.indexOf('registerPlugin(FocusLockPlugin.class)')
+    const superIndex = java.indexOf('super.onCreate(savedInstanceState)')
+    expect(registerIndex).toBeGreaterThanOrEqual(0)
+    expect(superIndex).toBeGreaterThan(registerIndex)
+    expect(java).toContain('registerPlugin(ApkUpdaterPlugin.class)')
   })
 })

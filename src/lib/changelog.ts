@@ -7,6 +7,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.3.2',
+    date: '2026-08-10',
+    zh: '修复 APK 自动更新“插件未实现”：本地插件注册时机错误（在 Bridge 创建后才注册导致空操作），已改为在 super.onCreate 之前注册；修复后应用内更新可正常下载安装，专注白名单的真实应用列表也同步可用。',
+    en: 'Fixed the APK auto-update “plugin is not implemented” error: local plugins were registered after the Capacitor bridge was created (a no-op); they are now registered before super.onCreate, so in-app updates download/install correctly and the real installed-app list for the focus whitelist works too.'
+  },
+  {
     version: '2.3.1',
     date: '2026-08-10',
     zh: '应用图标圆环渐变改为与中国风主题首页圆环一致的橙黄渐变。',
