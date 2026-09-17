@@ -7,11 +7,12 @@
   <body>
     <script>
       ;(function () {
-        var base = '/Discipline/'
-        var path = location.pathname.replace(/^\/Discipline\/?/, '')
-        location.replace(base + (path ? '#/' + path : ''))
+        var pathname = location.pathname
+        var base = pathname.indexOf('/Discipline/') === 0 ? '/Discipline/' : '/'
+        var route = pathname.replace(/^\/Discipline\/?/, '').replace(/^\//, '')
+        location.replace(base + (route ? '#/' + route : ''))
       })()
     </script>
-    <noscript><a href="/Discipline/">Discipline</a></noscript>
+    <noscript><a href="./">Discipline</a></noscript>
   </body>
 </html>
