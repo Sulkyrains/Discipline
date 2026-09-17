@@ -1,8 +1,9 @@
 # 发布说明（Discipline）
 
-## 当前发布策略（2026-08-08 起）
-- **只部署 Cloudflare Pages，暂不同步 GitHub**（master 推送与 gh-pages 发布均暂停）。
-- 线上地址：https://your-discipline.pages.dev
+## 当前发布策略（2026-09-17 起，GitHub 同步已恢复）
+- **Cloudflare Pages 与 GitHub 同步发布**（2026-08-08 的「暂不同步 GitHub」策略已作废，master 推送与 gh-pages 发布均已恢复）。
+- Cloudflare Pages：https://your-discipline.pages.dev
+- GitHub Pages：https://sulkyrains.github.io/Discipline/ —— 仓库 `Sulkyrains/Discipline` 的 gh-pages 分支为 dist 内容镜像（含签名 APK）。
 - 旧项目 `discipline`（discipline-8cb.pages.dev）已停更，保留访问不删除。
 
 ## 部署命令
@@ -32,5 +33,10 @@
 - 手动核对：Supabase → Authentication → Rate limiting 保持开启（默认）；可选：Cloudflare 控制台为该站点启用 Bot Fight Mode / WAF 托管规则（视套餐而定）。
 - RLS/管理员接口审计结论：全表 RLS + owner 策略；`admin_feedback`/`admin_users` 为 security definer 且函数体内校验 `admins` 成员；`search_path` 固定为 `public`；无需额外改动。
 
-## 恢复 GitHub 同步（暂不使用）
-- 按原流程执行 `git push origin master` 与 `gh-pages -d dist -b gh-pages`。
+## GitHub 发布步骤（2026-09-17 起恢复）
+- 构建后执行 `npm run deploy:gh-pages`（= `gh-pages -d dist -b gh-pages`），源码 `git push origin master`。
+- 发布后核对 gh-pages 分支确实包含 `apk/Discipline-v<版本>.apk`：gh-pages 工具不会删除分支上的 dotfile，若分支残留含 `*.apk` 规则的 `.gitignore`，签名 APK 会被静默跳过（2026-09-17 已清理，勿再向该分支添加 `.gitignore`）。
+- 校园网直连 github.com 会超时，push 需临时走本机代理（ClashVerge，127.0.0.1:7897），不要写入 git config：
+  ```powershell
+  git -c http.proxy=http://127.0.0.1:7897 -c https.proxy=http://127.0.0.1:7897 push origin master
+  ```
